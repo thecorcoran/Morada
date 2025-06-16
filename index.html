@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Morada</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.tiny.cloud/1/5g985h5nnoarje29szp3x7g2z6a811y9wsvvp2wylg5s6u4i/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+  </head>
+  <body>
+    <div class="main-container">
+      <div class="content-area">
+        <div class="breadcrumb-bar" id="breadcrumb-bar"></div>
+        <h2 id="view-title"></h2>
+        <canvas id="nest-canvas"></canvas>
+      </div>
+    </div>
+    
+    <div id="editor-mode" class="hidden">
+        <div id="editor-main-content">
+            <textarea id="main-editor"></textarea>
+        </div>
+        <div id="editor-metadata">
+            <div id="editor-status-bar">
+                <span id="editor-word-count">Words: 0</span>
+            </div>
+            <div id="tag-manager">
+                <label>Tags:</label>
+                <div id="tag-list"></div>
+                <input type="text" id="tag-input" placeholder="Add a tag and press Enter...">
+            </div>
+        </div>
+        <div class="editor-instructions">Press 'Escape' to save and close</div>
+    </div>
+
+    <div id="search-palette" class="hidden">
+      <input type="text" id="search-input" placeholder="Search content or #tags...">
+      <div id="search-results"></div>
+    </div>
+
+    <div id="compendium-modal" class="hidden">
+      <div class="compendium-header">
+        <h2>The Compendium</h2>
+        <input type="text" id="compendium-filter" placeholder="Filter by text or #tag...">
+        <button id="close-compendium-btn">×</button>
+      </div>
+      <div class="compendium-body">
+          <div id="compendium-library" class="compendium-panel">
+            </div>
+          <div id="compendium-manuscript" class="compendium-panel">
+            </div>
+      </div>
+      <div class="compendium-footer">
+        <button id="generate-btn">Generate .txt File</button>
+      </div>
+    </div>
+
+    <script src="./renderer.js"></script>
+  </body>
+</html>

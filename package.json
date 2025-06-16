@@ -1,0 +1,20 @@
+{
+  "name": "morada-project",
+  "version": "1.0.0",
+  "description": "A fractal writing environment.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "postinstall": "mkdir -p ./assets && ncp node_modules/tinymce/skins ./assets/skins && ncp node_modules/tinymce/themes ./assets/themes"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^31.0.1",
+    "ncp": "^2.0.0",
+    "tinymce": "^7.1.2"
+  },
+  "dependencies": {
+    "sortablejs": "^1.15.6"
+  }
+}
