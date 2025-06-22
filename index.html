@@ -22,6 +22,16 @@
         <div id="editor-metadata">
             <div id="editor-status-bar">
                 <span id="editor-word-count">Words: 0</span>
+                <div id="writing-timer-controls">
+                  <label for="timer-duration-input">Set Timer (min):</label>
+                  <input type="number" id="timer-duration-input" value="30" min="1">
+                  <button id="timer-start-btn">Start Timer</button>
+                  <span id="writing-timer-display">Time: 00:00</span>
+                </div>
+                <div id="word-goal-controls">
+                  <label for="word-goal-input">Word Goal:</label>
+                  <span id="word-goal-current">0</span> / <input type="number" id="word-goal-input" value="500" min="0">
+                </div>
             </div>
             <div id="tag-manager">
                 <label>Tags:</label>
@@ -53,6 +63,37 @@
         <button id="generate-btn">Generate .txt File</button>
       </div>
     </div>
+
+    <div id="etymology-modal" class="hidden">
+      <div class="etymology-modal-content">
+        <div class="etymology-modal-header">
+          <h3 id="etymology-word">Etymology</h3>
+          <button id="close-etymology-btn">×</button>
+        </div>
+        <div id="etymology-result-area" class="etymology-modal-body">
+          <p>Loading...</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="certify-word-modal" class="hidden">
+      <div class="certify-word-modal-content">
+        <div class="certify-word-modal-header">
+          <h3>Certify Word: "<span id="certify-selected-word"></span>"</h3>
+          <button id="close-certify-word-btn">×</button>
+        </div>
+        <div class="certify-word-modal-body">
+          <label for="certify-definition-input">Your Definition:</label>
+          <textarea id="certify-definition-input" rows="4"></textarea>
+        </div>
+        <div class="certify-word-modal-footer">
+          <button id="save-certification-btn">Save Definition</button>
+          <button id="cancel-certification-btn">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="certified-word-tooltip" class="hidden"></div>
 
     <script src="./renderer.js"></script>
   </body>
