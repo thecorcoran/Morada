@@ -109,6 +109,14 @@ window.MyProjectUIManager = {
             li.classList.add('selected-for-compile');
         }
 
+        const itemWrapper = document.createElement('div'); // Wrapper for text elements
+        itemWrapper.style.display = 'flex';
+        itemWrapper.style.flexDirection = 'column'; // Stack title and preview
+
+        const titleLine = document.createElement('div'); // Line for toggle and title
+        titleLine.style.display = 'flex';
+        titleLine.style.alignItems = 'center';
+
         const toggle = document.createElement('span');
         toggle.className = 'tree-toggle';
         if (node.type === 'container' && node.children && node.children.length > 0) {
@@ -121,16 +129,44 @@ window.MyProjectUIManager = {
                 this.refreshCompendiumView();
             });
         } else {
-            toggle.innerHTML = '&nbsp;&nbsp;';
+            toggle.innerHTML = '&nbsp;&nbsp;'; // Keep space for alignment
         }
 
         const label = document.createElement('span');
         label.className = 'tree-item-label';
         label.textContent = node.title;
-        li.appendChild(toggle);
-        li.appendChild(label);
+        
+        titleLine.appendChild(toggle);
+        titleLine.appendChild(label);
+        itemWrapper.appendChild(titleLine);
+
+        if (node.type === 'text' && node.content) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = node.content;
+            const plainText = tempDiv.textContent || tempDiv.innerText || "";
+            const words = plainText.trim().split(/\s+/).slice(0, 7);
+            if (words.length > 0) {
+                const previewSpan = document.createElement('span');
+                previewSpan.className = 'compendium-item-preview';
+                let previewText = words.join(' ');
+                if (plainText.trim().split(/\s+/).length > 7) {
+                    previewText += '...';
+                }
+                previewSpan.textContent = previewText;
+                itemWrapper.appendChild(previewSpan);
+            }
+        }
+        
+        li.appendChild(itemWrapper);
 
         li.addEventListener('click', (e) => {
+            // Prevent selection when clicking on toggle or preview
+            if (e.target === toggle || e.target.classList.contains('compendium-item-preview')) {
+                 e.stopPropagation();
+                 return;
+            }
+            // If the click is on the label or the general li area (but not toggle/preview), proceed.
+            // We need to ensure the click is not propagated further up if it's meant for selection.
             e.stopPropagation();
             if (e.target === toggle) return;
             // Interaction with manuscriptList which should ideally be managed by dataStorage
