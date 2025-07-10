@@ -1,145 +1,885 @@
-:root { font-family: 'Vollkorn', serif; }
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html, body { width: 100%; height: 100%; font-family: var(--font-family); overflow: hidden; }
-canvas { display: block; width: 100%; height: 100%; }
-.main-container { display: flex; width: 100%; height: 100%; }
-.content-area { flex-grow: 1; display: flex; flex-direction: column; height: 100%; }
-.breadcrumb-bar { background-color: #5a5a5a; color: #f5f5f5; padding: 8px 15px; font-size: 14px; flex-shrink: 0; }
-#view-title { background-color: #6a6a6a; color: #ffffff; padding: 10px 15px; font-size: 18px; font-weight: bold; flex-shrink: 0; border-bottom: 2px solid #4a4a4a; }
-#nest-canvas { flex-grow: 1; height: 100%; background-color: #2a3d2a; }
-.node-editor { position: absolute; border: 1px solid #777; outline: none; padding: 5px; background-color: #f5f5f5; color: #333; font-family: 'Vollkorn', serif; text-align: center; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4); z-index: 10; }
-#editor-mode { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(42, 61, 42, 0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 200; padding: 20px; }
-#editor-mode.hidden, #search-palette.hidden, #compendium-modal.hidden, #etymology-modal.hidden, #certify-word-modal.hidden, #certified-word-tooltip.hidden, #editor-metadata.hidden { display: none !important; } /* Added #editor-metadata.hidden and !important */
-#editor-main-content { width: 80%; max-width: 800px; height: 75%; display: flex; flex-direction: column; }
-.tox.tox-tinymce { height: 100% !important; box-shadow: 0 5px 25px rgba(0,0,0,0.5); border-bottom-left-radius: 0; border-bottom-right-radius: 0;}
-.editor-instructions { color: #ccc; margin-top: 10px; font-size: 12px; }
-#editor-metadata { width: 80%; max-width: 800px; background-color: #f0f0f0; border-top: 1px solid #ccc; box-shadow: 0 5px 25px rgba(0,0,0,0.5); border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; }
-#editor-status-bar { display: flex; justify-content: space-between; align-items: center; padding: 5px 10px; font-size: 12px; color: #777; border-bottom: 1px solid #ddd; }
-#writing-timer-controls { display: flex; align-items: center; gap: 8px; }
-#writing-timer-controls label { font-size: 12px; color: #555; }
-#timer-duration-input { width: 50px; padding: 2px 4px; border: 1px solid #ccc; border-radius: 3px; font-size: 12px; }
-#timer-start-btn { padding: 2px 8px; font-size: 12px; background-color: #e0e0e0; border: 1px solid #ccc; border-radius: 3px; cursor: pointer; }
-#timer-start-btn:hover { background-color: #d0d0d0; }
-#writing-timer-display { font-weight: bold; color: green; }
-#writing-timer-display.timer-ended { color: red; }
+/* ==========================================================================
+   1. VARIABLES & RESET
+   ========================================================================== */
 
-#word-goal-controls { display: flex; align-items: center; gap: 5px; margin-left: 15px; /* Add some space from timer */ }
-#word-goal-controls label { font-size: 12px; color: #555; }
-#word-goal-current { font-weight: bold; }
-#word-goal-input { width: 60px; padding: 2px 4px; border: 1px solid #ccc; border-radius: 3px; font-size: 12px; text-align: right; }
-#word-goal-controls .goal-met { color: green; font-weight: bold; }
+:root {
+  /* Fonts */
+  --font-primary: 'Vollkorn', serif;
 
-#tag-manager { padding: 10px; }
-#tag-manager label { font-size: 12px; font-weight: bold; color: #555; display: block; margin-bottom: 8px; }
-#tag-list { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; min-height: 28px; }
-.tag-pill { background-color: #007bff; color: white; padding: 3px 8px 3px 10px; border-radius: 12px; font-size: 13px; display: flex; align-items: center; font-family: var(--font-family); }
-.tag-delete-btn { background: none; border: none; color: white; opacity: 0.7; margin-left: 8px; cursor: pointer; font-weight: normal; /* Adjusted from bold to normal */ padding: 0 4px; /* Added some horizontal padding */ line-height: 1; font-size: 11px; /* Slightly smaller font for "Remove" */ }
-.tag-delete-btn:hover { opacity: 1; }
-#tag-input { width: 100%; background-color: #fff; color: #333; border: 1px solid #ccc; border-radius: 4px; padding: 8px; font-family: var(--font-family); }
-#search-palette { position: fixed; top: 15%; left: 50%; transform: translateX(-50%); width: 50%; max-width: 600px; background-color: #34495e; border-radius: 8px; box-shadow: 0 5px 25px rgba(0,0,0,0.5); border: 1px solid #7f8c8d; z-index: 300; }
-#search-input { width: 100%; padding: 15px; background-color: transparent; color: #f5f5f5; font-size: 18px; border: none; border-bottom: 1px solid #7f8c8d; outline: none; }
-#search-results { max-height: 400px; overflow-y: auto; }
-.search-result-item { padding: 10px 15px; border-bottom: 1px solid #2c3e50; cursor: pointer; }
-.search-result-item:hover { background-color: #4e6a85; }
-.search-result-item .result-text { font-size: 16px; color: #ecf0f1; }
-.search-result-item .result-path { font-size: 12px; color: #95a5a6; margin-top: 4px; }
-.search-result-item .result-snippet { font-size: 12px; color: #bdc3c7; margin-top: 6px; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#compendium-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80vw; height: 80vh; background-color: #3a3a3a; color: #f5f5f5; border: 1px solid #888; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 400; display: flex; flex-direction: column; }
-.compendium-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background-color: #4a4a4a; border-bottom: 1px solid #888; flex-shrink: 0; gap: 20px; }
-#compendium-filter { flex-grow: 1; background-color: #3a3a3a; border: 1px solid #5a5a5a; color: #f5f5f5; padding: 8px; border-radius: 4px; font-family: var(--font-family); font-size: 14px; }
-#close-compendium-btn { background: none; border: none; color: #f5f5f5; font-size: 24px; cursor: pointer; }
-.compendium-body { flex-grow: 1; display: flex; overflow: hidden; }
-.compendium-panel { height: 100%; padding: 15px; overflow-y: auto; }
-#compendium-library { width: 50%; border-right: 1px solid #555; }
-#compendium-manuscript { width: 50%; }
-#compendium-library ul { list-style-type: none; padding-left: 20px; }
-#compendium-library li { padding: 5px 0; border-radius: 3px; }
-#compendium-library li:hover { background-color: #4a4a4a; }
-li.selected-for-compile > .tree-item-label { font-weight: bold; color: #58a6ff; }
-.tree-item-label { cursor: pointer; padding: 2px 5px; }
-.tree-toggle { cursor: pointer; display: inline-block; width: 1.5em; user-select: none; text-align: center; }
+  /* Colors */
+  --color-text-light: #fbf1c7; /* Light text for dark accents */
+  --color-text-dark: #3c3836;  /* Dark text for light backgrounds */
+  --color-text-muted: #7c6f64;
+  --color-text-link: #076678;
+  --color-text-success: #79740e;
+  --color-text-danger: #9d0006;
+
+  --color-bg-canvas: #fbf1c7; /* Main off-white background */
+  --color-bg-dark-primary: #f9f5d7; /* Modals */
+  --color-bg-dark-secondary: #ebdbb2; /* Sidebars */
+  --color-bg-dark-tertiary: #d5c4a1; /* Headers */
+  --color-bg-light-primary: #fbf1c7; /* Was for light modals, now same as canvas */
+  --color-bg-light-secondary: #f2e5bc; /* Hover effects */
+
+  --color-accent-primary: #458588; /* Blue */
+  --color-accent-primary-hover: #076678;
+  --color-accent-secondary: #d79921; /* Yellow */
+  --color-accent-danger: #cc241d;
+  --color-accent-danger-hover: #9d0006;
+
+  --color-border-dark: #bdae93;
+  --color-border-light: #d5c4a1;
+  --color-shadow: rgba(0, 0, 0, 0.15);
+
+  /* Spacing & Sizing */
+  --spacing-small: 8px;
+  --spacing-medium: 15px;
+  --spacing-large: 20px;
+  --border-radius: 4px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-primary);
+  overflow: hidden;
+}
+ 
+/* ==========================================================================
+   2. BASE & LAYOUT
+   ========================================================================== */
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-primary);
+  overflow: hidden;
+  background-color: var(--color-bg-canvas);
+  color: var(--color-text-dark);
+}
+ 
+.main-container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+ 
+.content-area {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ==========================================================================
+   3. SIDEBARS & PANELS
+   ========================================================================== */
+
+#outliner-sidebar {
+  width: 250px;
+  background-color: var(--color-bg-dark-secondary);
+  color: var(--color-text-dark);
+  border-right: 1px solid var(--color-border-light);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease-in-out;
+  overflow: hidden; /* Hide content when width is 0 */
+}
+
+#outliner-sidebar.hidden {
+  width: 0;
+  border-right: none;
+}
+
+.outliner-header {
+  padding: 10px var(--spacing-medium);
+  font-size: 18px;
+  font-weight: bold;
+  background-color: var(--color-bg-dark-tertiary);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+#outliner-list {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 10px;
+  white-space: nowrap;
+}
+
+.outliner-item {
+  padding: var(--spacing-small) 10px;
+  cursor: pointer;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background-color 0.2s;
+}
+
+.outliner-item:hover {
+  background-color: var(--color-bg-dark-tertiary);
+}
+
+.outliner-item.selected {
+  background-color: var(--color-accent-primary);
+  color: white;
+  font-weight: bold;
+}
+
+.outliner-item-empty {
+  padding: var(--spacing-small) 10px;
+  color: var(--color-text-muted);
+}
+
+.breadcrumb-bar {
+  background-color: var(--color-bg-dark-secondary);
+  color: var(--color-text-dark);
+  padding: var(--spacing-small) var(--spacing-medium);
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+#view-title {
+  background-color: #6a6a6a; /* Kept as is, slightly different shade */
+  color: var(--color-text-light); /* Keep light text on this dark header */
+  padding: 10px var(--spacing-medium);
+  font-size: 18px;
+  font-weight: bold;
+  flex-shrink: 0;
+  border-bottom: 2px solid var(--color-bg-dark-tertiary);
+}
+
+#nest-canvas {
+  flex-grow: 1;
+  height: 100%;
+  background-color: var(--color-bg-canvas);
+}
+
+.node-editor {
+  position: absolute;
+  border: 1px solid #777;
+  outline: none;
+  padding: 8px;
+  background-color: var(--color-bg-light-secondary);
+  color: var(--color-text-dark);
+  font-family: var(--font-primary);
+  text-align: center;
+  box-shadow: 0 4px 15px var(--color-shadow);
+  z-index: 10;
+}
+
+/* --- General Hidden Class --- */
+.hidden {
+  display: none !important;
+}
+
+/* ==========================================================================
+   4. EDITOR MODE
+   ========================================================================== */
+
+#editor-mode {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(42, 61, 42, 0.95);
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  z-index: 200;
+  padding: var(--spacing-large);
+  gap: var(--spacing-medium);
+}
+
+#editor-main-content {
+  width: 80%;
+  height: 85%;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.tox.tox-tinymce {
+  height: 100% !important;
+  box-shadow: 0 5px 25px var(--color-shadow);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.editor-instructions {
+  color: var(--color-border-light);
+  margin-top: 10px;
+  font-size: 12px;
+}
+
+#editor-inspector-sidebar {
+  width: 320px;
+  flex-shrink: 0;
+  background-color: var(--color-bg-light-secondary);
+  border-radius: var(--border-radius);
+  display: flex;
+  flex-direction: column;
+  height: 85%;
+  overflow-y: auto;
+  transition: width 0.3s ease-in-out, opacity 0.3s ease-in-out;
+  opacity: 1;
+}
+
+#editor-inspector-sidebar.hidden {
+  width: 0;
+  opacity: 0;
+  padding: 0;
+}
+
+#editor-footnotes-pane {
+  flex-grow: 1; /* Allows footnotes to fill remaining space */
+  display: flex;
+  flex-direction: column;
+}
+
+#editor-status-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px;
+  font-size: 12px;
+  color: var(--color-text-dark);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+#writing-timer-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#writing-timer-controls label {
+  font-size: 12px;
+  color: var(--color-text-dark);
+}
+
+#timer-duration-input {
+  width: 50px;
+  padding: 2px 4px;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius);
+  font-size: 12px;
+}
+
+#timer-start-btn {
+  padding: 2px 8px;
+  font-size: 12px;
+  background-color: var(--color-bg-light-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+}
+
+#timer-start-btn:hover {
+  background-color: #d0d0d0; /* Keep specific hover */
+}
+
+#writing-timer-display {
+  font-weight: bold;
+  color: green;
+}
+
+#writing-timer-display.timer-ended {
+  color: var(--color-text-danger);
+}
+
+#word-goal-controls {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+#word-goal-controls label {
+  font-size: 12px;
+  color: var(--color-text-dark);
+}
+
+#word-goal-current {
+  font-weight: bold;
+}
+
+#word-goal-input {
+  width: 60px;
+  padding: 2px 4px;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius);
+  font-size: 12px;
+  text-align: right;
+}
+
+#word-goal-controls .goal-met {
+  color: var(--color-text-success);
+  font-weight: bold;
+}
+
+#tag-manager {
+  padding: 10px;
+}
+
+#tag-manager label {
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--color-text-dark);
+  display: block;
+  margin-bottom: 8px;
+}
+
+#tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 10px;
+  min-height: 28px;
+}
+
+.tag-pill {
+  background-color: var(--color-accent-primary);
+  color: white;
+  padding: 3px 8px 3px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  font-family: var(--font-primary);
+}
+
+.tag-delete-btn {
+  background: none;
+  border: none;
+  color: white;
+  opacity: 0.7;
+  margin-left: 8px;
+  cursor: pointer;
+  font-weight: normal;
+  /* Adjusted from bold to normal */
+  padding: 0 4px;
+  /* Added some horizontal padding */
+  line-height: 1;
+  font-size: 11px;
+  /* Slightly smaller font for "Remove" */
+}
+
+.tag-delete-btn:hover {
+  opacity: 1;
+}
+
+#tag-input {
+  width: 100%;
+  background-color: var(--color-bg-light-primary);
+  color: var(--color-text-dark);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-small);
+  font-family: var(--font-primary);
+}
+
+/* ==========================================================================
+   5. COMPONENTS
+   ========================================================================== */
+
+/* --- Search Palette --- */
+#search-palette {
+  position: fixed;
+  top: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50%;
+  max-width: 600px;
+  background-color: var(--color-bg-dark-secondary);
+  border-radius: calc(var(--border-radius) * 2);
+  box-shadow: 0 5px 25px var(--color-shadow);
+  border: 1px solid var(--color-border-light);
+  z-index: 300;
+}
+
+#search-input {
+  width: 100%;
+  padding: var(--spacing-medium);
+  background-color: transparent;
+  color: var(--color-text-dark);
+  font-size: 18px;
+  border: none;
+  border-bottom: 1px solid var(--color-border-light);
+  outline: none;
+}
+
+#search-results {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.search-result-item {
+  padding: 10px var(--spacing-medium);
+  border-bottom: 1px solid var(--color-border-light);
+  cursor: pointer;
+}
+
+.search-result-item:hover {
+  background-color: var(--color-bg-dark-tertiary);
+}
+
+.search-result-item .result-text {
+  font-size: 16px;
+  color: var(--color-text-dark);
+}
+
+.search-result-item .result-path {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+
+.search-result-item .result-snippet {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 6px;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.search-result-item .result-snippet mark {
+  background-color: var(--color-accent-secondary);
+  color: var(--color-text-dark);
+  font-style: normal;
+  font-weight: bold;
+}
+
+/* --- Compendium Modal --- */
+#compendium-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80vw;
+  height: 80vh;
+  background-color: var(--color-bg-dark-secondary);
+  color: var(--color-text-dark);
+  border: 1px solid var(--color-border-light);
+  border-radius: calc(var(--border-radius) * 2);
+  box-shadow: 0 10px 30px var(--color-shadow);
+  z-index: 400;
+  display: flex;
+  flex-direction: column;
+}
+
+.compendium-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px var(--spacing-large);
+  background-color: var(--color-bg-dark-tertiary);
+  border-bottom: 1px solid var(--color-border-light);
+  flex-shrink: 0;
+  gap: var(--spacing-large);
+}
+
+#compendium-filter {
+  flex-grow: 1;
+  background-color: var(--color-bg-light-primary);
+  border: 1px solid var(--color-border-dark);
+  color: var(--color-text-dark);
+  padding: var(--spacing-small);
+  border-radius: var(--border-radius);
+  font-family: var(--font-primary);
+  font-size: 14px;
+}
+
+#close-compendium-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-dark);
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.compendium-body {
+  flex-grow: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.compendium-panel {
+  height: 100%;
+  padding: var(--spacing-medium);
+  overflow-y: auto;
+}
+
+#compendium-library {
+  width: 50%;
+  border-right: 1px solid var(--color-border-dark);
+}
+
+#compendium-manuscript {
+  width: 50%;
+}
+
+#compendium-library ul {
+  list-style-type: none;
+  padding-left: 20px;
+}
+
+#compendium-library li {
+  padding: 5px 0;
+  border-radius: 3px;
+}
+
+#compendium-library li:hover {
+  background-color: var(--color-bg-dark-tertiary);
+}
+
+li.selected-for-compile > .tree-item-label {
+  font-weight: bold;
+  color: var(--color-text-link);
+}
+
+.tree-item-label {
+  cursor: pointer;
+  padding: 2px 5px;
+}
+
+.tree-toggle {
+  cursor: pointer;
+  display: inline-block;
+  width: 1.5em;
+  user-select: none;
+  text-align: center;
+}
+
 .compendium-item-preview {
   font-size: 0.8em;
-  color: #bbb; /* Lighter color for the preview */
-  margin-left: 1.8em; /* Align with title, after toggle space */
+  color: var(--color-text-muted);
+  /* Lighter color for the preview */
+  margin-left: 1.8em;
+  /* Align with title, after toggle space */
   font-style: italic;
-  padding: 0 5px 2px 5px; /* Match label padding somewhat */
-  cursor: default; /* Indicate it's not directly clickable for selection */
+  padding: 0 5px 2px 5px;
+  /* Match label padding somewhat */
+  cursor: default;
+  /* Indicate it's not directly clickable for selection */
 }
-li.collapsed > ul { display: none; }
-#compendium-manuscript ol { list-style-type: decimal; padding-left: 30px; }
-#compendium-manuscript li { padding: 8px; background-color: #4a4a4a; border-radius: 3px; margin-bottom: 5px; border: 1px solid #5a5a5a; cursor: grab; display: flex; justify-content: space-between; align-items: center; }
-#compendium-manuscript li:active { cursor: grabbing; }
-.include-notes-label { font-size: 11px; color: #ccc; display: flex; align-items: center; gap: 5px; cursor: pointer; }
-.compendium-footer { padding: 10px 20px; background-color: #4a4a4a; border-top: 1px solid #888; flex-shrink: 0; text-align: right; }
-#generate-btn { background-color: #007bff; color: white; border: none; border-radius: 4px; padding: 10px 15px; font-size: 14px; font-weight: bold; cursor: pointer; }
-#generate-btn:hover { background-color: #0056b3; }
 
-/* Etymology Modal Styles */
-#etymology-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 500; }
-#etymology-modal.hidden { display: none; }
-.etymology-modal-content { background-color: #fefefe; color: #333; padding: 0; border-radius: 5px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); width: 60%; max-width: 700px; display: flex; flex-direction: column; }
-.etymology-modal-header { padding: 10px 20px; background-color: #5a5a5a; color: white; display: flex; justify-content: space-between; align-items: center; border-top-left-radius: 5px; border-top-right-radius: 5px; }
-.etymology-modal-header h3 { margin: 0; font-size: 18px; }
-#close-etymology-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; opacity: 0.8; }
-#close-etymology-btn:hover { opacity: 1; }
-.etymology-modal-body { padding: 20px; height: 400px; overflow-y: auto; font-size: 14px; line-height: 1.6; }
-.etymology-modal-body h4 { font-size: 16px; margin-top: 15px; margin-bottom: 5px; color: #444; }
-.etymology-modal-body p { margin-bottom: 10px; }
-.etymology-modal-body ul { margin-left: 20px; margin-bottom: 10px; }
-.etymology-modal-body li { margin-bottom: 5px; }
-
-/* Certify Word Modal Styles */
-#certify-word-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 510; /* Higher than etymology modal */ }
-#certify-word-modal.hidden { display: none; }
-.certify-word-modal-content { background-color: #fff; color: #333; padding: 0; border-radius: 5px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); width: 50%; max-width: 600px; display: flex; flex-direction: column; }
-.certify-word-modal-header { padding: 10px 20px; background-color: #6c757d; /* A different color */ color: white; display: flex; justify-content: space-between; align-items: center; border-top-left-radius: 5px; border-top-right-radius: 5px; }
-.certify-word-modal-header h3 { margin: 0; font-size: 18px; }
-.certify-word-modal-header #certify-selected-word { font-style: italic; }
-#close-certify-word-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; opacity: 0.8; }
-#close-certify-word-btn:hover { opacity: 1; }
-.certify-word-modal-body { padding: 20px; }
-.certify-word-modal-body label { display: block; margin-bottom: 8px; font-weight: bold; font-size: 14px; }
-#certify-definition-input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; font-family: inherit; line-height: 1.5; }
-.certify-word-modal-footer { padding: 10px 20px; background-color: #f8f9fa; text-align: right; border-bottom-left-radius: 5px; border-bottom-right-radius: 5px; border-top: 1px solid #dee2e6; }
-.certify-word-modal-footer button { padding: 8px 15px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; margin-left: 10px; font-size: 14px; }
-#save-certification-btn { background-color: #28a745; color: white; border-color: #28a745; }
-#save-certification-btn:hover { background-color: #218838; }
-#cancel-certification-btn { background-color: #6c757d; color: white; border-color: #6c757d; }
-#cancel-certification-btn:hover { background-color: #5a6268; }
-
-/* Certified Word Tooltip */
-#certified-word-tooltip {
-  position: absolute; /* Positioned by JavaScript */
-  background-color: #333;
-  color: white;
-  padding: 8px 12px;
-  border-radius: 4px;
-  font-size: 13px;
-  line-height: 1.4;
-  z-index: 1000; /* Ensure it's on top */
-  max-width: 300px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-  pointer-events: none; /* Allow clicks to pass through to elements below if needed, though not typical for tooltips */
-}
-#certified-word-tooltip.hidden {
+li.collapsed > ul {
   display: none;
 }
 
-/* Styles for Tools Panel (#editor-metadata) when TinyMCE is in fullscreen */
-body.tox-fullscreen #editor-metadata {
-  position: fixed !important; /* Ensure it's fixed */
-  bottom: 0;
-  left: 0;
-  width: 100% !important; /* Override existing width/max-width */
-  max-width: 100% !important;
-  z-index: 2000 !important; /* Must be higher than TinyMCE fullscreen components */
-  /* background-color: #f0f0f0; Already set, should be fine */
-  /* border-top: 1px solid #ccc; Already set */
-  /* box-shadow: 0 -2px 5px rgba(0,0,0,0.1); Optional: adjust shadow for top edge */
+#compendium-manuscript ol {
+  list-style-type: decimal;
+  padding-left: 30px;
 }
 
-/* If #editor-metadata.hidden is also present, display:none should still win due to higher specificity of the !important on display:none */
-body.tox-fullscreen #editor-metadata.hidden {
-    display: none !important; /* Re-affirm, though the existing rule should cover it */
+#compendium-manuscript li {
+  padding: 8px;
+  background-color: var(--color-bg-dark-tertiary);
+  border-radius: var(--border-radius);
+  margin-bottom: 5px;
+  border: 1px solid var(--color-border-dark);
+  cursor: grab;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#compendium-manuscript li:active {
+  cursor: grabbing;
+}
+
+.include-notes-label {
+  font-size: 11px;
+  color: var(--color-text-dark);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.compendium-footer {
+  padding: 10px var(--spacing-large);
+  background-color: var(--color-bg-dark-tertiary);
+  border-top: 1px solid var(--color-border-light);
+  flex-shrink: 0;
+  text-align: right;
+}
+
+#generate-btn {
+  background-color: var(--color-accent-primary);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  padding: 10px var(--spacing-medium);
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+#generate-btn:hover {
+  background-color: var(--color-accent-primary-hover);
+}
+
+/* ==========================================================================
+   6. MODALS (Generic)
+   ========================================================================== */
+
+/* --- General Modal Styling --- */
+.modal {
+  display: flex;
+  /* Use flexbox for centering */
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  /* Stay in place */
+  z-index: 1000;
+  /* Sit on top */
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  /* Enable scroll if needed */
+  background-color: var(--color-shadow);
+  /* Black w/ opacity */
+  transition: opacity 0.3s ease;
+}
+
+.modal-content {
+  background-color: var(--color-bg-dark-primary);
+  margin: auto;
+  padding: var(--spacing-large);
+  border: 1px solid var(--color-border-light);
+  width: 80%;
+  max-width: 600px;
+  border-radius: calc(var(--border-radius) * 2);
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19); /* Specific shadow */
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-medium);
+  /* Spacing between header, body, footer */
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--color-border-light);
+  padding-bottom: var(--spacing-medium);
+}
+
+.modal-header h2,
+.modal-header h3 {
+  margin: 0;
+  font-family: var(--font-primary);
+}
+
+.modal-body {
+  flex-grow: 1;
+  /* Allows body to take up space */
+}
+
+.modal-body textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: var(--spacing-small);
+  box-sizing: border-box;
+  /* Important */
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius);
+  font-family: var(--font-primary);
+  font-size: 16px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: var(--spacing-medium);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.close-button {
+  color: var(--color-text-muted);
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.close-button:hover,
+.close-button:focus {
+  color: var(--color-text-dark);
+  text-decoration: none;
+}
+
+/* Specific button styling if needed */
+.modal-footer button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.modal-footer .delete-button {
+  background-color: var(--color-accent-danger);
+  color: white;
+}
+
+.modal-footer .delete-button:hover {
+  background-color: var(--color-accent-danger-hover);
+}
+
+.modal-footer button:not(.delete-button) {
+  background-color: var(--color-accent-primary);
+  color: white;
+}
+
+.modal-footer button:not(.delete-button):hover {
+  background-color: var(--color-accent-primary-hover);
+}
+
+/* ==========================================================================
+   7. UTILITY & MISC COMPONENTS
+   ========================================================================== */
+
+/* Hover Tooltip for Comments & Certified Words */
+#hover-tooltip {
+  position: absolute;
+  background-color: var(--color-bg-light-primary);
+  /* Light background */
+  border: 1px solid var(--color-border-light);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); /* Specific shadow */
+  padding: var(--spacing-small);
+  border-radius: var(--border-radius);
+  z-index: 1000;
+  /* Ensure it's above other content */
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 200px;
+  /* Adjust as needed */
+  max-width: 300px;
+  pointer-events: none;
+  /* Allow clicks to pass through to elements below if needed, though not typical for tooltips */
+}
+
+/* New Footnotes Pane Styles */
+#editor-footnotes-pane {
+  width: 80%;
+  max-width: 800px;
+  background-color: #f8f8f8;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  overflow: hidden;
+}
+
+#footnotes-header {
+  font-size: 14px;
+  font-weight: bold;
+  color: #555;
+  padding: var(--spacing-small) 10px;
+  cursor: pointer;
+  background-color: #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+}
+
+#footnotes-header:hover {
+  background-color: #e8e8e8;
+}
+
+#footnotes-toggle {
+  font-size: 12px;
+  transition: transform 0.2s ease-in-out;
+}
+
+#footnotes-list-container {
+  max-height: 250px;
+  overflow-y: auto;
+  padding: var(--spacing-small);
+  transition: max-height 0.3s ease-in-out, padding 0.3s ease-in-out, opacity 0.3s;
+  opacity: 1;
+}
+
+#footnotes-list {
+  list-style: none;
+  padding: 0;
+}
+
+#footnotes-list li {
+  margin-bottom: 10px;
+  padding: var(--spacing-small);
+  background-color: var(--color-bg-light-primary);
+  border: 1px solid var(--color-bg-light-secondary);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+#footnotes-list li:hover {
+  background-color: var(--color-bg-light-secondary);
+}
+
+/* Collapsed State for Footnotes */
+#editor-footnotes-pane.collapsed #footnotes-list-container {
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  overflow: hidden;
+  opacity: 0;
+}
+
+#editor-footnotes-pane.collapsed #footnotes-toggle {
+  transform: rotate(-90deg);
+}
+
+/* The .comment-highlight style should remain as it defines the text highlight. */
+.comment-highlight {
+  background-color: #fff8c4;
+  /* Light yellow highlight */
+  cursor: pointer;
+}
+
+.context-menu {
+  position: absolute;
+  background-color: var(--color-bg-light-primary);
+  border: 1px solid var(--color-border-light);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); /* Specific shadow */
+  z-index: 500;
+  border-radius: var(--border-radius);
+  padding: 5px 0;
+  min-width: 150px;
+}
+
+.context-menu ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.context-menu li {
+  padding: var(--spacing-small) var(--spacing-medium);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.certified-word {
+    background-color: #e6ffed;
+    cursor: pointer;
 }

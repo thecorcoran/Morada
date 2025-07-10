@@ -1,248 +1,234 @@
-[
-  {
-    "id": 1750477446736.9712,
-    "x": -865.4246353481655,
-    "y": -183.1504663240214,
-    "width": 250,
-    "height": 150,
-    "selected": false,
-    "isEditing": false,
-    "children": [],
-    "type": "text",
-    "title": "New Scriptorium",
-    "content": "<p><span class=\"smcap\">There</span> are two ways of getting home; and one of them is to stay there. The other is to walk round the whole world till we come back to the same place; and I tried to <span class=\"certified-word-highlight\" title=\"a path\" data-certification-id=\"cert-1750481001961-mzqoq\">trace</span> such a journey in a story I once wrote. It is, however, a relief to turn from that topic to <span class=\"certified-word-highlight\" title=\"the other one\" data-certification-id=\"cert-1750481015658-wefad\">another</span> story that I never wrote. Like every book I never wrote, it is by far the best book I have ever written. It is only too probable that I shall never write it, so I will use it symbolically here; for it was a symbol of the same truth. I conceived it as a romance of those vast valleys with sloping sides, like those along which the ancient White Horses of Wessex are scrawled along the flanks of the hills. It concerned some boy whose farm or cottage stood on such a slope, and who went on his travels to find something, such as the effigy and grave of some giant; and when he was far enough from home he looked back and saw that his own farm and kitchen-garden, shining flat on the hill-side like the colours and quarterings of a shield, were but parts of some such gigantic figure, on which he had always lived, but which was too large and too close to be seen. That, I think, is a true picture of the progress of any real independent intelligence to-day; and that is the point of this book.</p>",
-    "tags": [
-      "ks"
-    ],
-    "wordGoal": 0,
-    "certifications": [
-      {
-        "id": "cert-1750481001961-mzqoq",
-        "term": "trace",
-        "definition": "a path",
-        "characterIndex": 165
-      },
-      {
-        "id": "cert-1750481015658-wefad",
-        "term": "another",
-        "definition": "the other one",
-        "characterIndex": 263
-      }
-    ],
-    "isExpanded": false,
-    "certifiedWords": []
-  },
-  {
-    "id": 1750479280217.2715,
-    "x": -1183.8996987640708,
-    "y": -197.29230942768066,
-    "width": 250,
-    "height": 150,
-    "selected": false,
-    "isEditing": false,
-    "children": [],
-    "type": "text",
-    "title": "New Scriptorium",
-    "content": "<p><span class=\"smcap\">There</span> are two ways of getting home; and one of them is to stay there. The other is to walk round the whole world till we come back to the same place; and I tried to trace such a journey in a story I once wrote. It is, however, a relief to turn from that topic to another story that I never wrote. Like every book I never wrote, it is by far the best book I have ever written. It is only too probable that I shall never write it, so I will use it symbolically here; for it was a symbol of the same truth. I conceived it as a romance of those vast valleys with sloping sides, like those along which the ancient White Horses of Wessex are&nbsp;<span class=\"certified-word-highlight\" title=\"the way\" data-certification-id=\"cert-1750481074728-3di02\">scrawled</span> along the flanks of the hills. It concerned some boy whose farm or cottage stood on such a slope, and who went on his travels to find something, such as the effigy and grave of some giant; and when he was far enough from home he looked back and saw that his own farm and kitchen-garden, shining flat on the hill-side like the colours and quarterings of a shield, were but parts of some such gigantic figure, on which he had always lived, but which was too large and too close to be seen. That, I think, is a true picture of the progress of any real independent intelligence to-day; and that is the point of this book.</p>",
-    "tags": [
-      "Chesterton",
-      "Saved"
-    ],
-    "wordGoal": 0,
-    "certifications": [
-      {
-        "id": "cert-1750479303891-07002",
-        "term": "romance",
-        "definition": "the way one sees",
-        "characterIndex": 519
-      },
-      {
-        "id": "cert-1750479318414-qhuqv",
-        "term": "farm",
-        "definition": "a place of deer",
-        "characterIndex": 178
-      },
-      {
-        "id": "cert-1750481074728-3di02",
-        "term": "scrawled",
-        "definition": "the way",
-        "characterIndex": 636
-      }
-    ],
-    "isExpanded": false,
-    "certifiedWords": []
-  },
-  {
-    "id": 1750480528220.608,
-    "x": -1016.8007034751301,
-    "y": 136.53043028352124,
-    "width": 250,
-    "height": 150,
-    "selected": false,
-    "isEditing": false,
-    "children": [],
-    "type": "container",
-    "title": "New Chamber",
-    "content": "",
-    "tags": [],
-    "wordGoal": 0,
-    "certifications": [],
-    "isExpanded": false,
-    "certifiedWords": []
-  },
-  {
-    "id": 1750511632150.4204,
-    "x": 171.86556127859188,
-    "y": 64.13822755148442,
-    "width": 250,
-    "height": 150,
-    "selected": false,
-    "isEditing": false,
-    "children": [],
-    "type": "text",
-    "title": "On Home",
-    "content": "<p><span class=\"smcap\">There</span> are two ways of getting home; and one of them is to stay there. The other is to walk round the whole world till we come back to the same place; and I tried to trace such a <span class=\"certified-word\" data-definition=\"Open\">journey</span> in a story I <span class=\"certified-word\" data-definition=\"The only time something happens\">once</span> wrote. It is, however, a relief to turn from that topic to another story that I never wrote. Like every book I never wrote, it is by far the best book I have ever written. It is only too probable that I shall never write it, so I will use it symbolically here; for it was a symbol of the same truth. I conceived it as a romance of those vast valleys with sloping sides, like those along which the ancient White Horses of Wessex are scrawled along the flanks of the hills. It concerned some boy whose farm or cottage stood on such a slope, and who went on his travels to find something, such as the effigy and grave of some giant; and when he was far enough from home he looked back and saw that his own farm and kitchen-garden, shining flat on the hill-side like the colours and quarterings of a shield, were but parts of some such gigantic figure, on which he had always lived, but which was too large and too close to be seen. That, I think, is a true picture of the progress of any real independent intelligence to-day; and that is the point of this book. It is working great.</p>",
-    "tags": [
-      "Chesterton"
-    ],
-    "certifiedWords": [
-      {
-        "text": "once",
-        "definition": "The only time something happens"
-      },
-      {
-        "text": "journey",
-        "definition": "Open"
-      }
-    ],
-    "isExpanded": false
-  },
-  {
-    "id": 1750513578996.84,
-    "x": 649,
-    "y": 79,
-    "width": 250,
-    "height": 150,
-    "selected": false,
-    "isEditing": false,
-    "children": [],
-    "type": "text",
-    "title": "Chesterton on Authority",
-    "content": "<h2>ON AUTHORITY AND ACCURACY</h2>\n<p class=\"nind\"><span class=\"smcap\">In</span> this book, which is merely meant as a popular criticism of popular fallacies, often indeed of very vulgar errors, I feel that I have sometimes given an impression of scoffing at serious scientific work. It was, however, the very reverse of my intention. I am not arguing with the scientist who explains the elephant, but only with the sophist who explains it away. And as a matter of fact the sophist plays to the gallery, as he did in ancient Greece. He appeals to the ignorant, especially when he appeals to the learned. But I never meant my own criticism to be an impertinence to the truly learned. We all owe an infinite debt to the researches, especially the recent researches, of single-minded students in these matters; and I have only professed to pick up things here and there from them. I have not loaded my abstract argument with quotations and references, which only make a man look more learned than he is; but in some cases I find that my own loose fashion of allusion is rather misleading about my own meaning. The passage about Chaucer and the Child Martyr is badly expressed; I only mean that the English poet probably had in mind the English saint; of whose story he gives a sort of foreign version. In the same way two statements in the chapter on Mythology follow each other in such a way that it may seem to be suggested that the second story about Monotheism refers to the Southern Seas. I&nbsp;</p>",
-    "tags": [
-      "saint"
-    ],
-    "certifiedWords": [],
-    "isExpanded": false
-  },
-  {
-    "id": 1750516152683.1802,
-    "x": 91,
-    "y": 256,
-    "width": 250,
-    "height": 150,
-    "selected": false,
-    "isEditing": false,
-    "children": [
-      {
-        "id": 1750516232161.457,
-        "x": 524,
-        "y": 284,
-        "width": 250,
-        "height": 150,
-        "selected": false,
-        "isEditing": false,
-        "children": [],
-        "type": "text",
-        "title": "Name to be announced",
-        "content": "<p>&nbsp; &nbsp;My Dad is so `</p>\n<p>&nbsp;</p>\n<p>&nbsp;</p>\n<p>&nbsp;</p>\n<p>&nbsp;</p>\n<p>&nbsp;</p>\n<p>&nbsp;</p>\n<p>&nbsp;</p>\n<p>&nbsp;</p>\n<p>&nbsp;</p>\n<p>&nbsp;</p>\n<p>&nbsp;</p>\n<p>&nbsp;</p>\n<p>&nbsp;</p>\n<p>&nbsp;</p>\n<p>&nbsp;</p>",
-        "tags": [],
-        "certifiedWords": [],
-        "isExpanded": false
-      }
-    ],
-    "type": "container",
-    "title": "anna",
-    "content": "",
-    "tags": [],
-    "certifiedWords": [],
-    "isExpanded": true
-  },
-  {
-    "id": 1750517312967.3796,
-    "x": 632,
-    "y": 290,
-    "width": 250,
-    "height": 150,
-    "selected": false,
-    "isEditing": false,
-    "children": [],
-    "type": "text",
-    "title": "Ella",
-    "content": "<p>lk0p.h3ez</p>",
-    "tags": [],
-    "certifiedWords": [],
-    "isExpanded": false
-  },
-  {
-    "id": 1750517897725.9626,
-    "x": 978,
-    "y": 41,
-    "width": 250,
-    "height": 150,
-    "selected": false,
-    "isEditing": false,
-    "children": [],
-    "type": "container",
-    "title": "Novel One",
-    "content": "",
-    "tags": [],
-    "certifiedWords": [],
-    "isExpanded": false
-  },
-  {
-    "id": 1750517915579.184,
-    "x": 988,
-    "y": 232,
-    "width": 250,
-    "height": 150,
-    "selected": false,
-    "isEditing": false,
-    "children": [],
-    "type": "container",
-    "title": "Novel Two",
-    "content": "",
-    "tags": [],
-    "certifiedWords": [],
-    "isExpanded": false
-  },
-  {
-    "id": 1750616519142.7205,
-    "x": 422,
-    "y": 178,
-    "width": 250,
-    "height": 150,
-    "selected": true,
-    "isEditing": false,
-    "children": [
-      {
-        "id": 1750616536829.1729,
-        "x": 391,
-        "y": 182,
-        "width": 250,
-        "height": 150,
-        "selected": true,
-        "isEditing": false,
-        "children": [],
-        "type": "text",
-        "title": "test",
-        "content": "<p><span class=\"smcap\">There</span> are two ways of getting home; and one of them is to stay there. The other is to walk round the whole world till we come back to the same place; and I tried to trace such a <span class=\"certified-word\" data-definition=\"Open\">journey</span> in a story I <span class=\"certified-word\" data-definition=\"The only time something happens\">once</span> wrote. It is, however, a relief to turn from that topic to another story that I never wrote. Like every book I never wrote, it is by far the best book I have ever written. It is only too probable that I shall never write it, so I will use it symbolically here; for it was a symbol of the same truth. I conceived it as a romance of those vast valleys with sloping sides, like those along which the ancient White Horses of Wessex are scrawled along the flanks of the hills. It concerned some boy whose farm or cottage stood on such a slope, and who went on his travels to find something, such as the effigy and grave of some giant; and when he was far enough from home he looked back and saw that his own farm and kitchen-garden, shining flat on the hill-side like the colours and quarterings of a shield, were but parts of some such gigantic figure, on which he had always lived, but which was too large and too close to be seen. That, I think, is a true picture of the progress of any real independent intelligence to-day; and that is the point of this book. It is working great.</p>",
-        "tags": []
-      }
-    ],
-    "type": "container",
-    "title": "Test",
-    "content": "",
-    "tags": []
-  }
-]
+{
+  "nodes": [
+    {
+      "id": 1751149735207.2322,
+      "x": -534.8219227696654,
+      "y": 45.02274991627365,
+      "width": 250,
+      "height": 150,
+      "selected": true,
+      "isEditing": false,
+      "children": [
+        {
+          "id": 1751435155768.6443,
+          "x": -21,
+          "y": -172.5,
+          "width": 250,
+          "height": 150,
+          "title": "Chapter One",
+          "content": "<p>gone gone open it up. I wonder if it would work?</p>",
+          "tags": [],
+          "children": [],
+          "comments": [],
+          "type": "text",
+          "isExpanded": false,
+          "selected": true,
+          "isEditing": false,
+          "certifiedWords": []
+        },
+        {
+          "id": 1751636462475.8142,
+          "x": -176,
+          "y": -183.5,
+          "width": 250,
+          "height": 150,
+          "content": "",
+          "tags": [],
+          "children": [],
+          "comments": [],
+          "type": "container",
+          "isExpanded": false,
+          "selected": false,
+          "isEditing": false
+        }
+      ],
+      "type": "container",
+      "title": "Essays From Dad",
+      "content": "",
+      "tags": [],
+      "comments": [],
+      "certifiedWords": [],
+      "isExpanded": true
+    },
+    {
+      "id": 1751152776188.8608,
+      "x": 13.74829796701411,
+      "y": -53.83938265453423,
+      "width": 250,
+      "height": 150,
+      "selected": false,
+      "isEditing": false,
+      "children": [],
+      "type": "text",
+      "title": "change name",
+      "content": "<p>I am <span id=\"comment-1751343537862\" class=\"comment-highlight\">trying</span> to writetory and the sto a <span class=\"certified-word\" data-definition=\"I like this\">story</span> and the <span id=\"comment-1751227260152\" class=\"comment-highlight\"><span class=\"certified-word\" data-definition=\"I like this\">story</span></span>&nbsp;is not <span class=\"certified-word\" data-definition=\"I am not linking it\">done</span>.</p>\n<p><span id=\"comment-1751496321405\" class=\"comment-highlight\">it seems like ir ii ==snkns<span id=\"comment-1751467944753\" class=\"comment-highlight\"> hd skhs </span>s I would like to writin the sind ha gahd I akdjf akdjf a dkjf a;kafkha&nbsp; a;akfh a;adkfj a;kaj f;jfa ;a</span></p>\n<p>&nbsp;</p>",
+      "tags": [
+        "Open",
+        "#open"
+      ],
+      "comments": [
+        {
+          "id": "comment-1751227260152",
+          "text": "I have a few comments"
+        },
+        {
+          "id": "comment-1751343537862",
+          "text": "I want to make it good"
+        },
+        {
+          "id": "comment-1751467944753",
+          "text": "This is spelled wrong"
+        },
+        {
+          "id": "comment-1751496321405",
+          "text": ""
+        }
+      ],
+      "certifiedWords": [
+        {
+          "text": "story",
+          "definition": "I like this"
+        },
+        {
+          "text": "done",
+          "definition": "I am not linking it"
+        }
+      ],
+      "isExpanded": false
+    },
+    {
+      "id": 1751495707350.1765,
+      "x": -1083.8867626323251,
+      "y": -69.0758882342883,
+      "width": 250,
+      "height": 150,
+      "title": "New Chamber",
+      "content": "",
+      "tags": [],
+      "children": [],
+      "comments": [],
+      "type": "container",
+      "isExpanded": false,
+      "selected": true,
+      "isEditing": false,
+      "certifiedWords": []
+    },
+    {
+      "id": 1751518189297.4407,
+      "x": -138.4705940931923,
+      "y": -37.91786312947029,
+      "width": 250,
+      "height": 150,
+      "title": "New Chamber",
+      "content": "",
+      "tags": [],
+      "children": [
+        {
+          "id": 1751518216172.237,
+          "x": -73,
+          "y": -193.5,
+          "width": 250,
+          "height": 150,
+          "title": "New Chamber",
+          "content": "",
+          "tags": [],
+          "children": [],
+          "comments": [],
+          "type": "container",
+          "isExpanded": false,
+          "selected": false,
+          "isEditing": false,
+          "certifiedWords": []
+        },
+        {
+          "id": 1751518218172.4,
+          "x": -269,
+          "y": -194.5,
+          "width": 250,
+          "height": 150,
+          "title": "New Scriptorium",
+          "content": "",
+          "tags": [],
+          "children": [],
+          "comments": [],
+          "type": "text",
+          "isExpanded": false,
+          "selected": false,
+          "isEditing": false,
+          "certifiedWords": []
+        }
+      ],
+      "comments": [],
+      "type": "container",
+      "isExpanded": false,
+      "selected": true,
+      "isEditing": false,
+      "certifiedWords": []
+    }
+  ],
+  "manuscript": [
+    {
+      "id": 1751152776188.8608,
+      "x": 13.74829796701411,
+      "y": -53.83938265453423,
+      "width": 250,
+      "height": 150,
+      "selected": false,
+      "isEditing": false,
+      "children": [],
+      "type": "text",
+      "title": "change name",
+      "content": "<p>I am <span id=\"comment-1751343537862\" class=\"comment-highlight\">trying</span> to writetory and the sto a <span class=\"certified-word\" data-definition=\"I like this\">story</span> and the <span id=\"comment-1751227260152\" class=\"comment-highlight\"><span class=\"certified-word\" data-definition=\"I like this\">story</span></span>&nbsp;is not <span class=\"certified-word\" data-definition=\"I am not linking it\">done</span>.</p>\n<p><span id=\"comment-1751496321405\" class=\"comment-highlight\">it seems like ir ii ==snkns<span id=\"comment-1751467944753\" class=\"comment-highlight\"> hd skhs </span>s I would like to writin the sind ha gahd I akdjf akdjf a dkjf a;kafkha&nbsp; a;akfh a;adkfj a;kaj f;jfa ;a</span></p>\n<p>&nbsp;</p>",
+      "tags": [
+        "Open",
+        "#open"
+      ],
+      "comments": [
+        {
+          "id": "comment-1751227260152",
+          "text": "I have a few comments"
+        },
+        {
+          "id": "comment-1751343537862",
+          "text": "I want to make it good"
+        },
+        {
+          "id": "comment-1751467944753",
+          "text": "This is spelled wrong"
+        },
+        {
+          "id": "comment-1751496321405",
+          "text": ""
+        }
+      ],
+      "certifiedWords": [
+        {
+          "text": "story",
+          "definition": "I like this"
+        },
+        {
+          "text": "done",
+          "definition": "I am not linking it"
+        }
+      ],
+      "isExpanded": false
+    },
+    {
+      "id": 1751435155768.6443,
+      "x": -21,
+      "y": -172.5,
+      "width": 250,
+      "height": 150,
+      "title": "New Scriptorium",
+      "content": "<p>gone gone open it up.</p>",
+      "tags": [],
+      "children": [],
+      "comments": [],
+      "type": "text",
+      "isExpanded": false,
+      "selected": true,
+      "isEditing": false,
+      "certifiedWords": []
+    }
+  ]
+}

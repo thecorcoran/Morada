@@ -1,17 +1,23 @@
 // uiManager.js
 // This module is responsible for managing UI interactions, DOM updates, 
 // search functionality, and the compendium view.
-console.log("UIManager search: Node=", node.title, "Generated snippet=", snippet);
 
-window.MyProjectUIManager = {
+import { KeyConstants } from './constants.js';
+
+export const uiManager = {
     // --- DOM ELEMENT GETTERS (to be initialized in init) ---
     breadcrumbBar: null, viewTitle: null,
-    editorMode: null, editorWordCount: null,
-    tagList: null, tagInput: null,
+    editorMode: null, editorMetadata: null, editorWordCount: null, editorFootnotesPane: null, footnotesList: null, footnotesHeader: null, editorInspectorSidebar: null, outlinerSidebar: null, outlinerList: null,
+    tagList: null, tagInput: null, // Bug fix: 'class.result-text' corrected to 'class="result-text"'.
     searchPalette: null, searchInput: null, searchResults: null,
+    canvasContextMenu: null, renameNodeOption: null,
+
+    addShelfBtn: null,
     compendiumModal: null, closeCompendiumBtn: null,
     compendiumLibrary: null, compendiumManuscript: null,
     generateBtn: null, compendiumFilter: null,
+    includeCommentsCheckbox: null,
+    includeCertifiedWordsCheckbox: null, // New checkbox for certified words
 
     // --- STATE & DEPENDENCIES (to be initialized) ---
     rootNodes: [], 
@@ -19,10 +25,15 @@ window.MyProjectUIManager = {
     selectedNode: null,
     manuscriptList: [], 
     sortableInstance: null,
+    _searchDebounceTimeout: null, // For debouncing search input
+    _hideContextMenuHandler: null,
     
     drawFunction: null,
     saveNodesFunction: null,
     navigateToNodeFunction: null, 
+    createTitleEditorFunction: null,
+    openScriptoriumCallback: null,
+    addShelfCallback: null,
 
     /**
      * Initializes the UIManager with necessary DOM elements, data references, and callback functions.
@@ -30,69 +41,109 @@ window.MyProjectUIManager = {
      * @param {Array<Object>} config.rootNodes - Reference to the main root nodes array.
      * @param {Array<Object>} config.viewStack - Reference to the main view stack array.
      * @param {Object|null} config.selectedNode - Reference to the currently selected node.
+     * @param {Array<Object>} config.manuscriptList - Reference to the main manuscript list array.
      * @param {Function} config.drawFunction - Callback function to trigger a canvas redraw.
      * @param {Function} config.saveNodesFunction - Callback function to save all node data.
      * @param {Function} config.navigateToNodeFunction - Callback function to navigate to a specific node.
+     * @param {Function} config.createTitleEditorFunction - Callback to create the title editor for a node.
+     * @param {Function} config.openScriptoriumCallback - Callback to open a scriptorium from the outliner.
+     * @param {Function} config.addShelfCallback - Callback to create a new shelf.
      */
     init: function(config) { // Prompt refers to this as initUIManager for JSDoc
         this.breadcrumbBar = document.getElementById('breadcrumb-bar');
         this.viewTitle = document.getElementById('view-title');
         this.editorMode = document.getElementById('editor-mode');
+        this.editorMetadata = document.getElementById('editor-metadata');
+        this.editorFootnotesPane = document.getElementById('editor-footnotes-pane');
+        this.footnotesList = document.getElementById('footnotes-list');
+        this.editorInspectorSidebar = document.getElementById('editor-inspector-sidebar');
+        this.footnotesHeader = document.getElementById('footnotes-header');
         this.editorWordCount = document.getElementById('editor-word-count');
+        this.outlinerSidebar = document.getElementById('outliner-sidebar');
+        this.outlinerList = document.getElementById('outliner-list');
         this.tagList = document.getElementById('tag-list');
         this.tagInput = document.getElementById('tag-input');
         this.searchPalette = document.getElementById('search-palette');
         this.searchInput = document.getElementById('search-input');
         this.searchResults = document.getElementById('search-results');
+        this.canvasContextMenu = document.getElementById('canvas-context-menu');
+        this.addShelfBtn = document.getElementById('add-shelf-btn');
         this.compendiumModal = document.getElementById('compendium-modal');
         this.closeCompendiumBtn = document.getElementById('close-compendium-btn');
         this.compendiumLibrary = document.getElementById('compendium-library');
         this.compendiumManuscript = document.getElementById('compendium-manuscript');
         this.generateBtn = document.getElementById('generate-btn');
         this.compendiumFilter = document.getElementById('compendium-filter');
+        this.includeCommentsCheckbox = document.getElementById('include-comments-checkbox');
+        this.includeCertifiedWordsCheckbox = document.getElementById('include-certified-words-checkbox'); // Get reference to new checkbox
 
         this.rootNodes = config.rootNodes;
         this.viewStack = config.viewStack;
         this.selectedNode = config.selectedNode;
+        this.manuscriptList = config.manuscriptList;
         this.drawFunction = config.drawFunction;
         this.saveNodesFunction = config.saveNodesFunction;
         this.navigateToNodeFunction = config.navigateToNodeFunction;
+        this.createTitleEditorFunction = config.createTitleEditorFunction;
+        this.openScriptoriumCallback = config.openScriptoriumCallback;
+        this.addShelfCallback = config.addShelfCallback;
 
         this.updateUIChrome(); 
         
-        this.tagInput.addEventListener('keydown', (e) => {
-            if (e.key === AppConstants.KEY_ENTER && this.selectedNode) { 
+        this.tagInput.addEventListener('keydown', async (e) => {
+            if (e.key === KeyConstants.ENTER && this.selectedNode) { 
                 e.preventDefault();
                 const newTag = this.tagInput.value.trim();
                 if (newTag && !this.selectedNode.tags.includes(newTag)) {
                     // Assumes selectedNode.tags is an array. Consider nodeManager.addTagToNode if it exists.
-                    this.selectedNode.tags.push(newTag); 
-                    this.saveNodesFunction(this.rootNodes);
+                    this.selectedNode.tags.push(newTag);
+                    await this.saveNodesFunction();
                     this.renderTags(this.selectedNode); // Pass current selected node
                 }
                 this.tagInput.value = '';
             }
         });
         this.closeCompendiumBtn.addEventListener('click', () => this.closeCompendium());
+        if (this.footnotesHeader) {
+            this.footnotesHeader.addEventListener('click', () => {
+                if (this.editorFootnotesPane) {
+                    this.editorFootnotesPane.classList.toggle('collapsed');
+                }
+            });
+        }
         this.generateBtn.addEventListener('click', () => this.compileAndDownload());
-        this.searchInput.addEventListener('input', () => {
-            const query = this.searchInput.value;
-            if (query.length > 1 || (query.startsWith('#') && query.length > 1)) {
-                const results = this.search(query, this.rootNodes, []); // 'search' is the current name
-                this.displayResults(results);
-            } else {
-                this.clearSearchResults();
-            }
+        this.searchInput.addEventListener('input', () => { // Debounced search
+            clearTimeout(this._searchDebounceTimeout);
+            this._searchDebounceTimeout = setTimeout(() => {
+                const query = this.searchInput.value;
+                if (query.length > 1 || (query.startsWith('#') && query.length > 1)) {
+                    const results = this.search(query);
+                    this.displayResults(results);
+                } else {
+                    this.clearSearchResults();
+                }
+            }, 250); // Wait 250ms after user stops typing
         });
         this.compendiumFilter.addEventListener('input', () => this.refreshCompendiumView());
+
+        if (this.addShelfBtn && this.addShelfCallback) {
+            this.addShelfBtn.addEventListener('click', () => this.addShelfCallback());
+        }
     },
     
     /** Updates the local reference to the rootNodes array. @param {Array<Object>} newRootNodes */
     updateRootNodesReference: function(newRootNodes) { this.rootNodes = newRootNodes; },
     /** Updates the local reference to the viewStack array. @param {Array<Object>} newViewStack */
     updateViewStackReference: function(newViewStack) { this.viewStack = newViewStack; },
-    /** Updates the local reference to the selectedNode object. @param {Object|null} newSelectedNode */
-    updateSelectedNodeReference: function(newSelectedNode) { this.selectedNode = newSelectedNode; },
+    /** Updates the local reference to the selectedNode object and refreshes dependent UI. @param {Object|null} newSelectedNode */
+    updateSelectedNodeReference: function(newSelectedNode) {
+        this.selectedNode = newSelectedNode;
+        // If we are in a book view, re-render the outliner to update highlighting
+        if (this.viewStack.length > 0) {
+            const currentBook = this.viewStack[this.viewStack.length - 1];
+            this.renderOutliner(currentBook.children);
+        }
+    },
 
     // --- Private Helper Functions ---
     /**
@@ -105,79 +156,67 @@ window.MyProjectUIManager = {
     _createTreeItemElement: function(node, filterTerm) {
         const li = document.createElement('li');
         li.dataset.nodeId = node.id;
-        if (this.manuscriptList.find(item => item.id === node.id)) { // manuscriptList is local to UIManager for now
+
+        // The manuscriptList now holds IDs, so we check for the node's ID directly.
+        const isSelected = this.manuscriptList.includes(node.id);
+        if (isSelected) {
             li.classList.add('selected-for-compile');
         }
 
-        const itemWrapper = document.createElement('div'); // Wrapper for text elements
-        itemWrapper.style.display = 'flex';
-        itemWrapper.style.flexDirection = 'column'; // Stack title and preview
+        const hasChildren = node.type === 'container' && node.children && node.children.length > 0;
+        const isExpanded = filterTerm ? true : node.isExpanded;
+        const toggleIcon = hasChildren ? (isExpanded ? '▾' : '▸') : '&nbsp;&nbsp;';
 
-        const titleLine = document.createElement('div'); // Line for toggle and title
-        titleLine.style.display = 'flex';
-        titleLine.style.alignItems = 'center';
+        if (hasChildren && !isExpanded) {
+            li.classList.add('collapsed');
+        }
 
-        const toggle = document.createElement('span');
-        toggle.className = 'tree-toggle';
-        if (node.type === 'container' && node.children && node.children.length > 0) {
-            const isExpanded = filterTerm ? true : node.isExpanded;
-            toggle.textContent = isExpanded ? '▾ ' : '▸ ';
-            if (!isExpanded) li.classList.add('collapsed');
+        let previewHTML = '';
+        if (node.type === 'text' && node.content) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = node.content;
+            const plainText = (tempDiv.textContent || tempDiv.innerText || "").trim();
+            if (plainText) {
+                const words = plainText.split(/\s+/);
+                let previewText = words.slice(0, 7).join(' ');
+                if (words.length > 7) {
+                    previewText += '...';
+                }
+                previewHTML = `<span class="compendium-item-preview">${previewText}</span>`;
+            }
+        }
+
+        li.innerHTML = `
+            <div style="display: flex; flex-direction: column;">
+                <div style="display: flex; align-items: center;">
+                    <span class="tree-toggle">${toggleIcon}</span>
+                    <span class="tree-item-label">${node.title}</span>
+                </div>
+                ${previewHTML}
+            </div>
+        `;
+
+        // Add event listeners after setting innerHTML
+        if (hasChildren) {
+            const toggle = li.querySelector('.tree-toggle');
             toggle.addEventListener('click', (e) => {
                 e.stopPropagation();
                 node.isExpanded = !node.isExpanded;
                 this.refreshCompendiumView();
             });
-        } else {
-            toggle.innerHTML = '&nbsp;&nbsp;'; // Keep space for alignment
         }
-
-        const label = document.createElement('span');
-        label.className = 'tree-item-label';
-        label.textContent = node.title;
-        
-        titleLine.appendChild(toggle);
-        titleLine.appendChild(label);
-        itemWrapper.appendChild(titleLine);
-
-        if (node.type === 'text' && node.content) {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = node.content;
-            const plainText = tempDiv.textContent || tempDiv.innerText || "";
-            const words = plainText.trim().split(/\s+/).slice(0, 7);
-            if (words.length > 0) {
-                const previewSpan = document.createElement('span');
-                previewSpan.className = 'compendium-item-preview';
-                let previewText = words.join(' ');
-                if (plainText.trim().split(/\s+/).length > 7) {
-                    previewText += '...';
-                }
-                previewSpan.textContent = previewText;
-                itemWrapper.appendChild(previewSpan);
-            }
-        }
-        
-        li.appendChild(itemWrapper);
 
         li.addEventListener('click', (e) => {
-            // Prevent selection when clicking on toggle or preview
-            if (e.target === toggle || e.target.classList.contains('compendium-item-preview')) {
-                 e.stopPropagation();
-                 return;
+            if (e.target.classList.contains('compendium-item-preview')) {
+                return;
             }
-            // If the click is on the label or the general li area (but not toggle/preview), proceed.
-            // We need to ensure the click is not propagated further up if it's meant for selection.
             e.stopPropagation();
-            if (e.target === toggle) return;
-            // Interaction with manuscriptList which should ideally be managed by dataStorage
-            const dataStorageManuscriptList = window.MyProjectDataStorage ? window.MyProjectDataStorage.getManuscriptList() : this.manuscriptList;
-            const existingIndex = dataStorageManuscriptList.findIndex(item => item.id === node.id);
+
+            const existingIndex = this.manuscriptList.indexOf(node.id);
             if (existingIndex > -1) {
-                if(window.MyProjectDataStorage) window.MyProjectDataStorage.removeFromManuscriptList(node.id);
-                else this.manuscriptList.splice(existingIndex, 1);
+                this.manuscriptList.splice(existingIndex, 1);
             } else {
-                if(window.MyProjectDataStorage) window.MyProjectDataStorage.addToManuscriptList(node);
-                else this.manuscriptList.push(node);
+                this.manuscriptList.push(node.id);
             }
             this.refreshCompendiumView();
         });
@@ -191,26 +230,39 @@ window.MyProjectUIManager = {
      * @returns {HTMLLIElement} The created list item element.
      */
     _createManuscriptItemElement: function(node) {
+        if (!node) {
+            const li = document.createElement('li');
+            li.textContent = '[Node not found - data may be out of sync]';
+            li.style.color = 'red';
+            return li;
+        }
         const li = document.createElement('li');
         li.dataset.nodeId = node.id; // For SortableJS
-        const titleSpan = document.createElement('span');
-        titleSpan.textContent = node.title;
-        li.appendChild(titleSpan);
+
+        let includeNotesCheckboxHTML = '';
         if (node.type === 'container') {
-            const labelEl = document.createElement('label');
-            labelEl.className = 'include-notes-label';
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.checked = node.includeNotes || false;
-            checkbox.onchange = () => { 
-                node.includeNotes = checkbox.checked; 
-                // If manuscriptList is from dataStorage, this change is on a copy.
-                // Need to update the item in dataStorage if this is desired to persist.
-            };
-            labelEl.appendChild(checkbox);
-            labelEl.appendChild(document.createTextNode(' Include Notes'));
-            li.appendChild(labelEl);
+            // The 'checked' property will be correctly set based on the boolean value.
+            includeNotesCheckboxHTML = `
+                <label class="include-notes-label">
+                    <input type="checkbox" class="include-notes-checkbox" ${node.includeNotes ? 'checked' : ''}>
+                     Include Notes
+                </label>
+            `;
         }
+
+        li.innerHTML = `
+            <span>${node.title}</span>
+            ${includeNotesCheckboxHTML}
+        `;
+
+        // Add event listener after setting innerHTML
+        const checkbox = li.querySelector('.include-notes-checkbox');
+        if (checkbox) {
+            checkbox.addEventListener('change', () => {
+                node.includeNotes = checkbox.checked;
+            });
+        }
+
         return li;
     },
 
@@ -222,18 +274,23 @@ window.MyProjectUIManager = {
      */
     _createSearchResultItemElement: function(result) {
         const resultEl = document.createElement('div');
-        if (result.snippet) {
-    const snippetEl = document.createElement('div');
-    snippetEl.className = 'result-snippet';
-    snippetEl.innerHTML = result.snippet; // Use innerHTML because snippet contains <mark> tags
-    resultEl.appendChild(snippetEl);
-    console.log("UIManager display: Added snippet for=", result.title, "Snippet HTML=", result.snippet);
-} else {
-    console.log("UIManager display: No snippet found for=", result.title);
-}
         resultEl.className = 'search-result-item';
-        const pathString = ['The Grounds', ...(result.path ? result.path.map(p => p.title) : [])].join(' / ');
-        resultEl.innerHTML = `<div class.result-text">${result.title}</div><div class="result-path">${pathString}</div>`;
+
+        const pathString = ['Bookshelf', ...(result.path ? result.path.map(p => p.title) : [])].join(' / ');
+
+        // Conditionally create the snippet HTML to be injected into the template
+        const snippetHTML = result.snippet
+            ? `<div class="result-snippet">${result.snippet}</div>`
+            : '';
+
+        // Bug fix: 'class.result-text' corrected to 'class="result-text"'.
+        // Bug fix: Snippet is now correctly included instead of being overwritten.
+        resultEl.innerHTML = `
+            <div class="result-text">${result.title}</div>
+            <div class="result-path">${pathString}</div>
+            ${snippetHTML}
+        `;
+
         resultEl.addEventListener('click', () => {
             if (this.navigateToNodeFunction && result.path) {
                 this.navigateToNodeFunction(result.path, result.id);
@@ -243,20 +300,215 @@ window.MyProjectUIManager = {
         return resultEl;
     },
 
+    /**
+     * Escapes a string for use in a regular expression.
+     * @private
+     * @param {string} string The string to escape.
+     * @returns {string} The escaped string.
+     */
+    _escapeRegExp: function(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    },
+
+    /**
+     * Shows the custom context menu at the specified coordinates.
+     * This function is now dynamic and builds the menu from a configuration array.
+     * @param {number} x - The clientX coordinate for the menu.
+     * @param {number} y - The clientY coordinate for the menu.
+     * @param {Array<Object>} items - An array of menu item objects to display.
+     */
+    showContextMenu: function(x, y, items) {
+        if (!this.canvasContextMenu) return;
+
+        this.hideContextMenu();
+
+        this.canvasContextMenu.innerHTML = ''; // Clear old items
+
+        items.forEach(item => {
+            const li = document.createElement('li');
+            if (item.type === 'separator') {
+                li.className = 'context-menu-separator';
+            } else {
+                li.className = 'context-menu-item';
+                li.textContent = item.label;
+                if (item.disabled) {
+                    li.classList.add('disabled');
+                } else {
+                    li.addEventListener('click', () => {
+                        item.action();
+                        this.hideContextMenu(); // Hide menu after action
+                    });
+                }
+            }
+            this.canvasContextMenu.appendChild(li);
+        });
+
+        this.canvasContextMenu.style.left = `${x}px`;
+        this.canvasContextMenu.style.top = `${y}px`;
+        this.canvasContextMenu.classList.remove('hidden');
+
+        // Add a one-time listener to the window to close the menu if the user clicks elsewhere.
+        this._hideContextMenuHandler = (e) => {
+            if (!this.canvasContextMenu.contains(e.target)) {
+                this.hideContextMenu();
+            }
+        };
+        setTimeout(() => window.addEventListener('click', this._hideContextMenuHandler), 0);
+    },
+
+    /**
+     * Hides the custom context menu and cleans up its event listeners.
+     */
+    hideContextMenu: function() {
+        if (this.canvasContextMenu && !this.canvasContextMenu.classList.contains('hidden')) {
+            this.canvasContextMenu.classList.add('hidden');
+            if (this._hideContextMenuHandler) {
+                // Clean up the global listener to prevent memory leaks.
+                window.removeEventListener('click', this._hideContextMenuHandler);
+                this._hideContextMenuHandler = null;
+            }
+        }
+    },
     // --- Public API ---
     /**
      * Updates the UI chrome elements like breadcrumbs and view titles.
      * The prompt signature was (viewStack, rootNodes, breadcrumbBarEl, viewTitleEl),
      * but this implementation uses internal references set during init.
      */
-    updateUIChrome: function() {
-        if (!this.breadcrumbBar || !this.viewTitle) return;
-        let path = 'The Grounds';
+    updateUIChrome: function() { // This function now also manages the outliner
+        if (!this.breadcrumbBar || !this.viewTitle || !this.outlinerSidebar) return;
+
+        // Update breadcrumbs and title
+        let path = 'Bookshelf';
         this.viewStack.forEach(node => { path += ` / ${node.title}`; });
         this.breadcrumbBar.textContent = path;
-        this.viewTitle.textContent = this.viewStack.length === 0 ? 'The Castle Grounds' : this.viewStack[this.viewStack.length - 1].title;
+        this.viewTitle.textContent = this.viewStack.length === 0 ? 'The Library' : this.viewStack[this.viewStack.length - 1].title;
+
+        // Update outliner visibility and content
+        if (this.viewStack.length > 0) {
+            this.outlinerSidebar.classList.remove('hidden');
+            const currentBook = this.viewStack[this.viewStack.length - 1];
+            this.renderOutliner(currentBook.children);
+        } else {
+            this.outlinerSidebar.classList.add('hidden');
+        }
+
+        // Update "Add Shelf" button visibility
+        if (this.addShelfBtn) {
+            this.addShelfBtn.classList.toggle('hidden', this.viewStack.length !== 0);
+        }
     },
 
+    /**
+     * Renders the list of Scriptoriums for the current Book in the outliner.
+     * @param {Array<Object>} nodes - The child nodes of the current Book.
+     */
+    renderOutliner: function(nodes) {
+        if (!this.outlinerList) return;
+        this.outlinerList.innerHTML = '';
+
+        const scriptoriums = nodes.filter(node => node.type === 'text');
+
+        if (scriptoriums.length === 0) {
+            this.outlinerList.innerHTML = '<div class="outliner-item-empty">No Scriptoriums</div>';
+            return;
+        }
+
+        scriptoriums.forEach(node => {
+            const item = document.createElement('div');
+            item.className = 'outliner-item';
+            item.textContent = node.title;
+            item.dataset.nodeId = node.id;
+
+            // Add highlighting for the currently selected node
+            if (this.selectedNode && this.selectedNode.id === node.id) {
+                item.classList.add('selected');
+            }
+
+            // Add interactivity to open the scriptorium on click
+            item.addEventListener('click', () => {
+                if (this.openScriptoriumCallback) this.openScriptoriumCallback(node.id);
+            });
+
+            this.outlinerList.appendChild(item);
+        });
+    },
+
+    /**
+     * Renders the footnotes (comments and certified words) for the current node.
+     * @param {Object} node The currently selected node.
+     */
+    renderEditorFootnotes: function(node) {
+        if (!this.footnotesList || !node) return;
+        this.footnotesList.innerHTML = '';
+
+        const allFootnotes = [];
+
+        if (node.comments) {
+            node.comments.forEach(comment => {
+                if (comment.text && comment.text.trim() !== '') {
+                    allFootnotes.push({
+                        type: 'Comment',
+                        id: comment.id,
+                        text: comment.text,
+                        sourceText: 'Comment' // Placeholder, as we don't store the original highlighted text
+                    });
+                }
+            });
+        }
+
+        if (node.certifiedWords) {
+            node.certifiedWords.forEach(cw => {
+                allFootnotes.push({
+                    type: 'Certified Word',
+                    id: `cw-${cw.text}`,
+                    text: cw.definition,
+                    sourceText: cw.text
+                });
+            });
+        }
+
+        if (allFootnotes.length === 0) {
+            this.footnotesList.innerHTML = '<li>No comments or certified words for this node.</li>';
+            return;
+        }
+
+        allFootnotes.forEach((item, index) => {
+            const li = document.createElement('li');
+            const tempDiv = document.createElement('div');
+            tempDiv.textContent = item.text; // Use textContent to prevent HTML injection
+            li.innerHTML = `<strong>${index + 1}. [${item.type}: "${item.sourceText}"]</strong>: ${tempDiv.innerHTML}`;
+            // Note: The click-to-highlight functionality would need editorManager reference, can be added later.
+            this.footnotesList.appendChild(li);
+        });
+    },
+
+    /**
+     * Toggles the visibility of the editor's inspector sidebar.
+     */
+    toggleInspectorSidebar: function() {
+        if (this.editorInspectorSidebar) {
+            this.editorInspectorSidebar.classList.toggle('hidden');
+        }
+    },
+
+    /**
+     * Recursively calculates the total word count for a node and all its children.
+     * @param {Object} node - The node to start counting from.
+     * @returns {number} The total word count.
+     */
+    getTotalWordCount: function(node) {
+        if (!node) return 0;
+
+        if (node.type === 'text') {
+            return this.getWordCount(node.content);
+        }
+
+        if (node.type === 'container' && node.children && node.children.length > 0) {
+            return node.children.reduce((sum, child) => sum + this.getTotalWordCount(child), 0);
+        }
+        return 0;
+    },
     /**
      * Calculates the word count of a given HTML string.
      * @param {string} content - The HTML content string.
@@ -277,7 +529,7 @@ window.MyProjectUIManager = {
      * This implementation uses internal `this.tagList` and `this.saveNodesFunction`,
      * and `this.selectedNode` as the node reference.
      */
-    renderTags: function(node) { 
+    renderTags: function(node) {
         if (!this.tagList) return;
         this.tagList.innerHTML = '';
         if (node && node.tags) {
@@ -288,9 +540,9 @@ window.MyProjectUIManager = {
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'tag-delete-btn';
                 deleteBtn.textContent = '×';
-                deleteBtn.onclick = () => {
+                deleteBtn.onclick = async () => {
                     node.tags = node.tags.filter(t => t !== tag);
-                    this.saveNodesFunction(this.rootNodes);
+                    await this.saveNodesFunction();
                     this.renderTags(node); // Re-render for the same node
                 };
                 tagPill.appendChild(deleteBtn);
@@ -333,12 +585,11 @@ window.MyProjectUIManager = {
     /**
      * Performs a search through the nodes based on a query, generating snippets with highlighting.
      * @param {string} queryToSearch - The search query. Can include '#' for tag search.
-     * @param {Array<Object>} nodesSetToSearch - The array of nodes to search within.
-     * @param {Array<Object>} currentPath - The current path of nodes leading to this search level.
+     * This function now implicitly searches `this.rootNodes`.
      * @returns {Array<Object>} An array of matching node results, each with 'path' and 'snippet' properties.
      */
-    search: function(queryToSearch, nodesSetToSearch, currentPath) {
-        let results = [];
+    search: function(queryToSearch) {
+        const results = [];
         if (!queryToSearch || queryToSearch.trim() === '') {
             return results;
         }
@@ -346,13 +597,28 @@ window.MyProjectUIManager = {
         const isTagSearch = queryToSearch.startsWith('#');
         const searchTerm = (isTagSearch ? queryToSearch.substring(1) : queryToSearch).trim().toLowerCase();
 
-        if (searchTerm === '') {
-            return results;
-        }
-        // Escape searchTerm for use in RegExp, ensuring special characters are treated literally.
-        const escapedSearchTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        if (searchTerm === '') return results;
+        
+        const escapedSearchTerm = this._escapeRegExp(searchTerm);
+        const highlightRegex = new RegExp(escapedSearchTerm, 'gi');
 
-        for (const node of nodesSetToSearch) {
+        // Start the recursive search, passing down the prepared terms and the results array to be populated.
+        this._performSearchRecursively(this.rootNodes, searchTerm, isTagSearch, highlightRegex, [], results);
+        return results;
+    },
+
+    /**
+     * The recursive part of the search functionality, optimized to avoid repeated work.
+     * @private
+     * @param {Array<Object>} nodes - The current set of nodes to search through.
+     * @param {string} searchTerm - The lower-cased search term.
+     * @param {boolean} isTagSearch - Whether this is a tag search.
+     * @param {RegExp} highlightRegex - The regex for highlighting matches.
+     * @param {Array<Object>} currentPath - The path to the current set of nodes.
+     * @param {Array<Object>} results - The master results array to push matches into.
+     */
+    _performSearchRecursively: function(nodes, searchTerm, isTagSearch, highlightRegex, currentPath, results) {
+        for (const node of nodes) {
             const newPath = [...currentPath, node];
             let isMatch = false;
             let snippet = '';
@@ -361,45 +627,29 @@ window.MyProjectUIManager = {
                 if (node.tags && node.tags.some(tag => tag.toLowerCase().includes(searchTerm))) {
                     isMatch = true;
                     const firstMatchingTag = node.tags.find(tag => tag.toLowerCase().includes(searchTerm));
-                    if (firstMatchingTag) {
-                        snippet = `Tag: ${firstMatchingTag.replace(new RegExp(escapedSearchTerm, 'gi'), '<mark>$&</mark>')}`;
-                    } else {
-                        snippet = 'Matches in tags.'; // Fallback, should be rare
-                    }
+                    snippet = `Tag: ${firstMatchingTag ? firstMatchingTag.replace(highlightRegex, '<mark>$&</mark>') : 'Matches in tags.'}`;
                 }
             } else {
                 const matchInTitle = node.title.toLowerCase().includes(searchTerm);
-                
                 const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = node.content || ''; // Ensure node.content is not null/undefined
+                tempDiv.innerHTML = node.content || '';
                 const plainTextContent = tempDiv.textContent || tempDiv.innerText || '';
                 const matchInContent = plainTextContent.toLowerCase().includes(searchTerm);
 
-                if (matchInTitle || matchInContent) {
+                if (matchInTitle) {
                     isMatch = true;
-                    if (matchInTitle) {
-                        snippet = node.title.replace(new RegExp(escapedSearchTerm, 'gi'), '<mark>$&</mark>');
-                    } else if (matchInContent) {
-                        const matchIndex = plainTextContent.toLowerCase().indexOf(searchTerm);
-                        if (matchIndex !== -1) {
-                            const snippetRadius = 30;
-                            const termActualLength = searchTerm.length; 
-                            let startIndex = Math.max(0, matchIndex - snippetRadius);
-                            let endIndex = Math.min(plainTextContent.length, matchIndex + termActualLength + snippetRadius);
-                            
-                            const prefix = startIndex > 0 ? '...' : '';
-                            const suffix = endIndex < plainTextContent.length ? '...' : '';
-                            
-                            const rawSnippetText = plainTextContent.substring(startIndex, endIndex);
-                            snippet = prefix + rawSnippetText.replace(new RegExp(escapedSearchTerm, 'gi'), '<mark>$&</mark>') + suffix;
-                        } else {
-                             // Fallback if indexOf failed after a successful includes; should be rare.
-                            const genericSnippetLength = snippetRadius * 2;
-                            snippet = plainTextContent.substring(0, genericSnippetLength) + (plainTextContent.length > genericSnippetLength ? '...' : '');
-                        }
-                    }
-                } else {
-                    snippet = ''; // Or some default like "N/A"
+                    snippet = node.title.replace(highlightRegex, '<mark>$&</mark>');
+                } else if (matchInContent) {
+                    isMatch = true;
+                    const matchIndex = plainTextContent.toLowerCase().indexOf(searchTerm);
+                    const snippetRadius = 30;
+                    const termActualLength = searchTerm.length;
+                    const startIndex = Math.max(0, matchIndex - snippetRadius);
+                    const endIndex = Math.min(plainTextContent.length, matchIndex + termActualLength + snippetRadius);
+                    const prefix = startIndex > 0 ? '...' : '';
+                    const suffix = endIndex < plainTextContent.length ? '...' : '';
+                    const rawSnippetText = plainTextContent.substring(startIndex, endIndex);
+                    snippet = prefix + rawSnippetText.replace(highlightRegex, '<mark>$&</mark>') + suffix;
                 }
             }
 
@@ -408,11 +658,9 @@ window.MyProjectUIManager = {
             }
 
             if (node.children && node.children.length > 0) {
-                // Pass original queryToSearch to recursive calls
-                results = results.concat(this.search(queryToSearch, node.children, newPath)); 
+                this._performSearchRecursively(node.children, searchTerm, isTagSearch, highlightRegex, newPath, results);
             }
         }
-        return results;
     },
 
     /**
@@ -437,15 +685,8 @@ window.MyProjectUIManager = {
      */
     openCompendium: function() {
         if (!this.compendiumModal) return;
-        // Always fetch the latest from dataStorage when opening
-        this.manuscriptList = window.MyProjectDataStorage ? window.MyProjectDataStorage.getManuscriptList() : [];
         this.refreshCompendiumView(); // Will use the just-fetched list
         this.compendiumModal.classList.remove('hidden');
-    },
-    
-    /** Clears the local UIManager copy of the manuscript list. */
-    clearManuscriptListLocal: function() { 
-        this.manuscriptList = [];
     },
 
     /**
@@ -466,7 +707,6 @@ window.MyProjectUIManager = {
         if (!this.compendiumLibrary || !this.compendiumFilter || !this.rootNodes) return;
         const filterTerm = this.compendiumFilter.value;
         this.compendiumLibrary.innerHTML = '';
-        this.manuscriptList = window.MyProjectDataStorage ? window.MyProjectDataStorage.getManuscriptList() : [];
 
         this.buildTree(this.rootNodes, this.compendiumLibrary, filterTerm);
         this.renderManuscript();
@@ -531,16 +771,28 @@ window.MyProjectUIManager = {
      * This implementation uses internal `this.compendiumManuscript` and fetches manuscriptList from dataStorage.
      */
     renderManuscript: function() {
+        // Helper function to find a node by ID from the root, needed for resolving IDs to objects.
+        const findNode = (nodes, id) => {
+            for (const node of nodes) {
+                if (node.id === id) return node;
+                if (node.children) {
+                    const found = findNode(node.children, id);
+                    if (found) return found;
+                }
+            }
+            return null;
+        };
+
         if (!this.compendiumManuscript) return;
         this.compendiumManuscript.innerHTML = '';
-        this.manuscriptList = window.MyProjectDataStorage ? window.MyProjectDataStorage.getManuscriptList() : [];
 
         if (this.manuscriptList.length === 0) {
             if (this.sortableInstance) { this.sortableInstance.destroy(); this.sortableInstance = null; }
             return;
         }
         const ol = document.createElement('ol');
-        this.manuscriptList.forEach(node => {
+        this.manuscriptList.forEach(nodeId => {
+            const node = findNode(this.rootNodes, nodeId);
             const li = this._createManuscriptItemElement(node);
             ol.appendChild(li);
         });
@@ -550,13 +802,10 @@ window.MyProjectUIManager = {
         if (typeof Sortable !== 'undefined') {
             this.sortableInstance = Sortable.create(ol, {
                 animation: 150,
-                onEnd: (evt) => {
-                    if (window.MyProjectDataStorage) {
-                        const currentList = window.MyProjectDataStorage.getManuscriptList();
-                        const item = currentList.splice(evt.oldIndex, 1)[0];
-                        if (item) currentList.splice(evt.newIndex, 0, item);
-                        // No need to manually set this.manuscriptList, it's fetched at render start
-                    }
+                onEnd: async (evt) => {
+                    const movedItemId = this.manuscriptList.splice(evt.oldIndex, 1)[0];
+                    if (movedItemId) this.manuscriptList.splice(evt.newIndex, 0, movedItemId);
+                    await this.saveNodesFunction(); // Save the new order
                     this.renderManuscript(); // Re-render
                 }
             });
@@ -570,26 +819,94 @@ window.MyProjectUIManager = {
      * The prompt signature was (manuscriptList). This fetches from dataStorage.
      */
     compileAndDownload: function() {
-        if (!window.MyProjectDataStorage) return;
+        if (!this.includeCommentsCheckbox || !this.includeCertifiedWordsCheckbox) return;
         let output = '';
-        const tempDiv = document.createElement('div');
-        const currentManuscriptList = window.MyProjectDataStorage.getManuscriptList();
+        const includeComments = this.includeCommentsCheckbox.checked;
+        const includeCertifiedWords = this.includeCertifiedWordsCheckbox.checked; // Get state of new checkbox
+        let footnotes = [];
+        let footnoteCounter = 1;
 
-        currentManuscriptList.forEach(node => {
-            if (node.type === 'container') {
-                output += `\n\n## ${node.title.toUpperCase()} ##\n\n`;
-                if (node.includeNotes && node.content) {
-                    tempDiv.innerHTML = node.content;
-                    output += `${tempDiv.textContent || tempDiv.innerText || ''}\n\n`;
-                }
-            } else if (node.type === 'text') {
-                output += `### ${node.title} ###\n\n`;
-                if (node.content) {
-                    tempDiv.innerHTML = node.content;
-                    output += `${tempDiv.textContent || tempDiv.innerText || ''}\n\n`;
+        // Helper function to find a node by ID from the root, needed for resolving IDs to objects.
+        const findNode = (nodes, id) => {
+            for (const node of nodes) {
+                if (node.id === id) return node;
+                if (node.children) {
+                    const found = findNode(node.children, id);
+                    if (found) return found;
                 }
             }
+            return null;
+        };
+
+        this.manuscriptList.forEach(nodeId => {
+            const node = findNode(this.rootNodes, nodeId);
+            if (!node) return; // Skip if node not found
+
+            // Process node title
+            if (node.type === 'container') {
+                output += `\n\n## ${node.title.toUpperCase()} ##\n\n`;
+            } else if (node.type === 'text') {
+                output += `### ${node.title} ###\n\n`;
+            }
+
+            // Determine which content to process
+            let contentToProcess = null;
+            if (node.type === 'container' && node.includeNotes) {
+                contentToProcess = node.content;
+            } else if (node.type === 'text') {
+                contentToProcess = node.content;
+            }
+
+            if (!contentToProcess) return; // Skips to the next node in forEach
+
+            const contentProcessorDiv = document.createElement('div');
+            contentProcessorDiv.innerHTML = contentToProcess;
+
+            // Process comments
+            if (includeComments && node.comments && node.comments.length > 0) {
+                const commentSpans = contentProcessorDiv.querySelectorAll('span.comment-highlight');
+                commentSpans.forEach(span => {
+                    const commentData = node.comments.find(c => c.id === span.id);
+                    if (commentData && commentData.text && commentData.text.trim() !== '') {
+                        footnotes.push(`${footnoteCounter}. [Comment] ${commentData.text}`); // Add type for clarity
+                        const marker = document.createTextNode(` [${footnoteCounter}]`);
+                        if (span.parentNode) {
+                            span.parentNode.insertBefore(marker, span.nextSibling);
+                        }
+                        footnoteCounter++;
+                    }
+                });
+            }
+
+            // Process certified words
+            if (includeCertifiedWords && node.certifiedWords && node.certifiedWords.length > 0) {
+                // To ensure all certified words are included, we dynamically wrap them,
+                // rather than relying on the spans already being in the content.
+                let tempContent = contentProcessorDiv.innerHTML;
+                node.certifiedWords.forEach(cw => {
+                    const wordRegex = new RegExp(`\\b(${this._escapeRegExp(cw.text)})\\b`, 'gi');
+                    const sanitizedDefinition = cw.definition.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                    tempContent = tempContent.replace(wordRegex, `<span class="certified-word-compile" data-definition="${sanitizedDefinition}">${'$&'}</span>`);
+                });
+                contentProcessorDiv.innerHTML = tempContent;
+
+                contentProcessorDiv.querySelectorAll('span.certified-word-compile').forEach(span => {
+                    const definition = span.getAttribute('data-definition');
+                    const wordText = span.textContent;
+                    footnotes.push(`${footnoteCounter}. [Certified Word: "${wordText}"] ${definition}`);
+                    span.insertAdjacentText('afterend', ` [${footnoteCounter++}]`);
+                });
+            }
+
+            // Finally, extract plain text from the processed HTML
+            output += `${contentProcessorDiv.textContent || contentProcessorDiv.innerText || ''}\n\n`;
         });
+
+        // Append footnotes if any were collected
+        if (footnotes.length > 0) {
+            output += '\n\n--- FOOTNOTES ---\n\n';
+            output += footnotes.join('\n');
+        }
 
         const blob = new Blob([output], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
@@ -616,4 +933,4 @@ window.MyProjectUIManager = {
         return this.searchPalette && !this.searchPalette.classList.contains('hidden');
     }
 };
-console.log("uiManager.js JSDoc comments added.");
+console.log("uiManager.js JSDoc comments added and search functions refactored.");

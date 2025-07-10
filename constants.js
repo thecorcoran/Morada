@@ -3,76 +3,123 @@
  * @fileOverview AppConstants provides a centralized object for widely used
  * constant values across the application. This helps in maintaining consistency
  * and makes updates easier.
- * @namespace AppConstants
  */
-window.AppConstants = {
-    // --- Node Dimensions & Appearance ---
-    /** @const {number} NODE_WIDTH - Default width for new nodes. */
-    NODE_WIDTH: 250,
-    /** @const {number} NODE_HEIGHT - Default height for new nodes. */
-    NODE_HEIGHT: 150,
-    /** @const {string} NODE_DEFAULT_COLOR - Default background color for container nodes. */
-    NODE_DEFAULT_COLOR: '#f5f5f5',
-    /** @const {string} NODE_TEXT_COLOR - Default background color for text nodes. */
-    NODE_TEXT_COLOR: '#fdf5e6',
-    /** @const {string} NODE_SELECTED_STROKE_COLOR - Stroke color for selected nodes. */
-    NODE_SELECTED_STROKE_COLOR: '#007bff',
 
-    // --- Canvas Settings ---
-    /** @const {number} CANVAS_ZOOM_INTENSITY - Multiplier for zoom operations. */
-    CANVAS_ZOOM_INTENSITY: 0.1,
-
-    // --- Editor Appearance (TinyMCE) ---
-    /** @const {string} EDITOR_DEFAULT_FONT_SIZE - Default font size for the TinyMCE editor. */
-    EDITOR_DEFAULT_FONT_SIZE: '18px',
-    /** @const {string} EDITOR_DEFAULT_LINE_HEIGHT - Default line height for the TinyMCE editor. */
-    EDITOR_DEFAULT_LINE_HEIGHT: '1.6',
-    /** @const {string} EDITOR_BACKGROUND_COLOR - Background color for the TinyMCE editor. */
-    EDITOR_BACKGROUND_COLOR: '#fdf5e6',
-
-    // --- Default Node Titles ---
-    /** @const {string} NEW_CHAMBER_TITLE - Default title for new container nodes. */
-    NEW_CHAMBER_TITLE: 'New Chamber',
-    /** @const {string} NEW_SCRIPTORIUM_TITLE - Default title for new text nodes. */
-    NEW_SCRIPTORIUM_TITLE: 'New Scriptorium',
-
-    // --- UI Interaction Keys ---
-    /** @const {string} KEY_ENTER - String representation for the 'Enter' key. */
-    KEY_ENTER: 'Enter',
-    /** @const {string} KEY_ESCAPE - String representation for the 'Escape' key. */
-    KEY_ESCAPE: 'Escape',
-    /** @const {string} KEY_DELETE - String representation for the 'Delete' key. */
-    KEY_DELETE: 'Delete',
-    /** @const {string} KEY_BACKSPACE - String representation for the 'Backspace' key. */
-    KEY_BACKSPACE: 'Backspace',
-    /** @const {string} KEY_F3 - String representation for the 'F3' key. */
-    KEY_F3: 'F3',
-    /** 
-     * @const {string} CTRL_K_COMBO - Conceptual representation for Ctrl+K combination.
-     * Note: Actual check in code is `e.ctrlKey && e.key === 'k'`.
-     */
-    CTRL_K_COMBO: 'Control+K', 
-
-    // --- Canvas Drawing Styles (Colors, Alphas, Fonts) ---
-    /** @const {number} CURRENT_LEVEL_FILL_ALPHA - Alpha transparency for nodes at the current viewing level. */
-    CURRENT_LEVEL_FILL_ALPHA: 1.0,
-    /** @const {number} CURRENT_LEVEL_TEXT_ALPHA - Alpha transparency for text on current level nodes. */
-    CURRENT_LEVEL_TEXT_ALPHA: 1.0,
-    /** @const {number} ANCESTOR_FILL_ALPHA - Alpha transparency for ancestor nodes. */
-    ANCESTOR_FILL_ALPHA: 0.25,
-    /** @const {number} ANCESTOR_TEXT_ALPHA - Alpha transparency for text on ancestor nodes. */
-    ANCESTOR_TEXT_ALPHA: 0.6,
-    /** @const {number} OTHER_LEVEL_FILL_ALPHA - Alpha transparency for nodes not current and not ancestor. */
-    OTHER_LEVEL_FILL_ALPHA: 0.1, 
-    /** @const {number} OTHER_LEVEL_TEXT_ALPHA - Alpha transparency for text on 'other' level nodes. */
-    OTHER_LEVEL_TEXT_ALPHA: 0.7, 
-    /** @const {string} DEFAULT_TEXT_COLOR - Default color for node titles and other general text on canvas. */
-    DEFAULT_TEXT_COLOR: '#333',
-    /** @const {string} DEFAULT_FONT_BOLD - Default bold font style for node titles. */
-    DEFAULT_FONT_BOLD: "bold 16px 'Vollkorn', serif",
-    /** @const {string} WORD_COUNT_FONT - Font style for word count text on nodes. */
-    WORD_COUNT_FONT: "12px 'Vollkorn', serif",
-    /** @const {string} WORD_COUNT_COLOR - Color for word count text on nodes. */
-    WORD_COUNT_COLOR: '#666',
+/**
+ * @namespace NodeConstants
+ * @description Constants related to node dimensions and appearance.
+ */
+export const NodeConstants = {
+  NODE_WIDTH: 250,
+  NODE_HEIGHT: 150,
+  NODE_DEFAULT_COLOR: '#f5f5f5',
+  NODE_TEXT_COLOR: '#fdf5e6',
+  NODE_SELECTED_STROKE_COLOR: '#007bff',
+  NODE_DEFAULT_STROKE_COLOR: '#d5c4a1',
 };
+
+/**
+ * @namespace CanvasConstants
+ * @description Constants related to the canvas and its interactions.
+ */
+export const CanvasConstants = {
+  CANVAS_ZOOM_INTENSITY: 0.1,
+  CANVAS_MIN_ZOOM_BOOKSHELF: 0.4,
+  CANVAS_MIN_ZOOM_DEFAULT: 0.1,
+  CANVAS_MAX_ZOOM: 2.0,
+  CANVAS_FIT_VIEW_PADDING: 100,
+  CANVAS_FOCUS_ZOOM_LEVEL: 1.2,
+};
+
+/**
+ * @namespace EditorConstants
+ * @description Constants related to the TinyMCE editor's appearance.
+ */
+export const EditorConstants = {
+  DEFAULT_FONT_SIZE: '18px',
+  DEFAULT_LINE_HEIGHT: '1.6',
+  BACKGROUND_COLOR: '#fdf5e6',
+};
+
+/**
+ * @namespace UIConstants
+ * @description Constants related to UI elements and styles on the canvas.
+ */
+export const UIConstants = {
+  CURRENT_LEVEL_FILL_ALPHA: 1.0,
+  CURRENT_LEVEL_TEXT_ALPHA: 1.0,
+  ANCESTOR_FILL_ALPHA: 0.25,
+  ANCESTOR_TEXT_ALPHA: 0.6,
+  OTHER_LEVEL_FILL_ALPHA: 0.1,
+  OTHER_LEVEL_TEXT_ALPHA: 0.7,
+  DEFAULT_TEXT_COLOR: '#333',
+  DEFAULT_FONT_BOLD: "bold 16px 'Vollkorn', serif",
+  WORD_COUNT_FONT: "12px 'Vollkorn', serif",
+  WORD_COUNT_COLOR: '#666',
+};
+
+/**
+ * @namespace BookshelfConstants
+ * @description Constants for the root "bookshelf" view styling.
+ */
+export const BookshelfConstants = {
+  BOOK_WIDTH: 40,
+  BOOK_SPACING: 10,
+  BOOK_ROTATION_MAX_DEGREES: 1,
+  BOOK_BASE_COLOR_CONTAINER: '#8B4513', // SaddleBrown
+  BOOK_LIGHT_COLOR_CONTAINER: '#A0522D',
+  BOOK_BASE_COLOR_TEXT: '#C19A6B', // Camel
+  BOOK_LIGHT_COLOR_TEXT: '#D2B48C',
+  BOOK_BAND_HIGHLIGHT: '#F0E68C', // Khaki
+  BOOK_BAND_SHADOW: '#B8860B',   // DarkGoldenrod
+  BOOK_OUTLINE_COLOR: '#3E2723',
+  BOOK_TITLE_COLOR: '#FFFFFF',
+  BOOK_TITLE_SHADOW: 'rgba(0,0,0,0.7)',
+  BOOK_WORD_COUNT_COLOR: 'rgba(255, 255, 255, 0.8)',
+  BOOKSHELF_Y_POSITION: 0, // Center the bookshelf vertically in world space.
+  SHELF_SPACING_VERTICAL: 250, // The vertical distance between shelves.
+  SHELF_PADDING: 100,
+  SHELF_HEIGHT: 20,
+  SHELF_BOTTOM_EDGE_HEIGHT: 5,
+  SHELF_COLOR_TOP: '#855E42',
+  SHELF_COLOR_BOTTOM: '#5D4037',
+  SHELF_EDGE_COLOR: '#4E342E',
+  SHELF_TITLE_FONT: "italic bold 22px 'Vollkorn', serif",
+  SHELF_TITLE_COLOR: '#4E342E', // Darker brown to match shelf edge
+  SHELF_TITLE_X_OFFSET: 20, // Distance from the bookend
+  SHELF_TITLE_Y_OFFSET: 0, // Vertical offset from the book's vertical center. Positive is down, negative is up.
+  BOOKEND_WIDTH: 30,
+  BOOKEND_COLOR: '#3E2723',
+  LION_BASE_COLOR: '#6D4C41', // A dark, stony brown
+  LION_SHADOW_COLOR: '#4E342E',
+  LION_HIGHLIGHT_COLOR: '#8D6E63',
+  LOOSE_LEAF_BG_COLOR: '#fdf5e6',
+  LOOSE_LEAF_BORDER_COLOR: '#d3c5b4',
+  LOOSE_LEAF_SHADOW_COLOR: 'rgba(0,0,0,0.2)',
+};
+
+/**
+ * @namespace KeyConstants
+ * @description Constants for keyboard interaction keys.
+ */
+export const KeyConstants = {
+  ENTER: 'Enter',
+  ESCAPE: 'Escape',
+  DELETE: 'Delete',
+  BACKSPACE: 'Backspace',
+  F3: 'F3',
+  K: 'k',
+};
+
+/**
+ * @namespace MiscConstants
+ * @description Miscellaneous constants like default titles.
+ */
+export const MiscConstants = {
+  NEW_BOOK_TITLE: 'New Book',
+  NEW_SCRIPTORIUM_TITLE: 'New Scriptorium',
+};
+
+
+console.log("constants.js reorganized into feature-based groups.");
 console.log("constants.js JSDoc comments added.");

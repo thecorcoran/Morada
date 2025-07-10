@@ -5,12 +5,20 @@
     <title>Morada</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.tiny.cloud/1/5g985h5nnoarje29szp3x7g2z6a811y9wsvvp2wylg5s6u4i/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
   </head>
   <body>
     <div class="main-container">
+      <div id="outliner-sidebar" class="hidden">
+        <div class="outliner-header">
+          <h3>Outline</h3>
+        </div>
+        <div id="outliner-list"></div>
+      </div>
       <div class="content-area">
         <div class="breadcrumb-bar" id="breadcrumb-bar"></div>
         <h2 id="view-title"></h2>
+        <button id="add-shelf-btn" class="hidden" title="Add a new shelf with a book">+</button>
         <canvas id="nest-canvas"></canvas>
       </div>
     </div>
@@ -19,28 +27,53 @@
         <div id="editor-main-content">
             <textarea id="main-editor"></textarea>
         </div>
-        <div id="editor-metadata">
-            <div id="editor-status-bar">
-                <span id="editor-word-count">Words: 0</span>
-                <div id="writing-timer-controls">
-                  <label for="timer-duration-input">Set Timer (min):</label>
-                  <input type="number" id="timer-duration-input" value="30" min="1">
-                  <button id="timer-start-btn">Start Timer</button>
-                  <span id="writing-timer-display">Time: 00:00</span>
+        <div id="editor-inspector-sidebar" class="hidden">
+            <div id="editor-metadata">
+                <div id="editor-status-bar">
+                    <span id="editor-word-count">Words: 0</span>
+                    <div id="writing-timer-controls">
+                      <label for="timer-duration-input">Set Timer (min):</label>
+                      <input type="number" id="timer-duration-input" value="30" min="1">
+                      <button id="timer-start-btn">Start Timer</button>
+                      <span id="writing-timer-display">Time: 00:00</span>
+                    </div>
+                    <div id="word-goal-controls">
+                      <label for="word-goal-input">Word Goal:</label>
+                      <span id="word-goal-current">0</span> / <input type="number" id="word-goal-input" value="500" min="0">
+                    </div>
                 </div>
-                <div id="word-goal-controls">
-                  <label for="word-goal-input">Word Goal:</label>
-                  <span id="word-goal-current">0</span> / <input type="number" id="word-goal-input" value="500" min="0">
+                <div id="tag-manager">
+                    <label>Tags:</label>
+                    <div id="tag-list"></div>
+                    <input type="text" id="tag-input" placeholder="Add a tag and press Enter...">
                 </div>
             </div>
-            <div id="tag-manager">
-                <label>Tags:</label>
-                <div id="tag-list"></div>
-                <input type="text" id="tag-input" placeholder="Add a tag and press Enter...">
+            <div id="editor-footnotes-pane">
+                <h4 id="footnotes-header">Footnotes <span id="footnotes-toggle">▾</span></h4>
+                <div id="footnotes-list-container">
+                    <div id="footnotes-list"></div>
+                </div>
             </div>
         </div>
         <div class="editor-instructions">Press 'Escape' to save and close</div>
     </div>
+<!-- Comment Modal -->
+<div id="comment-modal" class="modal hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Add/Edit Comment</h2>
+            <span class="close-button" id="close-comment-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p>Commenting on: "<span id="comment-selected-text"></span>"</p>
+            <textarea id="comment-textarea" placeholder="Type your comment here..."></textarea>
+        </div>
+        <div class="modal-footer">
+            <button id="save-comment-btn">Save Comment</button>
+            <button id="delete-comment-btn" class="delete-button">Delete Comment</button>
+        </div>
+    </div>
+</div>
 
     <div id="search-palette" class="hidden">
       <input type="text" id="search-input" placeholder="Search content or #tags...">
@@ -60,41 +93,55 @@
             </div>
       </div>
       <div class="compendium-footer">
+        <div class="compendium-options">
+          <label for="include-comments-checkbox"><input type="checkbox" id="include-comments-checkbox"> Include Comments as Footnotes</label>
+          <label for="include-certified-words-checkbox"><input type="checkbox" id="include-certified-words-checkbox"> Include Certified Words as Footnotes</label>
+        </div>
         <button id="generate-btn">Generate .txt File</button>
       </div>
     </div>
 
-    <div id="etymology-modal" class="hidden">
-      <div class="etymology-modal-content">
-        <div class="etymology-modal-header">
+    <div id="etymology-modal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
           <h3 id="etymology-word">Etymology</h3>
-          <button id="close-etymology-btn">×</button>
+          <span class="close-button" id="close-etymology-btn">&times;</span>
         </div>
-        <div id="etymology-result-area" class="etymology-modal-body">
+        <div id="etymology-result-area" class="modal-body">
           <p>Loading...</p>
         </div>
       </div>
     </div>
 
-    <div id="certify-word-modal" class="hidden">
-      <div class="certify-word-modal-content">
-        <div class="certify-word-modal-header">
+    <div id="certify-word-modal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
           <h3>Certify Word: "<span id="certify-selected-word"></span>"</h3>
-          <button id="close-certify-word-btn">×</button>
+          <span class="close-button" id="close-certify-word-btn">&times;</span>
         </div>
-        <div class="certify-word-modal-body">
+        <div class="modal-body">
           <label for="certify-definition-input">Your Definition:</label>
           <textarea id="certify-definition-input" rows="4"></textarea>
         </div>
-        <div class="certify-word-modal-footer">
+        <div class="modal-footer">
           <button id="save-certification-btn">Save Definition</button>
           <button id="cancel-certification-btn">Cancel</button>
         </div>
       </div>
     </div>
 
-    <div id="certified-word-tooltip" class="hidden"></div>
+    <!-- Hover Tooltip for Comments & Certified Words -->
+    <div id="hover-tooltip" class="hidden"></div>
 
-    <script src="./renderer.js"></script>
+    <!-- Context Menu for Canvas Nodes -->
+    <div id="canvas-context-menu" class="context-menu hidden">
+      <ul>
+        <li id="rename-node-option">Rename</li>
+      </ul>
+    </div>
+
+    <!-- Load the main renderer script as a module. -->
+    <!-- It will handle importing all the other necessary modules. -->
+    <script type="module" src="renderer.js"></script>
   </body>
 </html>

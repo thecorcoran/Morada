@@ -4,140 +4,52 @@
 // like the currently selected node and the manuscript list for compilation.
 console.log("dataStorage.js loaded");
 
-const fs = require('fs');
-const path = require('path');
+import { NodeConstants, MiscConstants } from './constants.js';
+const fs = window.electronAPI.fs;
 
 // dataPath is defined in the original renderer.js and passed to functions.
 // For a fully self-contained module, this should be configured, possibly during an init phase.
 // However, adhering to current refactoring step, assuming dataPath is accessible or set.
 // const defaultDataPath = path.join(__dirname, '..', 'morada-data.json'); // Example if it were self-contained
-
-window.MyProjectDataStorage = {
+export const dataStorageManager = {
   /** @type {string} Stores the active data path after it's set by loadNodes. */
   _activeDataPath: '', 
-  
-  _rootNodes: [], 
-  _internalSelectedNode: null,
-  _internalManuscriptList: [],
+  /** @type {string} Stores the path for the backup data file. */
+  _backupDataPath: '',
 
   /**
-   * Sets the initial root nodes for the application.
-   * This is typically called after loading data or when initializing with default/empty data.
-   * @param {Array<Object>} nodes - The array of root node objects.
+   * Asynchronously saves the provided data to the JSON file, with backup and temp file logic for safety.
+   * @param {Object} dataToSave - An object containing all data to be persisted, e.g., { nodes: [], manuscript: [] }.
+   * @returns {Promise<void>} A promise that resolves when the save is complete.
    */
-  setInitialNodes: function(nodes) {
-    this._rootNodes = nodes;
-    // Normalization should ideally happen before or during setting initial nodes.
-    // If nodes are loaded via loadNodes(), normalization is already handled.
-  },
-  
-  /**
-   * Retrieves the current root nodes.
-   * @returns {Array<Object>} The array of root node objects.
-   */
-  getRootNodes: function() {
-      return this._rootNodes;
-  },
-
-  /**
-   * Saves the provided tree of nodes to the JSON file stored in `this._activeDataPath`.
-   * @param {Array<Object>} rootNodesToSave - The array of root node objects to save.
-   */
-  saveNodes: function(rootNodesToSave) {
+  async saveData(dataToSave) {
     if (!this._activeDataPath) {
-      console.error("Error saving nodes: Data path not set. Call loadNodes first with a valid path.");
-      return;
+      throw new Error("Error saving data: Data path not set. Call loadData first.");
     }
     try {
-      const data = JSON.stringify(rootNodesToSave, null, 2);
-      fs.writeFileSync(this._activeDataPath, data);
-    } catch (err) {
-      console.error(`Error saving nodes to ${this._activeDataPath}: ${err.message}`, err);
-    }
-  },
+      // Before saving, if manuscript contains full objects, map it to an array of IDs.
+      const dataToSerialize = {
+        nodes: dataToSave.nodes,
+        manuscript: (dataToSave.manuscript || []).map(item => (typeof item === 'object' && item.id) ? item.id : item),
+        shelves: dataToSave.shelves || []
+      };
 
-  /**
-   * Loads nodes from the JSON file specified by `passedDataPath`.
-   * Sets this path as the active path for subsequent saves.
-   * If the file doesn't exist or is corrupted, it returns an empty array and logs an error.
-   * Also resets the internal selected node and manuscript list.
-   * @param {string} passedDataPath - The path to the JSON file to load.
-   * @returns {Array<Object>} The loaded (and normalized) array of root node objects, or an empty array on failure.
-   */
-  loadNodes: function(passedDataPath) {
-    this._activeDataPath = passedDataPath; // Set the active data path
-    this._internalSelectedNode = null; 
-    this._internalManuscriptList = [];   
-    try {
-      if (fs.existsSync(this._activeDataPath)) {
-        const data = fs.readFileSync(this._activeDataPath, 'utf8');
-        this._rootNodes = JSON.parse(data);
-        this.normalizeNodes(this._rootNodes); 
-        console.log(`Nodes loaded successfully from ${this._activeDataPath}`);
-        return this._rootNodes; 
-      } else {
-        console.log(`Data file not found at ${this._activeDataPath}. Starting with an empty dataset.`);
-        this._rootNodes = [];
-        return this._rootNodes; 
+      const jsonString = JSON.stringify(dataToSerialize, null, 2);
+      const tempPath = this._activeDataPath + '.tmp';
+
+      // Create a backup of the current data file before overwriting
+      if (await fs.exists(this._activeDataPath)) {
+          await fs.copyFile(this._activeDataPath, this._backupDataPath);
       }
+
+      await fs.writeFile(tempPath, jsonString, 'utf8');
+      await fs.rename(tempPath, this._activeDataPath);
+      console.log(`Data saved successfully to: ${this._activeDataPath}`);
     } catch (err) {
-      if (err instanceof SyntaxError) { 
-        console.error(`Error parsing JSON from ${this._activeDataPath}: ${err.message}. File might be corrupted. Starting with an empty dataset.`, err);
-      } else {
-        console.error(`Error loading nodes from ${this._activeDataPath}: ${err.message}. Starting with an empty dataset.`, err);
-      }
-      this._rootNodes = [];
-      return this._rootNodes; 
+      console.error(`!!! CRITICAL: Error saving data to ${this._activeDataPath}: ${err.message}`, err);
+      alert("Critical error saving data. Please check console and consider manual backup of morada-data.json if possible.");
+      throw err; // Re-throw the error so the caller knows the save failed.
     }
-  },
-  
-  /**
-   * Sets the currently selected node in the application.
-   * @param {Object|null} node - The node object to set as selected, or null to clear selection.
-   */
-  setSelectedNode: function(node) {
-    this._internalSelectedNode = node;
-  },
-
-  /**
-   * Gets the currently selected node.
-   * @returns {Object|null} The currently selected node object, or null if no node is selected.
-   */
-  getSelectedNode: function() {
-    return this._internalSelectedNode;
-  },
-
-  /**
-   * Gets the current list of nodes selected for the manuscript.
-   * @returns {Array<Object>} An array of node objects in the manuscript list.
-   */
-  getManuscriptList: function() {
-    return this._internalManuscriptList;
-  },
-
-  /**
-   * Adds a node to the manuscript list if it's not already present.
-   * @param {Object} node - The node object to add to the manuscript list.
-   */
-  addToManuscriptList: function(node) {
-    if (!this._internalManuscriptList.find(item => item.id === node.id)) {
-      this._internalManuscriptList.push(node);
-    }
-  },
-
-  /**
-   * Removes a node from the manuscript list by its ID.
-   * @param {string} nodeId - The ID of the node to remove from the manuscript list.
-   */
-  removeFromManuscriptList: function(nodeId) {
-    this._internalManuscriptList = this._internalManuscriptList.filter(item => item.id !== nodeId);
-  },
-
-  /**
-   * Clears all nodes from the manuscript list.
-   */
-  clearManuscriptList: function() {
-    this._internalManuscriptList = [];
   },
 
   /**
@@ -150,14 +62,19 @@ window.MyProjectDataStorage = {
       node.id = node.id || Date.now() + Math.random().toString(36).substr(2, 9);
       node.x = typeof node.x === 'number' ? node.x : 0;
       node.y = typeof node.y === 'number' ? node.y : 0;
-      node.width = node.width || (window.AppConstants ? AppConstants.NODE_WIDTH : 250);
-      node.height = node.height || (window.AppConstants ? AppConstants.NODE_HEIGHT : 150);
+      node.width = node.width || NodeConstants.NODE_WIDTH;
+      node.height = node.height || NodeConstants.NODE_HEIGHT;
       
       if (!Array.isArray(node.children)) node.children = [];
       if (typeof node.type !== 'string') node.type = 'container'; 
-      if (typeof node.title !== 'string') node.title = 'Untitled';
+      if (typeof node.title !== 'string') {
+        // Use the same default titles as nodeManager for consistency.
+        node.title = node.type === 'text' ? MiscConstants.NEW_SCRIPTORIUM_TITLE : MiscConstants.NEW_BOOK_TITLE;
+      }
       if (typeof node.content !== 'string') node.content = '';
       if (!Array.isArray(node.tags)) node.tags = [];
+      if (!Array.isArray(node.comments)) node.comments = [];
+      if (!Array.isArray(node.certifiedWords)) node.certifiedWords = []; // Ensure certifiedWords exists
       
       node.isExpanded = typeof node.isExpanded === 'boolean' ? node.isExpanded : false;
       node.selected = typeof node.selected === 'boolean' ? node.selected : false;
@@ -166,6 +83,78 @@ window.MyProjectDataStorage = {
         this.normalizeNodes(node.children);
       }
     });
+  },
+
+  /**
+   * Asynchronously loads data from the JSON file, with logic to restore from a backup.
+   * Sets the active data and backup paths for subsequent saves.
+   * @returns {Promise<{nodes: Array<Object>, manuscript: Array<Object>}>} A promise that resolves with the loaded data.
+   */
+  async loadData() {
+    const paths = await window.electronAPI.getDataPaths();
+    this._activeDataPath = paths.dataPath;
+    this._backupDataPath = paths.backupPath;
+
+    let appData = { nodes: [], manuscript: [], shelves: [] }; // Default empty state
+
+    try {
+      if (await fs.exists(this._activeDataPath)) {
+        const data = await fs.readFile(this._activeDataPath, 'utf8');
+        const parsedData = JSON.parse(data);
+        
+        // Handle both old array-only format and new object format
+        appData.nodes = Array.isArray(parsedData) ? parsedData : (parsedData.nodes || []);
+        // Ensure manuscript is an array of IDs, not full objects
+        const manuscriptIds = (parsedData.manuscript || []).map(item => (typeof item === 'object' && item.id) ? item.id : item);
+        appData.manuscript = manuscriptIds;
+        appData.shelves = parsedData.shelves || [];
+
+        // --- One-time Migration for Shelf Names ---
+        if (appData.nodes.length > 0 && appData.shelves.length === 0) {
+            console.log("[Migration] No shelf names found. Creating defaults.");
+            const maxShelf = appData.nodes.reduce((max, node) => Math.max(max, node.shelf || 0), -1);
+            if (maxShelf >= 0) {
+                for (let i = 0; i <= maxShelf; i++) {
+                    appData.shelves.push({ index: i, name: `Shelf ${i + 1}` });
+                }
+            }
+        }
+
+        this.normalizeNodes(appData.nodes);
+        console.log(`Data loaded successfully from ${this._activeDataPath}.`);
+      } else {
+        console.log("Main data file not found. Checking for backup.");
+        appData = await this._loadFromBackup();
+      }
+    } catch (err) {
+      console.error(`!!! CRITICAL: Error loading or parsing ${this._activeDataPath}:`, err);
+      alert(`Error loading data: ${err.message}. Trying to load from backup.`);
+      appData = await this._loadFromBackup();
+    }
+    return appData;
+  },
+
+  /**
+   * Asynchronously attempts to load data from the backup file. If successful,
+   * it restores the main data file from the backup.
+   * @private
+   * @returns {Promise<{nodes: Array<Object>, manuscript: Array<Object>}>} A promise that resolves with the backup data or an empty state.
+   */
+  async _loadFromBackup() {
+    if (await fs.exists(this._backupDataPath)) {
+      try {
+        console.log(`Attempting to restore from backup: ${this._backupDataPath}`);
+        const backupData = await fs.readFile(this._backupDataPath, 'utf8');
+        const parsedData = JSON.parse(backupData); // This will be returned
+        await fs.copyFile(this._backupDataPath, this._activeDataPath); // Restore main file
+        console.log("Successfully restored data from backup.");
+        return parsedData;
+      } catch (backupErr) {
+        console.error(`!!! CRITICAL: Failed to load or restore from backup file:`, backupErr);
+        alert("Failed to load from backup. Starting with a blank state. Your data might still be in 'morada-data.json.bak'.");
+      }
+    }
+    return { nodes: [], manuscript: [], shelves: [] }; // Return default empty state if no backup exists or fails
   }
 };
 console.log("dataStorage.js JSDoc comments added.");

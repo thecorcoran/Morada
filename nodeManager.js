@@ -3,8 +3,9 @@
 // adding tags, and handling title editing.
 // Node dimensions (NODE_WIDTH, NODE_HEIGHT) are sourced from AppConstants.
 console.log("nodeManager.js loaded");
+import { NodeConstants, MiscConstants, KeyConstants } from './constants.js';
 
-window.MyProjectNodeManager = {
+export const nodeManager = {
   // --- Injected Dependencies (set via init) ---
   /** @type {number} Current canvas zoom scale. */
   scale: 1,
@@ -20,6 +21,10 @@ window.MyProjectNodeManager = {
   drawFunction: null, 
   /** @type {Function|null} Function to save the current state of all nodes. */
   saveNodesFunction: null, 
+  /** @type {Array<Object>|null} A reference to the main view stack array. */
+  viewStack: null,
+  /** @type {Object|null} A reference to the canvasRenderer module. */
+  canvasRenderer: null,
 
   /**
    * Initializes the NodeManager with necessary references and functions from the main application.
@@ -31,14 +36,16 @@ window.MyProjectNodeManager = {
    * @param {Function} drawFunc - Function to call to redraw the canvas.
    * @param {Function} saveNodesFunc - Function to call to save all nodes.
    */
-  init: function(canvasEl, initialScale, initialOffsetX, initialOffsetY, getCurrentNodesFunc, drawFunc, saveNodesFunc) {
-    this.canvas = canvasEl;
-    this.scale = initialScale;
-    this.offsetX = initialOffsetX;
-    this.offsetY = initialOffsetY;
-    this.getCurrentNodes = getCurrentNodesFunc;
-    this.drawFunction = drawFunc;
-    this.saveNodesFunction = saveNodesFunc;
+  init: function(config) {
+    this.canvas = config.canvasEl;
+    this.scale = config.initialScale;
+    this.offsetX = config.initialOffsetX;
+    this.offsetY = config.initialOffsetY;
+    this.getCurrentNodes = config.getCurrentNodesFunc;
+    this.drawFunction = config.drawFunc;
+    this.saveNodesFunction = config.saveNodesFunc;
+    this.viewStack = config.viewStackRef;
+    this.canvasRenderer = config.canvasRendererRef;
   },
   
   /**
@@ -60,23 +67,41 @@ window.MyProjectNodeManager = {
    * @returns {Object|null} The node object if found, otherwise null.
    * Note: This version of getNodeAtPosition uses the module's internal canvas, scale, offsetX, offsetY, and getCurrentNodes.
    * The prompt signature was (mouseX, mouseY, canvas, scale, offsetX, offsetY, currentNodes) - this implies passing them,
-   * but current implementation uses 'this.canvas' etc. Sticking to current internal usage.
    */
   getNodeAtPosition: function(mouseX, mouseY) {
     if (!this.canvas || !this.getCurrentNodes) {
         console.error("NodeManager not fully initialized for getNodeAtPosition (canvas or getCurrentNodes missing)");
         return null;
     }
-    // Use MyProjectCanvasRenderer.getCanvasWorldPosition if available and appropriate
-    const worldX = (mouseX - this.canvas.clientWidth / 2) / this.scale + this.canvas.width / 2 + this.offsetX;
-    const worldY = (mouseY - this.canvas.clientHeight / 2) / this.scale + this.canvas.height / 2 + this.offsetY;
+    // Correctly convert screen coordinates (from event.offsetX/Y) to world coordinates
+    const worldX = (mouseX - this.canvas.width / 2) / this.scale + this.offsetX;
+    const worldY = (mouseY - this.canvas.height / 2) / this.scale + this.offsetY;
     
     const currentNodes = this.getCurrentNodes();
-    for (let i = currentNodes.length - 1; i >= 0; i--) {
-      const node = currentNodes[i];
-      if (worldX >= node.x && worldX <= node.x + node.width &&
-          worldY >= node.y && worldY <= node.y + node.height) {
-        return node;
+
+    if (this.viewStack && this.viewStack.length === 0) {
+      // Bookshelf view logic: check against both books and loose-leaf documents
+      // Use the multi-shelf layout to get the correct, rendered positions of all items.
+      const layoutNodes = this.canvasRenderer.calculateMultiShelfLayout(currentNodes);
+
+      // Iterate backwards so we hit the top-most items first.
+      for (let i = layoutNodes.length - 1; i >= 0; i--) {
+        const layoutNode = layoutNodes[i];
+        if (worldX >= layoutNode.x && worldX <= layoutNode.x + layoutNode.width &&
+            worldY >= layoutNode.y && worldY <= layoutNode.y + layoutNode.height) {
+          // The layoutNode has the original node's data, so we can return it directly.
+          // However, it's safer to return the original object from the source array.
+          return currentNodes.find(n => n.id === layoutNode.id);
+        }
+      }
+    } else {
+      // Standard view logic: check against original node positions
+      for (let i = currentNodes.length - 1; i >= 0; i--) {
+        const node = currentNodes[i];
+        if (worldX >= node.x && worldX <= node.x + node.width &&
+            worldY >= node.y && worldY <= node.y + node.height) {
+          return node;
+        }
       }
     }
     return null;
@@ -85,12 +110,10 @@ window.MyProjectNodeManager = {
   /**
    * Creates an inline editor for a node's title.
    * @param {Object} node - The node object whose title is to be edited.
-   * @param {Array<Object>} rootNodes - The root nodes array, passed to saveNodesFunction.
    * Note: The prompt signature was (node, scale, offsetX, offsetY, canvas, onSaveCallback).
    * This implementation uses the module's internal scale, offsetX, canvas, and saveNodesFunction/drawFunction.
-   * It's being kept consistent with current module structure. `rootNodes` is for the save function.
    */
-  createTitleEditor: function(node, rootNodes) { 
+  createTitleEditor: function(node) { 
     if (!this.drawFunction || !this.saveNodesFunction || !this.canvas) {
         console.error("NodeManager not fully initialized for createTitleEditor");
         return;
@@ -103,16 +126,14 @@ window.MyProjectNodeManager = {
     editor.className = 'node-editor'; // Ensure CSS class for styling
     editor.value = node.title;
 
-    const rect = this.canvas.getBoundingClientRect();
-    const canvasX = rect.left + window.scrollX;
-    const canvasY = rect.top + window.scrollY;
-
-    const screenX = (node.x - this.offsetX) * this.scale + this.canvas.width / 2 + canvasX;
-    const screenY = (node.y - this.offsetY) * this.scale + this.canvas.height / 2 + canvasY;
+    // Correctly calculate screen position for the editor
+    const screenX = (node.x - this.offsetX) * this.scale + this.canvas.width / 2;
+    const screenY = (node.y - this.offsetY) * this.scale + this.canvas.height / 2;
     
     editor.style.position = 'absolute'; // Crucial for correct positioning
-    editor.style.left = `${screenX}px`;
-    editor.style.top = `${screenY}px`;
+    const canvasRect = this.canvas.getBoundingClientRect();
+    editor.style.left = `${canvasRect.left + screenX}px`;
+    editor.style.top = `${canvasRect.top + screenY}px`;
     editor.style.width = `${node.width * this.scale}px`;
     editor.style.fontSize = `${16 * this.scale}px`; // Consider AppConstants for font details
     editor.style.zIndex = '1000'; // Ensure editor is on top
@@ -121,19 +142,19 @@ window.MyProjectNodeManager = {
     editor.focus();
     editor.select();
 
-    const saveAndRemove = () => {
+    const saveAndRemove = async () => {
       node.title = editor.value;
       node.isEditing = false;
       if (document.body.contains(editor)) { // Check if editor is still in DOM
           document.body.removeChild(editor);
       }
-      this.saveNodesFunction(rootNodes); 
+      await this.saveNodesFunction(); // This is now an alias for saveData
       this.drawFunction(); 
     };
 
     editor.addEventListener('blur', saveAndRemove, { once: true }); // Use {once: true} to auto-remove after blur
     editor.addEventListener('keydown', (e) => {
-      if (e.key === AppConstants.KEY_ENTER || e.key === AppConstants.KEY_ESCAPE) {
+      if (e.key === KeyConstants.ENTER || e.key === KeyConstants.ESCAPE) {
         e.stopPropagation();
         // blur will trigger saveAndRemove due to {once: true}
         editor.blur(); // Trigger blur to save and remove
@@ -152,14 +173,16 @@ window.MyProjectNodeManager = {
   createNode: function(x, y, isTextType, id) {
     return {
       id: id,
-      x: x - AppConstants.NODE_WIDTH / 2, // Center node on coordinates
-      y: y - AppConstants.NODE_HEIGHT / 2,
-      width: AppConstants.NODE_WIDTH,
-      height: AppConstants.NODE_HEIGHT,
-      title: isTextType ? AppConstants.NEW_SCRIPTORIUM_TITLE : AppConstants.NEW_CHAMBER_TITLE,
+      x: x - NodeConstants.NODE_WIDTH / 2, // Center node on coordinates
+      y: y - NodeConstants.NODE_HEIGHT / 2,
+      width: NodeConstants.NODE_WIDTH,
+      height: NodeConstants.NODE_HEIGHT,
+      title: isTextType ? MiscConstants.NEW_SCRIPTORIUM_TITLE : MiscConstants.NEW_BOOK_TITLE,
       content: '',
       tags: [],
       children: [],
+      // Note: 'comments' array is initialized, but individual comment objects will not have 'status' property.
+      comments: [],
       type: isTextType ? 'text' : 'container',
       isExpanded: false,
       selected: false,
