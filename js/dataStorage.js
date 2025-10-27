@@ -1,96 +1,139 @@
 // dataStorage.js
-// This module will be responsible for data storage, including loading, saving,
+// This module is responsible for data storage, including loading, saving,
 // and normalizing node data, as well as managing application-level selections
 // like the currently selected node and the manuscript list for compilation.
 console.log("dataStorage.js loaded");
 
-const fs = require('fs');
-const path = require('path');
-
-// dataPath is defined in the original renderer.js and passed to functions.
-// For a fully self-contained module, this should be configured, possibly during an init phase.
-// However, adhering to current refactoring step, assuming dataPath is accessible or set.
-// const defaultDataPath = path.join(__dirname, '..', 'morada-data.json'); // Example if it were self-contained
-
 window.MyProjectDataStorage = {
   /** @type {string} Stores the active data path after it's set by loadNodes. */
-  _activeDataPath: '', 
-  
-  _rootNodes: [], 
+  _activeDataPath: '',
+  /** @type {string} Stores the active backup data path. */
+  _backupDataPath: '',
+
+  _rootNodes: [],
   _internalSelectedNode: null,
   _internalManuscriptList: [],
 
   /**
+   * Initializes the data storage module by fetching the data paths from the main process.
+   */
+  async init() {
+    const paths = await window.fs.getDataPaths();
+    this._activeDataPath = paths.dataPath;
+    this._backupDataPath = paths.backupPath;
+  },
+
+  /**
    * Sets the initial root nodes for the application.
-   * This is typically called after loading data or when initializing with default/empty data.
    * @param {Array<Object>} nodes - The array of root node objects.
    */
   setInitialNodes: function(nodes) {
     this._rootNodes = nodes;
-    // Normalization should ideally happen before or during setting initial nodes.
-    // If nodes are loaded via loadNodes(), normalization is already handled.
   },
-  
+
   /**
    * Retrieves the current root nodes.
    * @returns {Array<Object>} The array of root node objects.
    */
   getRootNodes: function() {
-      return this._rootNodes;
+    return this._rootNodes;
   },
 
   /**
-   * Saves the provided tree of nodes to the JSON file stored in `this._activeDataPath`.
+   * Saves the provided tree of nodes to the JSON file.
+   * It first creates a backup of the existing data file.
    * @param {Array<Object>} rootNodesToSave - The array of root node objects to save.
    */
-  saveNodes: function(rootNodesToSave) {
+  async saveNodes(rootNodesToSave) {
     if (!this._activeDataPath) {
-      console.error("Error saving nodes: Data path not set. Call loadNodes first with a valid path.");
+      console.error("Error saving nodes: Data path not set. Call init first.");
       return;
     }
     try {
+      // Backup the current data file before saving
+      if (await window.fs.exists(this._activeDataPath)) {
+        await window.fs.copyFile(this._activeDataPath, this._backupDataPath);
+      }
       const data = JSON.stringify(rootNodesToSave, null, 2);
-      fs.writeFileSync(this._activeDataPath, data);
+      await window.fs.writeFile(this._activeDataPath, data);
     } catch (err) {
       console.error(`Error saving nodes to ${this._activeDataPath}: ${err.message}`, err);
     }
   },
 
   /**
-   * Loads nodes from the JSON file specified by `passedDataPath`.
-   * Sets this path as the active path for subsequent saves.
-   * If the file doesn't exist or is corrupted, it returns an empty array and logs an error.
-   * Also resets the internal selected node and manuscript list.
-   * @param {string} passedDataPath - The path to the JSON file to load.
+   * Loads nodes from the JSON file.
+   * If the file doesn't exist, it returns an empty array.
+   * If the file is corrupted, it attempts to load from a backup.
    * @returns {Array<Object>} The loaded (and normalized) array of root node objects, or an empty array on failure.
    */
-  loadNodes: function(passedDataPath) {
-    this._activeDataPath = passedDataPath; // Set the active data path
-    this._internalSelectedNode = null; 
-    this._internalManuscriptList = [];   
+  async loadNodes() {
+    if (!this._activeDataPath) {
+      await this.init(); // Ensure paths are loaded
+    }
+
+    this._internalSelectedNode = null;
+    this._internalManuscriptList = [];
+
+    const loadFromFile = async (filePath) => {
+      try {
+        if (await window.fs.exists(filePath)) {
+          const data = await window.fs.readFile(filePath, 'utf8');
+          this._rootNodes = JSON.parse(data);
+          this.normalizeNodes(this._rootNodes);
+          console.log(`Nodes loaded successfully from ${filePath}`);
+          return this._rootNodes;
+        }
+      } catch (err) {
+        console.error(`Error loading or parsing file from ${filePath}: ${err.message}`, err);
+      }
+      return null;
+    };
+
+    let loadedData = await loadFromFile(this._activeDataPath);
+
+    if (loadedData === null && await window.fs.exists(this._backupDataPath)) {
+      console.log("Attempting to load from backup file.");
+      loadedData = await loadFromFile(this._backupDataPath);
+      if (loadedData !== null) {
+        // If backup is successful, restore it to the main file
+        await this.saveNodes(loadedData);
+      }
+    }
+
+    if (loadedData === null) {
+      console.log("Starting with an empty dataset.");
+      this._rootNodes = [];
+      return this._rootNodes;
+    }
+
+    return loadedData;
+  },
+
+  /**
+   * Restores the main data file from the backup file.
+   * @returns {boolean} True if restoration was successful, false otherwise.
+   */
+  async restoreFromBackup() {
+    if (!this._backupDataPath) {
+      console.error("Backup path not set. Call init first.");
+      return false;
+    }
     try {
-      if (fs.existsSync(this._activeDataPath)) {
-        const data = fs.readFileSync(this._activeDataPath, 'utf8');
-        this._rootNodes = JSON.parse(data);
-        this.normalizeNodes(this._rootNodes); 
-        console.log(`Nodes loaded successfully from ${this._activeDataPath}`);
-        return this._rootNodes; 
+      if (await window.fs.exists(this._backupDataPath)) {
+        await window.fs.copyFile(this._backupDataPath, this._activeDataPath);
+        console.log(`Successfully restored data from ${this._backupDataPath} to ${this._activeDataPath}`);
+        return true;
       } else {
-        console.log(`Data file not found at ${this._activeDataPath}. Starting with an empty dataset.`);
-        this._rootNodes = [];
-        return this._rootNodes; 
+        console.warn("No backup file found to restore from.");
+        return false;
       }
     } catch (err) {
-      if (err instanceof SyntaxError) { 
-        console.error(`Error parsing JSON from ${this._activeDataPath}: ${err.message}. File might be corrupted. Starting with an empty dataset.`, err);
-      } else {
-        console.error(`Error loading nodes from ${this._activeDataPath}: ${err.message}. Starting with an empty dataset.`, err);
-      }
-      this._rootNodes = [];
-      return this._rootNodes; 
+      console.error(`Error restoring from backup: ${err.message}`, err);
+      return false;
     }
   },
-  
+
   /**
    * Sets the currently selected node in the application.
    * @param {Object|null} node - The node object to set as selected, or null to clear selection.
@@ -152,20 +195,20 @@ window.MyProjectDataStorage = {
       node.y = typeof node.y === 'number' ? node.y : 0;
       node.width = node.width || (window.AppConstants ? AppConstants.NODE_WIDTH : 250);
       node.height = node.height || (window.AppConstants ? AppConstants.NODE_HEIGHT : 150);
-      
+
       if (!Array.isArray(node.children)) node.children = [];
-      if (typeof node.type !== 'string') node.type = 'container'; 
+      if (typeof node.type !== 'string') node.type = 'container';
       if (typeof node.title !== 'string') node.title = 'Untitled';
       if (typeof node.content !== 'string') node.content = '';
       if (!Array.isArray(node.tags)) node.tags = [];
-      
+
       node.isExpanded = typeof node.isExpanded === 'boolean' ? node.isExpanded : false;
       node.selected = typeof node.selected === 'boolean' ? node.selected : false;
-      
-      if (node.children.length > 0) { 
+
+      if (node.children.length > 0) {
         this.normalizeNodes(node.children);
       }
     });
   }
 };
-console.log("dataStorage.js JSDoc comments added.");
+console.log("dataStorage.js has been refactored to use secure IPC for file access and includes a backup system.");
