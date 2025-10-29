@@ -16,7 +16,17 @@
         <div id="outliner-list"></div>
       </div>
       <div class="content-area">
-        <div class="breadcrumb-bar" id="breadcrumb-bar"></div>
+        <div class="breadcrumb-bar" id="breadcrumb-bar">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button id="breadcrumb-back-btn" title="Back">⟵ Back</button>
+            <button id="open-navigator-btn" title="Open Navigator">Navigator</button>
+            <button id="open-compendium-btn" title="Open Compendium">Compendium</button>
+            <button id="open-scriptorium-btn" title="Open Scriptorium for selected node">Scriptorium</button>
+            <button id="new-project-btn" title="Create a new Project on the main floor">New Project</button>
+            <button id="auto-fit-toggle" title="Toggle auto-fit of nodes">Auto-Fit: On</button>
+          </div>
+          <div id="breadcrumb-path" style="margin-left:12px; font-weight:600;">The Grounds</div>
+        </div>
         <h2 id="view-title"></h2>
         <button id="add-shelf-btn" class="hidden" title="Add a new shelf with a book">+</button>
         <canvas id="nest-canvas"></canvas>
@@ -25,6 +35,11 @@
     
     <div id="editor-mode" class="hidden">
         <div id="editor-main-content">
+      <div id="editor-toolbar" class="editor-toolbar">
+        <button id="editor-comment-btn" type="button" title="Add Comment (Ctrl+M)">Comment</button>
+        <button id="editor-certify-btn" type="button" title="Certify Word (Ctrl+Shift+C)">Certify</button>
+        <button id="editor-saveclose-btn" type="button" title="Save and Close (Esc)">Save & Close</button>
+      </div>
             <textarea id="main-editor"></textarea>
         </div>
         <div id="editor-inspector-sidebar" class="hidden">
@@ -98,6 +113,7 @@
           <label for="include-certified-words-checkbox"><input type="checkbox" id="include-certified-words-checkbox"> Include Certified Words as Footnotes</label>
         </div>
         <button id="generate-btn">Generate .txt File</button>
+        <button id="export-tags-btn" title="Export all tags as CSV">Export Tags</button>
       </div>
     </div>
 
@@ -140,8 +156,16 @@
       </ul>
     </div>
 
-    <!-- Load the main renderer script as a module. -->
-    <!-- It will handle importing all the other necessary modules. -->
-    <script type="module" src="renderer.js"></script>
+    <!-- Load core non-module scripts that expose globals the renderer expects. -->
+    <script src="js/constants.js"></script>
+    <script src="js/dataStorage.js"></script>
+    <script src="js/stateManager.js"></script>
+    <script src="js/canvasRenderer.js"></script>
+    <script src="js/nodeManager.js"></script>
+    <script src="js/editorManager.js"></script>
+    <script src="js/uiManager.js"></script>
+
+    <!-- Load the main renderer script as a module. It relies on the globals above. -->
+    <script type="module" src="js/renderer.js"></script>
   </body>
 </html>

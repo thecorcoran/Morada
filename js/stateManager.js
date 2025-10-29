@@ -53,7 +53,14 @@ window.MyProjectStateManager = {
         this._state.currentNodes = nodes;
     },
     setSelectedNode(node) {
+        // Clear previous selection flag if any
+        if (this._state.selectedNode && typeof this._state.selectedNode === 'object') {
+            this._state.selectedNode.selected = false;
+        }
         this._state.selectedNode = node;
+        if (node && typeof node === 'object') {
+            node.selected = true;
+        }
     },
     setScale(scale) {
         this._state.scale = scale;

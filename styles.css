@@ -631,6 +631,211 @@ li.collapsed > ul {
   background-color: var(--color-accent-primary-hover);
 }
 
+/* Tags modal (used by Export Tags / Tags Overview) */
+#tags-modal .modal-content {
+  max-width: 900px;
+  width: 85%;
+  max-height: 80vh;
+  overflow: auto;
+}
+
+#tags-modal table td .tag-pill {
+  margin-right: 6px;
+}
+
+#tags-modal .modal-body {
+  padding: 8px 0;
+}
+
+#tags-modal .modal-footer button {
+  min-width: 110px;
+}
+
+/* Navigator modal styling */
+#navigator-modal .navigator-content {
+  max-width: 920px;
+  width: 86%;
+}
+
+.navigator-search input {
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius);
+  padding: 6px 8px;
+  background: var(--color-bg-light-primary);
+}
+
+.navigator-tree {
+  background: var(--color-bg-light-primary);
+  border: 1px solid var(--color-border-light);
+  padding: 8px;
+  border-radius: calc(var(--border-radius) * 1.5);
+}
+
+.navigator-ul {
+  list-style: none;
+  margin: 0;
+  padding-left: 6px;
+}
+
+.navigator-li {
+  margin-bottom: 6px;
+}
+
+.navigator-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px;
+  border-radius: 4px;
+}
+
+.navigator-row:hover {
+  background: var(--color-bg-dark-tertiary);
+}
+
+.navigator-toggle {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  margin-right: 8px;
+}
+
+.navigator-title {
+  font-weight: 600;
+  color: var(--color-text-dark);
+}
+
+.navigator-count {
+  color: var(--color-text-muted);
+  margin-left: 8px;
+}
+
+.navigator-open-btn {
+  background: var(--color-accent-primary);
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+}
+
+.navigator-open-btn:hover {
+  background: var(--color-accent-primary-hover);
+}
+
+.navigator-children.hidden { display: none; }
+
+/* Node Inspector Overlay (shows scriptoriums inside a container) */
+.node-inspector-overlay {
+  border: 2px solid var(--color-accent-primary);
+  background: rgba(255,255,255,0.02);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+  border-radius: 6px;
+  overflow: visible;
+}
+.node-inspector-headerbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.02));
+  border-bottom: 1px solid var(--color-border-light);
+}
+.node-inspector-title {
+  font-weight: 700;
+  color: var(--color-text-dark);
+  font-size: 14px;
+}
+.node-inspector-stats {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.node-inspector-search {
+  padding: 4px 8px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 4px;
+  background: var(--color-bg-light-primary);
+}
+.node-inspector-children { position: relative; }
+.node-inspector-child {
+  background: rgba(255,255,255,0.95);
+  border: 1px dashed var(--color-border-dark);
+  border-radius: 6px;
+  padding: 6px 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  font-size: 12px;
+  color: var(--color-text-dark);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+}
+.node-inspector-child .child-title { font-weight: 600; margin-bottom: 4px; }
+.node-inspector-child .child-stats { font-size: 11px; color: var(--color-text-muted); }
+
+/* Full-screen node inspector modal (node fills screen; info inside) */
+.node-inspector-modal .node-inspector-panel {
+  width: 90vw;
+  height: 86vh;
+  background: linear-gradient(180deg, var(--color-bg-light-primary), var(--color-bg-dark-primary));
+  border: 2px solid var(--color-accent-primary);
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.node-inspector-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.node-inspector-panel-title {
+  font-size: 20px;
+  color: var(--color-text-dark);
+}
+.node-inspector-close {
+  background: var(--color-accent-primary);
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.node-inspector-meta { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.node-inspector-stats { display: flex; gap: 12px; align-items: center; color: var(--color-text-muted); }
+.node-inspector-searchwrap { min-width: 260px; }
+.node-inspector-search { width: 100%; padding: 6px 8px; border: 1px solid var(--color-border-light); border-radius: 6px; }
+.node-inspector-list { overflow: auto; padding: 6px; display: flex; flex-direction: column; gap: 8px; }
+.node-inspector-list-row { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-radius: 6px; background: rgba(255,255,255,0.95); border: 1px solid var(--color-border-light); }
+.node-inspector-list-row .row-title { font-weight: 700; color: var(--color-text-dark); }
+.node-inspector-list-row .row-sub { font-size: 12px; color: var(--color-text-muted); }
+.row-open-btn { background: var(--color-accent-primary); color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+.row-open-btn:hover { background: var(--color-accent-primary-hover); }
+
+/* Visible focus outline for keyboard users (quick win) */
+button:focus, input:focus, textarea:focus, select:focus, [tabindex]:focus {
+  outline: 3px solid rgba(69,133,136,0.35);
+  outline-offset: 2px;
+}
+
+/* Use focus-visible where supported to avoid showing for mouse clicks */
+button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Make sure focusable elements have clear visual state */
+.node-inspector-close:focus, .row-open-btn:focus, .navigator-open-btn:focus {
+  box-shadow: 0 0 0 3px rgba(69,133,136,0.18);
+}
+
+
 /* ==========================================================================
    6. MODALS (Generic)
    ========================================================================== */

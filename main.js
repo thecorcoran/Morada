@@ -4,9 +4,11 @@ const fs = require('node:fs/promises');
 
 const createWindow = () => {
   const mainWindow = new BrowserWindow({
-    fullscreen: true,
-    width: 800,
-    height: 600,
+    fullscreen: false,
+    fullscreenable: false,
+    width: 1200,
+    height: 800,
+    center: true,
     // NEW: Add the webPreferences block here
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -14,6 +16,9 @@ const createWindow = () => {
       contextIsolation: true,
     }
   });
+
+  // Helpful logging to diagnose startup issues and renderer errors.
+  console.log('[main] createWindow: created BrowserWindow');
 
   // Set a Content Security Policy (CSP) for the application.
   // This is the recommended, most secure way to apply a CSP in Electron.
@@ -34,6 +39,33 @@ const createWindow = () => {
   });
 
   mainWindow.loadFile('index.html');
+
+  // Open DevTools after the renderer finishes loading so renderer console
+  // errors are visible in the main process logs for debugging here.
+  mainWindow.webContents.on('did-finish-load', () => {
+    try {
+      console.log('[main] renderer did-finish-load');
+      // Open DevTools so we can see renderer console messages during startup.
+      mainWindow.webContents.openDevTools({ mode: 'detach' });
+    } catch (err) {
+      console.error('[main] failed to open DevTools:', err);
+    }
+  });
+
+  // Forward renderer console messages to the main process stdout so we can
+  // capture them when running Electron in headless test environments.
+  mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
+    console.log(`[renderer-console] [level ${level}] ${message} (line ${line} @ ${sourceId})`);
+  });
+
+  // Detect if the renderer process crashes or becomes unresponsive.
+  mainWindow.webContents.on('render-process-gone', (event, details) => {
+    console.error('[main] renderer process gone:', details);
+  });
+
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+    console.error('[main] did-fail-load', errorCode, errorDescription, validatedURL);
+  });
 };
 
 // --- Application Menu ---

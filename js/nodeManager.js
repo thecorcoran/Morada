@@ -32,16 +32,26 @@ window.MyProjectNodeManager = {
    * @returns {Object|null} The node object if found, otherwise null.
    */
   getNodeAtPosition: function(mouseX, mouseY) {
-    if (!this.canvas) {
-        console.error("NodeManager not fully initialized for getNodeAtPosition (canvas missing)");
-        return null;
-    }
-    const scale = this.stateManager.getScale();
-    const offsetX = this.stateManager.getOffsetX();
-    const offsetY = this.stateManager.getOffsetY();
+  if (!this.canvas) {
+    console.error("NodeManager not fully initialized for getNodeAtPosition (canvas missing)");
+    return null;
+  }
+  const scale = this.stateManager.getScale();
+  const offsetX = this.stateManager.getOffsetX();
+  const offsetY = this.stateManager.getOffsetY();
 
-    const worldX = (mouseX - this.canvas.clientWidth / 2) / scale + this.canvas.width / 2 + offsetX;
-    const worldY = (mouseY - this.canvas.clientHeight / 2) / scale + this.canvas.height / 2 + offsetY;
+  // mouseX/mouseY are client (CSS) coordinates. Convert to canvas pixel
+  // coordinates in case the canvas is scaled by devicePixelRatio or CSS.
+  const clientW = this.canvas.clientWidth || this.canvas.width;
+  const clientH = this.canvas.clientHeight || this.canvas.height;
+  const scaleX = this.canvas.width / clientW;
+  const scaleY = this.canvas.height / clientH;
+  const canvasMouseX = mouseX * scaleX;
+  const canvasMouseY = mouseY * scaleY;
+
+  // Convert canvas pixel coordinates into world coordinates used by the scene.
+  const worldX = (canvasMouseX - this.canvas.width / 2) / scale + this.canvas.width / 2 + offsetX;
+  const worldY = (canvasMouseY - this.canvas.height / 2) / scale + this.canvas.height / 2 + offsetY;
     
     const currentNodes = this.stateManager.getCurrentNodes();
     for (let i = currentNodes.length - 1; i >= 0; i--) {

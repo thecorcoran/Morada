@@ -18,7 +18,8 @@ window.MyProjectDataStorage = {
    * Initializes the data storage module by fetching the data paths from the main process.
    */
   async init() {
-    const paths = await window.fs.getDataPaths();
+    // Use the secure API exposed by preload (`electronAPI`).
+    const paths = await window.electronAPI.getDataPaths();
     this._activeDataPath = paths.dataPath;
     this._backupDataPath = paths.backupPath;
   },
@@ -51,11 +52,11 @@ window.MyProjectDataStorage = {
     }
     try {
       // Backup the current data file before saving
-      if (await window.fs.exists(this._activeDataPath)) {
-        await window.fs.copyFile(this._activeDataPath, this._backupDataPath);
+      if (await window.electronAPI.fs.exists(this._activeDataPath)) {
+        await window.electronAPI.fs.copyFile(this._activeDataPath, this._backupDataPath);
       }
       const data = JSON.stringify(rootNodesToSave, null, 2);
-      await window.fs.writeFile(this._activeDataPath, data);
+      await window.electronAPI.fs.writeFile(this._activeDataPath, data);
     } catch (err) {
       console.error(`Error saving nodes to ${this._activeDataPath}: ${err.message}`, err);
     }
@@ -77,9 +78,14 @@ window.MyProjectDataStorage = {
 
     const loadFromFile = async (filePath) => {
       try {
-        if (await window.fs.exists(filePath)) {
-          const data = await window.fs.readFile(filePath, 'utf8');
-          this._rootNodes = JSON.parse(data);
+        if (await window.electronAPI.fs.exists(filePath)) {
+          const data = await window.electronAPI.fs.readFile(filePath, 'utf8');
+          const parsed = JSON.parse(data);
+          // The stored file may be either an array of nodes or an object
+          // containing a `nodes`/`manuscript`/`rootNodes` property. Normalize
+          // to an array for internal storage.
+          let nodes = Array.isArray(parsed) ? parsed : (parsed.nodes || parsed.manuscript || parsed.rootNodes || []);
+          this._rootNodes = nodes;
           this.normalizeNodes(this._rootNodes);
           console.log(`Nodes loaded successfully from ${filePath}`);
           return this._rootNodes;
@@ -92,7 +98,7 @@ window.MyProjectDataStorage = {
 
     let loadedData = await loadFromFile(this._activeDataPath);
 
-    if (loadedData === null && await window.fs.exists(this._backupDataPath)) {
+    if (loadedData === null && await window.electronAPI.fs.exists(this._backupDataPath)) {
       console.log("Attempting to load from backup file.");
       loadedData = await loadFromFile(this._backupDataPath);
       if (loadedData !== null) {
@@ -120,8 +126,8 @@ window.MyProjectDataStorage = {
       return false;
     }
     try {
-      if (await window.fs.exists(this._backupDataPath)) {
-        await window.fs.copyFile(this._backupDataPath, this._activeDataPath);
+      if (await window.electronAPI.fs.exists(this._backupDataPath)) {
+        await window.electronAPI.fs.copyFile(this._backupDataPath, this._activeDataPath);
         console.log(`Successfully restored data from ${this._backupDataPath} to ${this._activeDataPath}`);
         return true;
       } else {
@@ -201,6 +207,12 @@ window.MyProjectDataStorage = {
       if (typeof node.title !== 'string') node.title = 'Untitled';
       if (typeof node.content !== 'string') node.content = '';
       if (!Array.isArray(node.tags)) node.tags = [];
+  // Per-node word goal and timer support
+  if (typeof node.wordGoal !== 'number') node.wordGoal = 0;
+  if (!node.timer || typeof node.timer !== 'object') node.timer = { duration: 0, remaining: 0, running: false };
+  // Ensure per-node comment and certified word storage exists for stability
+  if (!Array.isArray(node.comments)) node.comments = [];
+  if (!Array.isArray(node.certifiedWords)) node.certifiedWords = [];
 
       node.isExpanded = typeof node.isExpanded === 'boolean' ? node.isExpanded : false;
       node.selected = typeof node.selected === 'boolean' ? node.selected : false;
@@ -209,6 +221,91 @@ window.MyProjectDataStorage = {
         this.normalizeNodes(node.children);
       }
     });
+  }
+  ,
+  /**
+   * Adds a comment object to the specified node.
+   * @param {string} nodeId
+   * @param {{id:string, text:string, spanId?:string, createdAt?:number}} commentObj
+   */
+  addCommentToNode: function(nodeId, commentObj) {
+    const node = this._findNodeById(nodeId, this._rootNodes);
+    if (!node) return false;
+    if (!Array.isArray(node.comments)) node.comments = [];
+    node.comments.push(Object.assign({ createdAt: Date.now() }, commentObj));
+    return true;
+  },
+
+  /**
+   * Removes a comment from a node by comment id (or spanId)
+   * @param {string} nodeId
+   * @param {string} commentId
+   */
+  removeCommentFromNode: function(nodeId, commentId) {
+    const node = this._findNodeById(nodeId, this._rootNodes);
+    if (!node || !Array.isArray(node.comments)) return false;
+    node.comments = node.comments.filter(c => c.id !== commentId && c.spanId !== commentId);
+    return true;
+  },
+
+  addCertifiedWordToNode: function(nodeId, cwObj) {
+    const node = this._findNodeById(nodeId, this._rootNodes);
+    if (!node) return false;
+    if (!Array.isArray(node.certifiedWords)) node.certifiedWords = [];
+    node.certifiedWords.push(Object.assign({ createdAt: Date.now() }, cwObj));
+    return true;
+  },
+
+  removeCertifiedWordFromNode: function(nodeId, spanId) {
+    const node = this._findNodeById(nodeId, this._rootNodes);
+    if (!node || !Array.isArray(node.certifiedWords)) return false;
+    node.certifiedWords = node.certifiedWords.filter(cw => cw.spanId !== spanId);
+    return true;
+  },
+
+  /**
+   * Finds a node by id inside a nested nodes array.
+   * @param {string} id
+   * @param {Array<object>} nodes
+   * @returns {object|null}
+   */
+  _findNodeById: function(id, nodes) {
+    for (const n of nodes) {
+      if (n.id === id) return n;
+      if (n.children && n.children.length > 0) {
+        const found = this._findNodeById(id, n.children);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+  ,
+
+  /**
+   * Set the word goal for a node and optionally persist.
+   * @param {string} nodeId
+   * @param {number} goal
+   */
+  setNodeWordGoal: function(nodeId, goal) {
+    const node = this._findNodeById(nodeId, this._rootNodes);
+    if (!node) return false;
+    node.wordGoal = Number(goal) || 0;
+    return true;
+  },
+
+  /**
+   * Update a node's timer state (duration, remaining, running)
+   * @param {string} nodeId
+   * @param {{duration?:number,remaining?:number,running?:boolean}} state
+   */
+  updateNodeTimer: function(nodeId, state) {
+    const node = this._findNodeById(nodeId, this._rootNodes);
+    if (!node) return false;
+    node.timer = node.timer || { duration: 0, remaining: 0, running: false };
+    if (typeof state.duration === 'number') node.timer.duration = state.duration;
+    if (typeof state.remaining === 'number') node.timer.remaining = state.remaining;
+    if (typeof state.running === 'boolean') node.timer.running = state.running;
+    return true;
   }
 };
 console.log("dataStorage.js has been refactored to use secure IPC for file access and includes a backup system.");

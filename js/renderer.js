@@ -2,8 +2,11 @@
 // be executed in the renderer process for that window.
 
 // --- Imports and Global State ---
-const canvas = document.getElementById('main-canvas');
+// The canonical canvas id in the HTML/CSS is `nest-canvas`.
+const canvas = document.getElementById('nest-canvas');
 const ctx = canvas.getContext('2d');
+// Snap/grid size (pixels in world coords)
+const GRID_SIZE = 20;
 
 // --- State (now managed by StateManager) ---
 let isDragging = false;
@@ -12,11 +15,13 @@ let lastMousePosition = { x: 0, y: 0 };
 
 // --- Initialization ---
 async function init() {
-    // Initialize DataStorage first
-    await MyProjectDataStorage.init();
+    console.log('[renderer] init: starting');
+    try {
+        // Initialize DataStorage first
+        await MyProjectDataStorage.init();
 
-    // Load Data into StateManager
-    const loadedNodes = await MyProjectDataStorage.loadNodes();
+        // Load Data into StateManager
+        const loadedNodes = await MyProjectDataStorage.loadNodes();
     MyProjectStateManager.setRootNodes(loadedNodes);
 
     // Initialize Managers with a reference to the state manager
@@ -28,8 +33,12 @@ async function init() {
         navigateToNodeFunction: navigateToNode,
     });
 
+    // Initialize the EditorManager after the UIManager so it can receive
+    // the uiManager and dataStorage references it needs to configure TinyMCE.
     MyProjectEditorManager.init({
         stateManager: MyProjectStateManager,
+        uiManager: MyProjectUIManager,
+        dataStorage: MyProjectDataStorage,
         drawFunction: draw,
     });
 
@@ -46,8 +55,37 @@ async function init() {
     resizeCanvas();
     draw();
 
+    // Fit nodes into view so they're visible and clustered at start
+    try { if (window.MyProjectUIManager && typeof window.MyProjectUIManager.fitNodesToView === 'function') window.MyProjectUIManager.fitNodesToView(); } catch (e) { console.warn('fitNodesToView initial call failed', e); }
+
     // Event Listeners
     setupEventListeners();
+    console.log('[renderer] init: completed');
+    // Add a small debug overlay so users can visually confirm the renderer
+    // finished initialization. Click to dismiss.
+    try {
+        const overlay = document.createElement('div');
+        overlay.id = 'renderer-ready-overlay';
+        overlay.textContent = 'Renderer initialized — click to dismiss';
+        Object.assign(overlay.style, {
+            position: 'fixed',
+            right: '12px',
+            bottom: '12px',
+            background: 'rgba(0,0,0,0.75)',
+            color: '#fff',
+            padding: '8px 12px',
+            borderRadius: '6px',
+            zIndex: 99999,
+            cursor: 'pointer'
+        });
+        overlay.addEventListener('click', () => overlay.remove());
+        document.body.appendChild(overlay);
+    } catch (err) {
+        console.error('[renderer] overlay creation failed:', err);
+    }
+    } catch (err) {
+        console.error('[renderer] init failed:', err);
+    }
 }
 
 function setupEventListeners() {
@@ -57,6 +95,12 @@ function setupEventListeners() {
     canvas.addEventListener('wheel', onWheel);
     window.addEventListener('resize', resizeCanvas);
     document.addEventListener('keydown', onKeyDown);
+    // Hide custom context menu on any document click
+    document.addEventListener('click', (ev) => {
+        try { const cm = document.getElementById('canvas-context-menu'); if (cm) cm.classList.add('hidden'); } catch (e) {}
+    });
+    // Prevent the browser's default context menu on the canvas
+    canvas.addEventListener('contextmenu', (ev) => { ev.preventDefault(); });
 }
 
 // --- Event Handlers ---
@@ -67,8 +111,32 @@ function onMouseDown(e) {
 
     const clickedNode = MyProjectNodeManager.getNodeAtPosition(x, y);
 
-    if (e.button === 2 || e.ctrlKey) { // Right-click or Ctrl-click
-        // Context menu logic will be handled in a future step
+    console.log('[renderer] onMouseDown at', x, y, 'clickedNode=', clickedNode && clickedNode.id);
+
+    if (e.button === 2 || e.ctrlKey) { // Right-click or Ctrl-click -> show custom context menu
+        try {
+            const menu = document.getElementById('canvas-context-menu');
+            if (menu) {
+                // Position the menu at mouse location
+                menu.style.left = (e.clientX) + 'px';
+                menu.style.top = (e.clientY) + 'px';
+                menu.classList.remove('hidden');
+                // Wire the rename option to open the title editor for the clicked node
+                const renameOpt = document.getElementById('rename-node-option');
+                if (renameOpt) {
+                    renameOpt.onclick = (evt) => {
+                        evt.stopPropagation();
+                        try {
+                            if (clickedNode && window.MyProjectUIManager && typeof window.MyProjectUIManager.createTitleEditor === 'function') {
+                                window.MyProjectUIManager.createTitleEditor(clickedNode);
+                            }
+                        } catch (err) { console.warn('rename handler failed', err); }
+                        menu.classList.add('hidden');
+                    };
+                }
+            }
+        } catch (err) { console.warn('show context menu failed', err); }
+        e.preventDefault();
         return;
     }
 
@@ -77,10 +145,46 @@ function onMouseDown(e) {
         if (selectedNode && selectedNode.isEditing) {
             MyProjectUIManager.createTitleEditor(selectedNode); // Changed from MyProjectNodeManager
         }
+        // If the user clicks the already-selected node (single click), deselect it.
+        if (selectedNode && selectedNode.id === clickedNode.id && e.detail === 1) {
+            MyProjectStateManager.setSelectedNode(null);
+            try { const m = document.getElementById('node-inspector-modal'); if (m) m.remove(); } catch (e) {}
+            // don't start dragging this click
+            isDragging = false;
+            draw();
+            return;
+        }
         MyProjectStateManager.setSelectedNode(clickedNode);
+        // Show node inspector overlay when selecting a container node
+        try {
+            if (clickedNode && clickedNode.type === 'container' && window.MyProjectUIManager && typeof window.MyProjectUIManager.showNodeInspector === 'function') {
+                window.MyProjectUIManager.showNodeInspector(clickedNode);
+            } else {
+                // remove any existing inspector when selecting non-container
+                const existing = document.getElementById('node-inspector-overlay'); if (existing) existing.remove();
+            }
+        } catch (err) { console.warn('showNodeInspector failed', err); }
+        // Support double-click to open text nodes or enter containers
+        if (e.detail === 2 || e.type === 'dblclick') {
+            if (clickedNode.type === 'text') {
+                console.log('[renderer] double-click/open attempt for text node', clickedNode.id);
+                MyProjectEditorManager.openEditorMode(clickedNode);
+                return;
+            } else if (clickedNode.type === 'container') {
+                console.log('[renderer] double-click/enter container', clickedNode.id);
+                MyProjectStateManager.pushToViewStack(clickedNode);
+                MyProjectStateManager.setCurrentNodes(clickedNode.children || []);
+                MyProjectUIManager.updateUIChrome();
+                draw();
+                return;
+            }
+        }
         isDragging = true;
         dragStart = { x: x - clickedNode.x, y: y - clickedNode.y };
     } else {
+        // Clicked empty space: clear selection and close any node inspector
+        MyProjectStateManager.setSelectedNode(null);
+        try { const m = document.getElementById('node-inspector-modal'); if (m) m.remove(); } catch (e) {}
         isDragging = true; // For panning
         dragStart = { x, y };
     }
@@ -89,7 +193,17 @@ function onMouseDown(e) {
 
 function onMouseUp(e) {
     isDragging = false;
-    if (MyProjectStateManager.getSelectedNode()) {
+    const sel = MyProjectStateManager.getSelectedNode();
+    if (sel) {
+        try {
+            // Snap the node to grid to keep layout tidy
+            sel.x = Math.round(sel.x / GRID_SIZE) * GRID_SIZE;
+            sel.y = Math.round(sel.y / GRID_SIZE) * GRID_SIZE;
+            // Make sure node remains visible in the viewport
+            if (window.MyProjectUIManager && typeof window.MyProjectUIManager.ensureNodeVisible === 'function') {
+                window.MyProjectUIManager.ensureNodeVisible(sel, 80);
+            }
+        } catch (err) { console.warn('post-drag snap/ensure failed', err); }
         MyProjectDataStorage.saveNodes(MyProjectStateManager.getRootNodes());
     }
 }
@@ -168,18 +282,25 @@ function onKeyDown(e) {
             break;
         case 'Delete':
             if (selectedNode) {
-                const currentNodes = MyProjectStateManager.getCurrentNodes();
-                const newCurrentNodes = MyProjectNodeManager.deleteNode(selectedNode.id, currentNodes);
-
-                if (viewStack.length > 0) {
-                    viewStack[viewStack.length - 1].children = newCurrentNodes;
-                } else {
-                    MyProjectStateManager.setRootNodes(newCurrentNodes);
-                }
-                MyProjectStateManager.setCurrentNodes(newCurrentNodes);
-                MyProjectStateManager.setSelectedNode(null);
-                MyProjectDataStorage.saveNodes(MyProjectStateManager.getRootNodes());
-                draw();
+                // route delete through UIManager to allow confirmation and undo
+                try {
+                    if (window.MyProjectUIManager && typeof window.MyProjectUIManager.confirmAndDeleteNode === 'function') {
+                        window.MyProjectUIManager.confirmAndDeleteNode(selectedNode);
+                    } else {
+                        const currentNodes = MyProjectStateManager.getCurrentNodes();
+                        const newCurrentNodes = MyProjectNodeManager.deleteNode(selectedNode.id, currentNodes);
+                        if (viewStack.length > 0) {
+                            viewStack[viewStack.length - 1].children = newCurrentNodes;
+                        } else {
+                            MyProjectStateManager.setRootNodes(newCurrentNodes);
+                        }
+                        MyProjectStateManager.setCurrentNodes(newCurrentNodes);
+                        MyProjectStateManager.setSelectedNode(null);
+                        MyProjectDataStorage.saveNodes(MyProjectStateManager.getRootNodes());
+                        draw();
+                        try { if (window.MyProjectUIManager && window.MyProjectUIManager._autoFit && typeof window.MyProjectUIManager.fitNodesToView === 'function') window.MyProjectUIManager.fitNodesToView(); } catch (err) {}
+                    }
+                } catch (err) { console.warn('Delete handling failed', err); }
             }
             break;
         case 'c':
