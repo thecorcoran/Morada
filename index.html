@@ -41,6 +41,7 @@
             <div class="masthead-btn-group tool-group">
               <button id="auto-tidy-btn" class="masthead-btn" title="Auto-Tidy Desk (Ctrl+T)">Tidy Desk</button>
               <button id="toggle-outliner-btn" class="masthead-btn" title="Toggle Outline Sidebar">Outline</button>
+              <button id="open-archive-btn" class="masthead-btn subtle-btn" title="Open Archives Vault (Ctrl+Shift+A)">Archives (<span id="archive-count-badge">0</span>)</button>
               <button id="open-compendium-btn" class="masthead-btn accent-btn" title="Open Manuscript Press">Manuscript Press</button>
               <button id="open-navigator-btn" class="masthead-btn subtle-btn" title="Open Navigator">Navigator</button>
               <button id="auto-fit-toggle" class="masthead-btn subtle-btn" title="Toggle auto-fit of nodes">Auto-Fit: On</button>
@@ -227,6 +228,42 @@
       <div id="search-results"></div>
     </div>
 
+    <!-- Archives Vault Modal -->
+    <div id="archive-modal" class="modal hidden">
+      <div class="modal-content archive-modal-content">
+        <div class="modal-header archive-modal-header">
+          <div class="archive-header-title">
+            <h2>The Archives Vault</h2>
+            <span class="archive-header-subtitle">Archived portfolios & sheets safely stored away from the desk</span>
+          </div>
+          <span class="close-button" id="close-archive-btn" title="Close Archives (Esc)">&times;</span>
+        </div>
+        <div class="archive-modal-controls">
+          <div class="archive-search-container">
+            <span class="archive-search-lens" aria-hidden="true">🔍</span>
+            <input type="text" id="archive-search-input" placeholder="Search archives by title, text, or #tags..." />
+          </div>
+          <div class="archive-tabs" id="archive-tabs">
+            <button type="button" class="archive-tab active" data-filter="all">All (<span id="archive-tab-all-count">0</span>)</button>
+            <button type="button" class="archive-tab" data-filter="container">Portfolios (<span id="archive-tab-portfolios-count">0</span>)</button>
+            <button type="button" class="archive-tab" data-filter="text">Sheets (<span id="archive-tab-sheets-count">0</span>)</button>
+          </div>
+        </div>
+        <div class="archive-modal-body modal-body">
+          <div id="archive-list" class="archive-list">
+            <!-- Dynamically populated archive cards -->
+          </div>
+        </div>
+        <div class="modal-footer archive-modal-footer">
+          <span class="archive-footer-hint">Items here are removed from the desk canvas and preserved intact.</span>
+          <div class="archive-footer-actions">
+            <button type="button" id="archive-restore-all-btn" class="archive-restore-all-btn" title="Restore all archived items back to the desk">↩ Restore All to Desk</button>
+            <button type="button" id="close-archive-footer-btn" class="archive-close-footer-btn">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div id="compendium-modal" class="hidden">
       <div class="compendium-header">
         <h2>Manuscript Press</h2>
@@ -302,6 +339,9 @@
         <li id="open-node-option">Open / Enter</li>
         <li id="rename-node-option">Rename</li>
         <li id="inspect-node-option">Inspect Contents</li>
+        <li class="context-menu-divider"></li>
+        <li id="archive-node-option">📦 Archive to Vault</li>
+        <li id="delete-node-option" class="context-menu-danger">🗑️ Delete</li>
       </ul>
     </div>
 

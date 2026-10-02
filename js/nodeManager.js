@@ -56,6 +56,7 @@ window.MyProjectNodeManager = {
     const currentNodes = this.stateManager.getCurrentNodes();
     for (let i = currentNodes.length - 1; i >= 0; i--) {
       const node = currentNodes[i];
+      if (node && node.archived) continue; // Archived nodes are removed from the desk canvas
       if (worldX >= node.x && worldX <= node.x + node.width &&
           worldY >= node.y && worldY <= node.y + node.height) {
         return node;
@@ -63,8 +64,6 @@ window.MyProjectNodeManager = {
     }
     return null;
   },
-
-  
 
   /**
    * Creates a new node object.
@@ -97,8 +96,56 @@ window.MyProjectNodeManager = {
       type: isTextType ? 'text' : 'container',
       isExpanded: false,
       selected: false,
-      isEditing: false
+      isEditing: false,
+      archived: false,
+      archivedAt: null
     };
+  },
+
+  /**
+   * Archives a node, removing it from the active desk view.
+   * @param {Object} node
+   */
+  archiveNode: function(node) {
+    if (!node) return;
+    node.archived = true;
+    node.archivedAt = new Date().toISOString();
+    node.selected = false;
+  },
+
+  /**
+   * Unarchives a node, restoring it to the active desk view.
+   * @param {Object} node
+   */
+  unarchiveNode: function(node) {
+    if (!node) return;
+    node.archived = false;
+    delete node.archivedAt;
+  },
+
+  /**
+   * Recursively gathers all archived nodes from a node tree.
+   * @param {Array<Object>} [nodes] - Array of nodes (defaults to root nodes if available).
+   * @returns {Array<{node: Object, parent: Object|null}>}
+   */
+  getAllArchivedNodes: function(nodes) {
+    const list = [];
+    const rootNodes = nodes || (this.stateManager ? this.stateManager.getRootNodes() : []);
+
+    function recurse(arr, parent) {
+      if (!Array.isArray(arr)) return;
+      arr.forEach(node => {
+        if (!node) return;
+        if (node.archived) {
+          list.push({ node: node, parent: parent });
+        } else if (Array.isArray(node.children) && node.children.length > 0) {
+          recurse(node.children, node);
+        }
+      });
+    }
+
+    recurse(rootNodes, null);
+    return list;
   },
 
   /**
@@ -120,6 +167,23 @@ window.MyProjectNodeManager = {
    */
   deleteNode: function(nodeId, nodeList) {
     return nodeList.filter(node => node.id !== nodeId);
+  },
+
+  /**
+   * Recursively deletes a node by its ID anywhere within the node tree.
+   * @param {string} nodeId - The ID of the node to delete.
+   * @param {Array<Object>} nodes - The array of nodes to remove from.
+   * @returns {Array<Object>}
+   */
+  deleteNodeRecursively: function(nodeId, nodes) {
+    if (!Array.isArray(nodes)) return [];
+    return nodes.filter(node => {
+      if (node.id === nodeId) return false;
+      if (node.children && node.children.length > 0) {
+        node.children = this.deleteNodeRecursively(nodeId, node.children);
+      }
+      return true;
+    });
   },
 
   /**

@@ -46,7 +46,7 @@ window.MyProjectEditorManager = {
                     suffix: '.min',
                     plugins: 'lists link wordcount',
                     menu: {
-                        file: { title: 'File', items: 'newdocument | preview | print | saveclose_item' },
+                        file: { title: 'File', items: 'newdocument | preview | print | archive_item | saveclose_item' },
                         edit: { title: 'Edit', items: 'undo redo | cut copy paste | selectall' },
                         view: { title: 'View', items: 'fullview_item | visualaid visualchars visualblocks' },
                         insert: { title: 'Insert', items: 'link insert_maxim_item | hr' },
@@ -247,6 +247,17 @@ window.MyProjectEditorManager = {
                             shortcut: 'F11',
                             onAction: () => this.toggleFullView()
                         });
+                        editor.ui.registry.addMenuItem('archive_item', {
+                            text: 'Archive Sheet',
+                            shortcut: 'Ctrl+Shift+A',
+                            onAction: () => {
+                                const currentNode = this.stateManager ? this.stateManager.getSelectedNode() : null;
+                                this.closeEditorMode();
+                                if (currentNode && this.uiManager && typeof this.uiManager.archiveNode === 'function') {
+                                    this.uiManager.archiveNode(currentNode);
+                                }
+                            }
+                        });
                         editor.ui.registry.addMenuItem('saveclose_item', {
                             text: 'Save & Close Sheet',
                             shortcut: 'Esc',
@@ -257,6 +268,14 @@ window.MyProjectEditorManager = {
                             if (e.key === 'F11' || (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f')) {
                                 e.preventDefault();
                                 this.toggleFullView();
+                            }
+                            if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a') {
+                                e.preventDefault();
+                                const currentNode = this.stateManager ? this.stateManager.getSelectedNode() : null;
+                                this.closeEditorMode();
+                                if (currentNode && this.uiManager && typeof this.uiManager.archiveNode === 'function') {
+                                    this.uiManager.archiveNode(currentNode);
+                                }
                             }
                             if (typeof AppConstants !== 'undefined' && e.key === AppConstants.KEY_ESCAPE) {
                                 e.stopPropagation();

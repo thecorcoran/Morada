@@ -168,7 +168,7 @@ window.MyProjectCanvasRenderer = {
 
     this.ctx.save();
     currentNodes.forEach(target => {
-      if (target === selectedNode || !Array.isArray(target.tags)) return;
+      if (target === selectedNode || target.archived || !Array.isArray(target.tags)) return;
       const sharedTags = selectedNode.tags.filter(t => target.tags.includes(t));
       if (sharedTags.length === 0) return;
 
@@ -204,7 +204,7 @@ window.MyProjectCanvasRenderer = {
    */
   _drawFilterTrellisLines: function(currentNodes, filter, scale) {
     if (!Array.isArray(currentNodes) || !filter) return;
-    const matchingNodes = currentNodes.filter(n => this.nodeMatchesFilter(n, filter));
+    const matchingNodes = currentNodes.filter(n => !n.archived && this.nodeMatchesFilter(n, filter));
     if (matchingNodes.length < 2) return;
 
     this.ctx.save();
@@ -561,11 +561,12 @@ window.MyProjectCanvasRenderer = {
       this._drawTrellisLines(selectedNodeGlobal, currentNodes, scale);
     }
 
-    // 3. Draw all visible nodes
+    // 3. Draw all visible nodes (excluding archived)
     const allLevels = [nodes, ...viewStack.map(n => n.children)];
     allLevels.forEach((levelNodes) => {
       const isCurrentLevel = levelNodes === currentNodes;
-      levelNodes.forEach(node => {
+      (levelNodes || []).forEach(node => {
+        if (node && node.archived) return; // ARCHIVE: Exclude archived portfolios and sheets
         const isNodeInViewStack = viewStack.includes(node);
         this._drawNode(node, isCurrentLevel, isNodeInViewStack && !isCurrentLevel, scale);
       });

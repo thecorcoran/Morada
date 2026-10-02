@@ -229,6 +229,7 @@ window.MyProjectDataStorage = {
 
       node.isExpanded = typeof node.isExpanded === 'boolean' ? node.isExpanded : false;
       node.selected = typeof node.selected === 'boolean' ? node.selected : false;
+      node.archived = typeof node.archived === 'boolean' ? node.archived : false;
 
       if (node.children.length > 0) {
         this.normalizeNodes(node.children);

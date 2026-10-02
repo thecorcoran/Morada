@@ -170,6 +170,32 @@ function onMouseDown(e) {
                         } catch (err) { console.warn('inspect handler failed', err); }
                     };
                 }
+
+                const archiveOpt = document.getElementById('archive-node-option');
+                if (archiveOpt) {
+                    archiveOpt.onclick = (evt) => {
+                        evt.stopPropagation();
+                        menu.classList.add('hidden');
+                        try {
+                            if (clickedNode && window.MyProjectUIManager && typeof window.MyProjectUIManager.archiveNode === 'function') {
+                                window.MyProjectUIManager.archiveNode(clickedNode);
+                            }
+                        } catch (err) { console.warn('archive handler failed', err); }
+                    };
+                }
+
+                const deleteOpt = document.getElementById('delete-node-option');
+                if (deleteOpt) {
+                    deleteOpt.onclick = (evt) => {
+                        evt.stopPropagation();
+                        menu.classList.add('hidden');
+                        try {
+                            if (clickedNode && window.MyProjectUIManager && typeof window.MyProjectUIManager.confirmAndDeleteNode === 'function') {
+                                window.MyProjectUIManager.confirmAndDeleteNode(clickedNode);
+                            }
+                        } catch (err) { console.warn('delete handler failed', err); }
+                    };
+                }
             }
         } catch (err) { console.warn('show context menu failed', err); }
         e.preventDefault();
@@ -326,14 +352,32 @@ function onWheel(e) {
 }
 
 function onKeyDown(e) {
-    if (MyProjectEditorManager.isEditorOpen() || MyProjectUIManager.isCompendiumOpen() || MyProjectUIManager.isSearchOpen()) {
+    if (MyProjectEditorManager.isEditorOpen() || MyProjectUIManager.isCompendiumOpen() || MyProjectUIManager.isSearchOpen() || (window.MyProjectUIManager && typeof window.MyProjectUIManager.isArchiveModalOpen === 'function' && window.MyProjectUIManager.isArchiveModalOpen())) {
         return; // Modals handle their own events
+    }
+
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) {
+        return;
     }
 
     const selectedNode = MyProjectStateManager.getSelectedNode();
     const viewStack = MyProjectStateManager.getViewStack();
 
     switch (e.key) {
+        case 'a':
+        case 'A':
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+                e.preventDefault();
+                if (window.MyProjectUIManager && typeof window.MyProjectUIManager.openArchiveModal === 'function') {
+                    window.MyProjectUIManager.openArchiveModal();
+                }
+            } else if (selectedNode && !e.ctrlKey && !e.metaKey && !e.altKey && !selectedNode.isEditing) {
+                e.preventDefault();
+                if (window.MyProjectUIManager && typeof window.MyProjectUIManager.archiveNode === 'function') {
+                    window.MyProjectUIManager.archiveNode(selectedNode);
+                }
+            }
+            break;
         case 'Enter':
             if (selectedNode) {
                 if (selectedNode.type === 'text') {
