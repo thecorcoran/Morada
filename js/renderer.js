@@ -4,13 +4,11 @@
 // --- Imports and Global State ---
 // The canonical canvas id in the HTML/CSS is `nest-canvas`.
 const canvas = document.getElementById('nest-canvas');
-const ctx = canvas.getContext('2d');
 // Snap/grid size (pixels in world coords)
 const GRID_SIZE = 20;
 
 // --- State (now managed by StateManager) ---
 let isDragging = false;
-let dragStart = { x: 0, y: 0 };
 let lastMousePosition = { x: 0, y: 0 };
 
 // --- Initialization ---
@@ -183,7 +181,6 @@ function onMouseDown(e) {
             }
         }
         isDragging = true;
-        dragStart = { x: x - clickedNode.x, y: y - clickedNode.y };
     } else {
         // Clicked empty space: clear selection and close any node inspector
         MyProjectStateManager.setSelectedNode(null);
@@ -213,7 +210,6 @@ function onMouseDown(e) {
         }
 
         isDragging = true; // For panning
-        dragStart = { x, y };
     }
     draw();
 }

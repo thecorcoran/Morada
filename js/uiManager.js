@@ -221,7 +221,6 @@ window.MyProjectUIManager = {
 
         if (this.timerStartBtn) this.timerStartBtn.addEventListener('click', () => this._toggleTimer());
         if (this.wordGoalInput) this.wordGoalInput.addEventListener('change', () => {
-            const g = parseInt(this.wordGoalInput.value, 10) || 0;
             if (this.wordGoalCurrent) this.wordGoalCurrent.textContent = '0';
             if (this.wordGoalCurrent) this.wordGoalCurrent.classList.remove('goal-met');
         });
