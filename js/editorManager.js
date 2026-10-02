@@ -51,11 +51,15 @@ window.MyProjectEditorManager = {
                     content_css: false,
                     content_style: `
                         body {
-                            font-family: 'Vollkorn', serif;
+                            font-family: 'Vollkorn', Georgia, serif;
                             font-size: ${typeof AppConstants !== 'undefined' ? AppConstants.EDITOR_DEFAULT_FONT_SIZE : '18px'};
-                            line-height: ${typeof AppConstants !== 'undefined' ? AppConstants.EDITOR_DEFAULT_LINE_HEIGHT : '1.8'};
-                            background-color: ${typeof AppConstants !== 'undefined' ? AppConstants.EDITOR_BACKGROUND_COLOR : '#fbf7ee'};
-                            padding: 2em;
+                            line-height: ${typeof AppConstants !== 'undefined' ? AppConstants.EDITOR_DEFAULT_LINE_HEIGHT : '1.7'};
+                            background-color: ${typeof AppConstants !== 'undefined' ? AppConstants.EDITOR_BACKGROUND_COLOR : '#fdfaf4'};
+                            color: #2c2523;
+                            max-width: 820px;
+                            margin: 0 auto;
+                            padding: 2.5rem 3.5rem;
+                            box-sizing: border-box;
                         }
                         .comment-highlight {
                             background-color: #fff275;
@@ -104,9 +108,17 @@ window.MyProjectEditorManager = {
                         this.tinymceEditor = editor;
                         this.tinyMCEAvailable = true;
                         editor.on('keydown', (e) => {
+                            if (e.key === 'F11' || (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f')) {
+                                e.preventDefault();
+                                this.toggleFullView();
+                            }
                             if (typeof AppConstants !== 'undefined' && e.key === AppConstants.KEY_ESCAPE) {
                                 e.stopPropagation();
-                                this.closeEditorMode();
+                                if (this.isFullView) {
+                                    this.toggleFullView(false);
+                                } else {
+                                    this.closeEditorMode();
+                                }
                             }
                             if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'm') {
                                 e.preventDefault();
@@ -406,11 +418,45 @@ window.MyProjectEditorManager = {
                 }
             });
         }
-        if (craftEtymologyInput) {
-            craftEtymologyInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
+        const fullviewBtn = document.getElementById('editor-fullview-btn');
+        const exitFullviewBtn = document.getElementById('exit-fullview-btn');
+        const scenicShuffleBtn = document.getElementById('scenic-shuffle-btn');
+        const scenicInsertBtn = document.getElementById('scenic-insert-btn');
+        const scenicSearchInput = document.getElementById('scenic-search-input');
+        const scenicCategoryFilter = document.getElementById('scenic-category-filter');
+
+        if (fullviewBtn) {
+            fullviewBtn.addEventListener('click', () => this.toggleFullView());
+        }
+        if (exitFullviewBtn) {
+            exitFullviewBtn.addEventListener('click', () => this.toggleFullView(false));
+        }
+        if (scenicShuffleBtn) {
+            scenicShuffleBtn.addEventListener('click', () => this.drawRandomMaxim());
+        }
+        if (scenicInsertBtn) {
+            scenicInsertBtn.addEventListener('click', () => this.insertCurrentMaximIntoSheet());
+        }
+        if (scenicSearchInput) {
+            scenicSearchInput.addEventListener('input', () => this.renderScenicMaximsList());
+        }
+        if (scenicCategoryFilter) {
+            scenicCategoryFilter.addEventListener('change', () => {
+                this.drawRandomMaxim();
+                this.renderScenicMaximsList();
+            });
+        }
+
+        if (!this._documentKeyListenersAttached && typeof document !== 'undefined') {
+            this._documentKeyListenersAttached = true;
+            document.addEventListener('keydown', (e) => {
+                if (!this.isEditorOpen()) return;
+                if (e.key === 'F11' || (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f')) {
                     e.preventDefault();
-                    if (craftEtymologyBtn) craftEtymologyBtn.click();
+                    this.toggleFullView();
+                } else if (e.key === 'Escape' && this.isFullView) {
+                    e.preventDefault();
+                    this.toggleFullView(false);
                 }
             });
         }
@@ -616,6 +662,7 @@ window.MyProjectEditorManager = {
         // Populate Craft Drawer panels
         this.renderCraftCertifiedList(node);
         this.updateStrunkMetrics(node ? (node.content || '') : '');
+        this.initScenicMaxims();
 
         // If TinyMCE is available and initialized, use it. Otherwise fall back to
         // a simple textarea so the editor can still be used.
@@ -746,6 +793,9 @@ window.MyProjectEditorManager = {
             }
         }
 
+        if (this.isFullView) {
+            this.toggleFullView(false);
+        }
         if (this.uiManager.editorMode) {
             this.uiManager.editorMode.classList.add('hidden');
         }
@@ -764,6 +814,233 @@ window.MyProjectEditorManager = {
      */
     isEditorOpen: function() {
         return this.uiManager && this.uiManager.editorMode && !this.uiManager.editorMode.classList.contains('hidden');
+    },
+
+    /**
+     * Toggles Full View focus writing mode.
+     * @param {boolean} [forceState]
+     */
+    toggleFullView: function(forceState) {
+        const editorMode = (this.uiManager && this.uiManager.editorMode)
+            ? this.uiManager.editorMode
+            : document.getElementById('editor-mode');
+        if (!editorMode) return;
+
+        const isCurrentlyFull = editorMode.classList.contains('full-view-mode');
+        const shouldBeFull = typeof forceState === 'boolean' ? forceState : !isCurrentlyFull;
+
+        this.isFullView = shouldBeFull;
+
+        if (shouldBeFull) {
+            editorMode.classList.add('full-view-mode');
+        } else {
+            editorMode.classList.remove('full-view-mode');
+        }
+
+        const fullviewBtn = document.getElementById('editor-fullview-btn');
+        if (fullviewBtn) {
+            fullviewBtn.textContent = shouldBeFull ? '✕ Exit Full View' : '⛶ Full View';
+        }
+
+        const exitBtn = document.getElementById('exit-fullview-btn');
+        if (exitBtn) {
+            if (shouldBeFull) exitBtn.classList.remove('hidden');
+            else exitBtn.classList.add('hidden');
+        }
+    },
+
+    /**
+     * Initializes and renders the Scenic Method (55 Maxims) section in the Craft Drawer.
+     */
+    initScenicMaxims: function() {
+        if (!window.MyProjectScenicMaxims) return;
+        if (!this._currentFeaturedMaxim) {
+            this.drawRandomMaxim();
+        } else {
+            this.renderFeaturedMaxim(this._currentFeaturedMaxim);
+        }
+        this.renderScenicMaximsList();
+    },
+
+    /**
+     * Draws and renders a new random maxim for inspiration.
+     */
+    drawRandomMaxim: function() {
+        if (!window.MyProjectScenicMaxims) return;
+        const categoryFilter = document.getElementById('scenic-category-filter');
+        const cat = categoryFilter ? categoryFilter.value : 'all';
+        const maxim = window.MyProjectScenicMaxims.getRandomMaxim(cat);
+        this._currentFeaturedMaxim = maxim;
+        this.renderFeaturedMaxim(maxim);
+    },
+
+    /**
+     * Displays a featured maxim on the card.
+     * @param {Object} maxim
+     */
+    renderFeaturedMaxim: function(maxim) {
+        if (!maxim) return;
+        const quoteEl = document.getElementById('scenic-featured-quote');
+        const metaEl = document.getElementById('scenic-featured-meta');
+        if (quoteEl) quoteEl.textContent = `“${maxim.text}”`;
+        if (metaEl) metaEl.textContent = `Maxim #${maxim.id} · ${maxim.categoryLabel}`;
+    },
+
+    /**
+     * Inserts the current featured maxim into the sheet editor.
+     */
+    insertCurrentMaximIntoSheet: function() {
+        const maxim = this._currentFeaturedMaxim;
+        if (!maxim) return;
+        const insertHtml = `<blockquote><em>“${maxim.text}”</em> &mdash; <small>Scenic Method Maxim #${maxim.id}</small></blockquote><p></p>`;
+
+        if (this.tinyMCEAvailable && this.tinymceEditor) {
+            try {
+                this.tinymceEditor.insertContent(insertHtml);
+                return;
+            } catch (err) {
+                console.warn('[editor] insertContent into TinyMCE failed', err);
+            }
+        }
+
+        try {
+            const ta = document.getElementById('main-editor-fallback');
+            if (ta) {
+                const start = ta.selectionStart || ta.value.length;
+                const end = ta.selectionEnd || ta.value.length;
+                const textToInsert = `\n> "${maxim.text}" — Scenic Method Maxim #${maxim.id}\n\n`;
+                ta.value = ta.value.substring(0, start) + textToInsert + ta.value.substring(end);
+            }
+        } catch (err) {
+            console.error('[editor] fallback insert maxim failed', err);
+        }
+    },
+
+    /**
+     * Loads the checked maxims for the given node from localStorage.
+     * @param {string} nodeId
+     * @returns {Set<number>}
+     */
+    _getCheckedMaximsForNode: function(nodeId) {
+        if (!nodeId) return new Set();
+        try {
+            if (typeof localStorage !== 'undefined') {
+                const raw = localStorage.getItem(`morada_scenic_checks_${nodeId}`);
+                if (raw) {
+                    const arr = JSON.parse(raw);
+                    if (Array.isArray(arr)) return new Set(arr);
+                }
+            } else if (this._scenicChecksMemory) {
+                const arr = this._scenicChecksMemory[nodeId];
+                if (Array.isArray(arr)) return new Set(arr);
+            }
+        } catch (e) {}
+        return new Set();
+    },
+
+    /**
+     * Saves checked maxims for the given node to localStorage.
+     * @param {string} nodeId
+     * @param {Set<number>} checkedSet
+     */
+    _saveCheckedMaximsForNode: function(nodeId, checkedSet) {
+        if (!nodeId) return;
+        try {
+            const arr = Array.from(checkedSet);
+            if (typeof localStorage !== 'undefined') {
+                localStorage.setItem(`morada_scenic_checks_${nodeId}`, JSON.stringify(arr));
+            } else {
+                if (!this._scenicChecksMemory) this._scenicChecksMemory = {};
+                this._scenicChecksMemory[nodeId] = arr;
+            }
+        } catch (e) {}
+    },
+
+    /**
+     * Toggles a maxim check state for the current node.
+     * @param {number} maximId
+     */
+    toggleScenicMaximCheck: function(maximId) {
+        const selNode = this.stateManager ? this.stateManager.getSelectedNode() : null;
+        if (!selNode) return;
+        const checkedSet = this._getCheckedMaximsForNode(selNode.id);
+        if (checkedSet.has(maximId)) {
+            checkedSet.delete(maximId);
+        } else {
+            checkedSet.add(maximId);
+        }
+        this._saveCheckedMaximsForNode(selNode.id, checkedSet);
+        this.renderScenicMaximsList();
+    },
+
+    /**
+     * Renders the filtered list of maxims with interactive checkboxes.
+     */
+    renderScenicMaximsList: function() {
+        const container = document.getElementById('scenic-maxims-list');
+        if (!container || !window.MyProjectScenicMaxims) return;
+        container.innerHTML = '';
+
+        const categoryFilter = document.getElementById('scenic-category-filter');
+        const searchInput = document.getElementById('scenic-search-input');
+        const selectedCat = categoryFilter ? categoryFilter.value : 'all';
+        const query = searchInput ? searchInput.value.trim() : '';
+
+        let list = (selectedCat && selectedCat !== 'all')
+            ? window.MyProjectScenicMaxims.getMaximsByCategory(selectedCat)
+            : window.MyProjectScenicMaxims.getAllMaxims();
+
+        if (query) {
+            list = window.MyProjectScenicMaxims.searchMaxims(query).filter(m => {
+                return selectedCat === 'all' || m.category === selectedCat;
+            });
+        }
+
+        const selNode = this.stateManager ? this.stateManager.getSelectedNode() : null;
+        const checkedSet = this._getCheckedMaximsForNode(selNode ? selNode.id : null);
+
+        if (list.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'craft-empty-state';
+            empty.textContent = 'No matching maxims found.';
+            container.appendChild(empty);
+            return;
+        }
+
+        list.forEach(maxim => {
+            const isChecked = checkedSet.has(maxim.id);
+            const item = document.createElement('div');
+            item.className = 'scenic-maxim-item' + (isChecked ? ' applied' : '');
+
+            const chk = document.createElement('input');
+            chk.type = 'checkbox';
+            chk.checked = isChecked;
+            chk.addEventListener('change', (e) => {
+                e.stopPropagation();
+                this.toggleScenicMaximCheck(maxim.id);
+            });
+
+            const num = document.createElement('span');
+            num.className = 'scenic-maxim-num';
+            num.textContent = `#${maxim.id}`;
+
+            const text = document.createElement('span');
+            text.className = 'scenic-maxim-text';
+            text.textContent = maxim.text;
+
+            item.appendChild(chk);
+            item.appendChild(num);
+            item.appendChild(text);
+
+            item.addEventListener('click', (e) => {
+                if (e.target !== chk) {
+                    chk.checked = !chk.checked;
+                    this.toggleScenicMaximCheck(maxim.id);
+                }
+            });
+
+            container.appendChild(item);
+        });
     }
 };
 

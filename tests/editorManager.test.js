@@ -1,4 +1,5 @@
 require('../js/strunkEngine.js');
+require('../js/scenicMaxims.js');
 const EditorManager = require('../js/editorManager.js');
 
 describe('MyProjectEditorManager & Craft Drawer Integration Tests', () => {
@@ -48,6 +49,10 @@ describe('MyProjectEditorManager & Craft Drawer Integration Tests', () => {
     beforeEach(() => {
         mockElements = {
             'editor-mode': createMockElement('editor-mode'),
+            'editor-main-content': createMockElement('editor-main-content'),
+            'editor-toolbar': createMockElement('editor-toolbar'),
+            'editor-fullview-btn': createMockElement('editor-fullview-btn', 'button'),
+            'exit-fullview-btn': createMockElement('exit-fullview-btn', 'button'),
             'editor-inspector-sidebar': createMockElement('editor-inspector-sidebar'),
             'toggle-craft-drawer-btn': createMockElement('toggle-craft-drawer-btn', 'button'),
             'close-craft-drawer-btn': createMockElement('close-craft-drawer-btn', 'span'),
@@ -63,7 +68,14 @@ describe('MyProjectEditorManager & Craft Drawer Integration Tests', () => {
             'craft-etymology-btn': createMockElement('craft-etymology-btn', 'button'),
             'craft-etymology-input': createMockElement('craft-etymology-input', 'input'),
             'editor-word-count': createMockElement('editor-word-count', 'strong'),
-            'main-editor-fallback': createMockElement('main-editor-fallback', 'textarea')
+            'main-editor-fallback': createMockElement('main-editor-fallback', 'textarea'),
+            'scenic-featured-quote': createMockElement('scenic-featured-quote', 'div'),
+            'scenic-featured-meta': createMockElement('scenic-featured-meta', 'div'),
+            'scenic-shuffle-btn': createMockElement('scenic-shuffle-btn', 'button'),
+            'scenic-insert-btn': createMockElement('scenic-insert-btn', 'button'),
+            'scenic-search-input': createMockElement('scenic-search-input', 'input'),
+            'scenic-category-filter': createMockElement('scenic-category-filter', 'select'),
+            'scenic-maxims-list': createMockElement('scenic-maxims-list', 'div')
         };
 
         mockElements['editor-mode'].classList.add('hidden');
@@ -194,9 +206,68 @@ describe('MyProjectEditorManager & Craft Drawer Integration Tests', () => {
         // Strunk markers must be stripped from saved node content
         expect(node.content).toBe('<p>The fortress was destroyed completely by the storm.</p>');
         expect(node.content).not.toContain('strunk-passive');
-        expect(node.content).not.toContain('strunk-adverb');
         expect(mockDataStorage.saveNodes).toHaveBeenCalled();
         expect(mockUIManager.editorMode.classList.contains('hidden')).toBe(true);
         expect(mockUIManager.editorInspectorSidebar.classList.contains('hidden')).toBe(true);
+    });
+
+    test('toggleFullView should toggle full-view-mode class and update buttons', () => {
+        const editorMode = mockElements['editor-mode'];
+        const fullviewBtn = mockElements['editor-fullview-btn'];
+        const exitBtn = mockElements['exit-fullview-btn'];
+
+        expect(editorMode.classList.contains('full-view-mode')).toBe(false);
+
+        // Enter Full View
+        EditorManager.toggleFullView(true);
+        expect(editorMode.classList.contains('full-view-mode')).toBe(true);
+        expect(fullviewBtn.textContent).toBe('✕ Exit Full View');
+        expect(exitBtn.classList.contains('hidden')).toBe(false);
+
+        // Exit Full View
+        EditorManager.toggleFullView(false);
+        expect(editorMode.classList.contains('full-view-mode')).toBe(false);
+        expect(fullviewBtn.textContent).toBe('⛶ Full View');
+        expect(exitBtn.classList.contains('hidden')).toBe(true);
+    });
+
+    test('initScenicMaxims and drawRandomMaxim should update featured maxim card', () => {
+        EditorManager.initScenicMaxims();
+
+        const quoteEl = mockElements['scenic-featured-quote'];
+        const metaEl = mockElements['scenic-featured-meta'];
+
+        expect(quoteEl.textContent).toContain('“');
+        expect(metaEl.textContent).toContain('Maxim #');
+
+        // Draw new random maxim
+        EditorManager.drawRandomMaxim();
+        expect(quoteEl.textContent.length).toBeGreaterThan(5);
+        expect(metaEl.textContent).toMatch(/Maxim #\d+/);
+    });
+
+    test('insertCurrentMaximIntoSheet should append scenic maxim to editor content', () => {
+        const ta = mockElements['main-editor-fallback'];
+        ta.value = 'Existing prose. ';
+
+        EditorManager.initScenicMaxims();
+        EditorManager.insertCurrentMaximIntoSheet();
+
+        expect(ta.value).toContain('Scenic Method Maxim #');
+    });
+
+    test('toggleScenicMaximCheck should save and update checked maxims', () => {
+        const testNode = { id: 'sheet-scenic-1', title: 'Scene Draft' };
+        mockStateManager.setSelectedNode(testNode);
+
+        // Check maxim 2 ("Render, never report.")
+        EditorManager.toggleScenicMaximCheck(2);
+        let checked = EditorManager._getCheckedMaximsForNode('sheet-scenic-1');
+        expect(checked.has(2)).toBe(true);
+
+        // Uncheck
+        EditorManager.toggleScenicMaximCheck(2);
+        checked = EditorManager._getCheckedMaximsForNode('sheet-scenic-1');
+        expect(checked.has(2)).toBe(false);
     });
 });

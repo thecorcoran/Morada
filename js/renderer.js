@@ -9,6 +9,8 @@ const GRID_SIZE = 20;
 
 // --- State (now managed by StateManager) ---
 let isDragging = false;
+let isPotentialDrag = false;
+let dragStartScreenPos = { x: 0, y: 0 };
 let lastMousePosition = { x: 0, y: 0 };
 
 // --- Initialization ---
@@ -91,8 +93,8 @@ async function init() {
 
 function setupEventListeners() {
     canvas.addEventListener('mousedown', onMouseDown);
-    canvas.addEventListener('mouseup', onMouseUp);
-    canvas.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('mousemove', onMouseMove);
     canvas.addEventListener('wheel', onWheel);
     window.addEventListener('resize', resizeCanvas);
     document.addEventListener('keydown', onKeyDown);
@@ -122,17 +124,47 @@ function onMouseDown(e) {
                 menu.style.left = (e.clientX) + 'px';
                 menu.style.top = (e.clientY) + 'px';
                 menu.classList.remove('hidden');
-                // Wire the rename option to open the title editor for the clicked node
+
+                const openOpt = document.getElementById('open-node-option');
+                if (openOpt) {
+                    openOpt.onclick = (evt) => {
+                        evt.stopPropagation();
+                        menu.classList.add('hidden');
+                        if (!clickedNode) return;
+                        if (clickedNode.type === 'text') {
+                            MyProjectEditorManager.openEditorMode(clickedNode);
+                        } else {
+                            MyProjectStateManager.pushToViewStack(clickedNode);
+                            MyProjectStateManager.setCurrentNodes(clickedNode.children || []);
+                            MyProjectUIManager.updateUIChrome();
+                            draw();
+                        }
+                    };
+                }
+
                 const renameOpt = document.getElementById('rename-node-option');
                 if (renameOpt) {
                     renameOpt.onclick = (evt) => {
                         evt.stopPropagation();
+                        menu.classList.add('hidden');
                         try {
                             if (clickedNode && window.MyProjectUIManager && typeof window.MyProjectUIManager.createTitleEditor === 'function') {
                                 window.MyProjectUIManager.createTitleEditor(clickedNode);
                             }
                         } catch (err) { console.warn('rename handler failed', err); }
+                    };
+                }
+
+                const inspectOpt = document.getElementById('inspect-node-option');
+                if (inspectOpt) {
+                    inspectOpt.onclick = (evt) => {
+                        evt.stopPropagation();
                         menu.classList.add('hidden');
+                        try {
+                            if (clickedNode && window.MyProjectUIManager && typeof window.MyProjectUIManager.showNodeInspector === 'function') {
+                                window.MyProjectUIManager.showNodeInspector(clickedNode);
+                            }
+                        } catch (err) { console.warn('inspect handler failed', err); }
                     };
                 }
             }
@@ -143,30 +175,15 @@ function onMouseDown(e) {
 
     if (clickedNode) {
         const selectedNode = MyProjectStateManager.getSelectedNode();
-        if (selectedNode && selectedNode.isEditing) {
-            MyProjectUIManager.createTitleEditor(selectedNode); // Changed from MyProjectNodeManager
-        }
-        // If the user clicks the already-selected node (single click), deselect it.
-        if (selectedNode && selectedNode.id === clickedNode.id && e.detail === 1) {
-            MyProjectStateManager.setSelectedNode(null);
-            try { const m = document.getElementById('node-inspector-modal'); if (m) m.remove(); } catch (e) {}
-            // don't start dragging this click
-            isDragging = false;
-            draw();
-            return;
+        if (selectedNode && selectedNode.isEditing && selectedNode.id !== clickedNode.id) {
+            MyProjectUIManager.createTitleEditor(selectedNode);
         }
         MyProjectStateManager.setSelectedNode(clickedNode);
-        // Show node inspector overlay when selecting a container node
-        try {
-            if (clickedNode && clickedNode.type === 'container' && window.MyProjectUIManager && typeof window.MyProjectUIManager.showNodeInspector === 'function') {
-                window.MyProjectUIManager.showNodeInspector(clickedNode);
-            } else {
-                // remove any existing inspector when selecting non-container
-                const existing = document.getElementById('node-inspector-overlay'); if (existing) existing.remove();
-            }
-        } catch (err) { console.warn('showNodeInspector failed', err); }
+
         // Support double-click to open text nodes or enter containers
         if (e.detail === 2 || e.type === 'dblclick') {
+            isPotentialDrag = false;
+            isDragging = false;
             if (clickedNode.type === 'text') {
                 console.log('[renderer] double-click/open attempt for text node', clickedNode.id);
                 MyProjectEditorManager.openEditorMode(clickedNode);
@@ -180,7 +197,9 @@ function onMouseDown(e) {
                 return;
             }
         }
-        isDragging = true;
+        isPotentialDrag = true;
+        dragStartScreenPos = { x: e.clientX, y: e.clientY };
+        isDragging = false;
     } else {
         // Clicked empty space: clear selection and close any node inspector
         MyProjectStateManager.setSelectedNode(null);
@@ -209,31 +228,45 @@ function onMouseDown(e) {
             return;
         }
 
-        isDragging = true; // For panning
+        isPotentialDrag = true;
+        dragStartScreenPos = { x: e.clientX, y: e.clientY };
+        isDragging = false; // For panning
     }
     draw();
 }
 
-function onMouseUp(e) {
+function onMouseUp() {
+    isPotentialDrag = false;
+    const wasDragging = isDragging;
     isDragging = false;
     canvas.style.cursor = (MyProjectCanvasRenderer.hoveredNode) ? 'pointer' : 'default';
-    const sel = MyProjectStateManager.getSelectedNode();
-    if (sel) {
-        try {
-            // Snap the node to grid to keep layout tidy
-            sel.x = Math.round(sel.x / GRID_SIZE) * GRID_SIZE;
-            sel.y = Math.round(sel.y / GRID_SIZE) * GRID_SIZE;
-            // Make sure node remains visible in the viewport
-            if (window.MyProjectUIManager && typeof window.MyProjectUIManager.ensureNodeVisible === 'function') {
-                window.MyProjectUIManager.ensureNodeVisible(sel, 80);
-            }
-        } catch (err) { console.warn('post-drag snap/ensure failed', err); }
-        MyProjectDataStorage.saveNodes(MyProjectStateManager.getRootNodes());
+    if (wasDragging) {
+        const sel = MyProjectStateManager.getSelectedNode();
+        if (sel) {
+            try {
+                // Snap the node to grid to keep layout tidy
+                sel.x = Math.round(sel.x / GRID_SIZE) * GRID_SIZE;
+                sel.y = Math.round(sel.y / GRID_SIZE) * GRID_SIZE;
+                // Make sure node remains visible in the viewport
+                if (window.MyProjectUIManager && typeof window.MyProjectUIManager.ensureNodeVisible === 'function') {
+                    window.MyProjectUIManager.ensureNodeVisible(sel, 80);
+                }
+            } catch (err) { console.warn('post-drag snap/ensure failed', err); }
+            MyProjectDataStorage.saveNodes(MyProjectStateManager.getRootNodes());
+            draw();
+        }
     }
 }
 
 function onMouseMove(e) {
     const { x, y } = getMousePos(e);
+
+    if (isPotentialDrag && !isDragging) {
+        const dist = Math.hypot(e.clientX - dragStartScreenPos.x, e.clientY - dragStartScreenPos.y);
+        if (dist > 4) {
+            isDragging = true;
+        }
+    }
 
     if (!isDragging) {
         const hovered = MyProjectNodeManager.getNodeAtPosition(x, y);

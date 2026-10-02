@@ -7,10 +7,10 @@ describe('MyProjectNodeManager', () => {
         expect(node.id).toBe('test-chamber-1');
         expect(node.type).toBe('container');
         expect(node.title).toBe('New Portfolio');
-        expect(node.width).toBe(340);
-        expect(node.height).toBe(210);
-        expect(node.x).toBe(500 - 170);
-        expect(node.y).toBe(400 - 105);
+        expect(node.width).toBe(520);
+        expect(node.height).toBe(330);
+        expect(node.x).toBe(500 - 260);
+        expect(node.y).toBe(400 - 165);
         expect(node.tags).toEqual([]);
         expect(node.children).toEqual([]);
         expect(node.content).toBe('');

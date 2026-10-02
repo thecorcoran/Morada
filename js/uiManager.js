@@ -1035,32 +1035,43 @@ window.MyProjectUIManager = {
         const currentNodes = this.stateManager.getCurrentNodes();
         if (!currentNodes || currentNodes.length === 0) return;
 
-        const nodeWidth = (window.AppConstants && AppConstants.NODE_WIDTH) || 340;
-        const nodeHeight = (window.AppConstants && AppConstants.NODE_HEIGHT) || 210;
         const gapX = 36;
-        const gapY = 36;
-
+        const gapY = 40;
         const total = currentNodes.length;
+
         let cols = Math.ceil(Math.sqrt(total));
         if (cols < 2 && total > 1) cols = 2;
         if (cols > 4) cols = 4;
 
-        const totalGridWidth = cols * nodeWidth + (cols - 1) * gapX;
-        const rows = Math.ceil(total / cols);
-        const totalGridHeight = rows * nodeHeight + (rows - 1) * gapY;
+        // Group nodes into rows of `cols` items
+        const rows = [];
+        for (let i = 0; i < total; i += cols) {
+            rows.push(currentNodes.slice(i, i + cols));
+        }
 
-        const startX = -totalGridWidth / 2;
-        const startY = -totalGridHeight / 2;
+        // Calculate each row's max height
+        const rowHeights = rows.map(r => Math.max(...r.map(n => n.height || (n.type === 'container' ? 520 : 340))));
+        const totalHeight = rowHeights.reduce((sum, h) => sum + h, 0) + (rows.length - 1) * gapY;
+        let currentY = -totalHeight / 2;
 
-        currentNodes.forEach((node, idx) => {
-            const col = idx % cols;
-            const row = Math.floor(idx / cols);
-            node.x = startX + col * (nodeWidth + gapX);
-            node.y = startY + row * (nodeHeight + gapY);
+        rows.forEach((row, rIdx) => {
+            const rowH = rowHeights[rIdx];
+            const rowWidth = row.reduce((sum, n) => sum + (n.width || (n.type === 'container' ? 520 : 340)), 0) + (row.length - 1) * gapX;
+            let currentX = -rowWidth / 2;
+
+            row.forEach(n => {
+                const w = n.width || (n.type === 'container' ? 520 : 340);
+                const h = n.height || (n.type === 'container' ? 330 : 210);
+                n.x = currentX;
+                n.y = currentY + (rowH - h) / 2;
+                currentX += w + gapX;
+            });
+
+            currentY += rowH + gapY;
         });
 
         if (this.saveNodesFunction) this.saveNodesFunction();
-        if (typeof this.fitNodesToView === 'function') this.fitNodesToView(60);
+        if (typeof this.fitNodesToView === 'function') this.fitNodesToView(80);
         if (this.drawFunction) this.drawFunction();
 
         if (this.outlinerSidebar && !this.outlinerSidebar.classList.contains('hidden')) {
@@ -2391,7 +2402,9 @@ window.MyProjectUIManager = {
             masterGlossary
         };
 
-        if (format === 'html') {
+        if (format === 'docx' || format === 'doc') {
+            return this._compileToDocx(currentManuscriptList, compileOptions);
+        } else if (format === 'html') {
             return this._compileToHtml(currentManuscriptList, compileOptions);
         } else if (format === 'txt' || format === 'text') {
             return this._compileToPlainText(currentManuscriptList, compileOptions);
@@ -2541,6 +2554,208 @@ ${bodyContent}
 </html>`;
     },
 
+    _compileToDocx: function(nodes, options) {
+        const title = options.title || 'Manuscript';
+        const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        let bodyContent = '';
+
+        if (options.includeCover) {
+            bodyContent += `
+  <div class="cover-page">
+    <h1 class="title">${this._escapeHtml(title)}</h1>
+    <p class="subtitle">Compiled on ${dateStr} &bull; ${options.totalWordCount.toLocaleString()} Words</p>
+    <div class="page-break"></div>
+  </div>`;
+        }
+
+        if (options.includeToc && nodes.length > 0) {
+            bodyContent += `
+  <div class="toc-container">
+    <h2>Table of Contents</h2>
+    <ul class="toc-list">`;
+            nodes.forEach((node) => {
+                const nodeTitle = this._escapeHtml(node.title || 'Untitled');
+                const isContainer = node.type === 'container';
+                bodyContent += `
+      <li class="${isContainer ? 'toc-portfolio' : 'toc-sheet'}">
+        <strong>${nodeTitle}</strong>
+      </li>`;
+            });
+            bodyContent += `
+    </ul>
+    <div class="page-break"></div>
+  </div>`;
+        }
+
+        nodes.forEach((node) => {
+            const nodeTitle = this._escapeHtml(node.title || 'Untitled');
+            const cleanContent = (node.content || '').trim();
+
+            if (node.type === 'container') {
+                bodyContent += `
+  <div class="chapter-container">
+    <h2 class="portfolio-heading">${nodeTitle}</h2>
+    ${node.includeNotes && cleanContent ? `<div class="content">${cleanContent}</div>` : ''}
+  </div>`;
+            } else if (node.type === 'text') {
+                bodyContent += `
+  <div class="sheet-container">
+    <h3 class="sheet-heading">${nodeTitle}</h3>
+    ${cleanContent ? `<div class="content">${cleanContent}</div>` : ''}
+  `;
+                if (options.includeComments && Array.isArray(node.comments) && node.comments.length > 0) {
+                    bodyContent += `
+    <div class="footnotes">
+      <h4>Notes & Annotations</h4>
+      <ol>`;
+                    node.comments.forEach(c => {
+                        bodyContent += `<li>${this._escapeHtml(c.text)}</li>`;
+                    });
+                    bodyContent += `
+      </ol>
+    </div>`;
+                }
+                bodyContent += `</div><div class="page-break"></div>`;
+            }
+
+            if (options.includeCertifiedWords && Array.isArray(node.certifiedWords)) {
+                node.certifiedWords.forEach(cw => {
+                    if (cw.word && cw.definition) options.masterGlossary.set(cw.word, cw.definition);
+                });
+            }
+        });
+
+        if (options.includeCertifiedWords && options.masterGlossary.size > 0) {
+            bodyContent += `
+  <div class="glossary-container">
+    <h2>Appendix: Certified Lexicon</h2>
+    <table class="lexicon-table">
+      <thead>
+        <tr>
+          <th style="width: 30%;">Certified Word</th>
+          <th>Living Definition</th>
+        </tr>
+      </thead>
+      <tbody>`;
+            const sortedWords = Array.from(options.masterGlossary.keys()).sort((a, b) => a.localeCompare(b));
+            sortedWords.forEach(w => {
+                bodyContent += `
+        <tr>
+          <td><strong>${this._escapeHtml(w)}</strong></td>
+          <td>${this._escapeHtml(options.masterGlossary.get(w))}</td>
+        </tr>`;
+            });
+            bodyContent += `
+      </tbody>
+    </table>
+  </div>`;
+        }
+
+        return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+  <meta charset="utf-8">
+  <title>${this._escapeHtml(title)}</title>
+  <!--[if gte mso 9]>
+  <xml>
+    <w:WordDocument>
+      <w:View>Print</w:View>
+      <w:Zoom>100</w:Zoom>
+      <w:DoNotOptimizeForBrowser/>
+    </w:WordDocument>
+  </xml>
+  <![endif]-->
+  <style>
+    @page {
+      size: 8.5in 11in;
+      margin: 1.0in 1.0in 1.0in 1.0in;
+      mso-header-margin: 0.5in;
+      mso-footer-margin: 0.5in;
+    }
+    body {
+      font-family: 'Georgia', 'Vollkorn', serif;
+      font-size: 12pt;
+      line-height: 1.7;
+      color: #1a1a1a;
+    }
+    h1.title {
+      font-size: 28pt;
+      text-align: center;
+      margin-top: 140pt;
+      margin-bottom: 20pt;
+      color: #111111;
+    }
+    p.subtitle {
+      text-align: center;
+      font-size: 13pt;
+      font-style: italic;
+      color: #555555;
+    }
+    .page-break {
+      page-break-before: always;
+      mso-special-character: line-break;
+    }
+    h2.portfolio-heading {
+      font-size: 20pt;
+      color: #2c2523;
+      border-bottom: 2pt solid #8c6d46;
+      padding-bottom: 6pt;
+      margin-top: 30pt;
+      margin-bottom: 16pt;
+    }
+    h3.sheet-heading {
+      font-size: 16pt;
+      color: #333333;
+      margin-top: 20pt;
+      margin-bottom: 12pt;
+    }
+    .content p {
+      margin-bottom: 12pt;
+      text-indent: 0.25in;
+    }
+    .footnotes {
+      margin-top: 24pt;
+      padding-top: 10pt;
+      border-top: 1pt solid #bbbbbb;
+      font-size: 10pt;
+      color: #444444;
+    }
+    .lexicon-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14pt;
+    }
+    .lexicon-table th, .lexicon-table td {
+      border: 1pt solid #cccccc;
+      padding: 8pt 10pt;
+      text-align: left;
+    }
+    .lexicon-table th {
+      background-color: #f7f2e7;
+      font-weight: bold;
+    }
+    .toc-list {
+      list-style: none;
+      padding-left: 0;
+    }
+    .toc-portfolio {
+      font-size: 14pt;
+      margin-top: 10pt;
+      color: #2c2523;
+    }
+    .toc-sheet {
+      font-size: 12pt;
+      margin-left: 20pt;
+      margin-top: 4pt;
+      color: #444444;
+    }
+  </style>
+</head>
+<body>
+${bodyContent}
+</body>
+</html>`;
+    },
+
     _compileToPlainText: function(nodes, options) {
         let output = '';
         const title = options.title || 'Manuscript';
@@ -2597,11 +2812,15 @@ ${bodyContent}
         const output = this.compileManuscript(format);
 
         const mimeMap = {
+            docx: 'application/msword;charset=utf-8',
+            doc: 'application/msword;charset=utf-8',
             markdown: 'text/markdown;charset=utf-8',
             html: 'text/html;charset=utf-8',
             txt: 'text/plain;charset=utf-8'
         };
         const extMap = {
+            docx: 'doc',
+            doc: 'doc',
             markdown: 'md',
             html: 'html',
             txt: 'txt'
@@ -2657,11 +2876,12 @@ MyProjectUIManager.fitNodesToView = function(padding = 80) {
         // Compute bounding box in world coordinates
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         nodes.forEach(n => {
-            const w = n.width || 200; const h = n.height || 120;
-            minX = Math.min(minX, n.x - w/2);
-            minY = Math.min(minY, n.y - h/2);
-            maxX = Math.max(maxX, n.x + w/2);
-            maxY = Math.max(maxY, n.y + h/2);
+            const w = n.width || (n.type === 'container' ? 520 : 340);
+            const h = n.height || (n.type === 'container' ? 330 : 210);
+            minX = Math.min(minX, n.x);
+            minY = Math.min(minY, n.y);
+            maxX = Math.max(maxX, n.x + w);
+            maxY = Math.max(maxY, n.y + h);
         });
         const bboxW = Math.max(1, maxX - minX);
         const bboxH = Math.max(1, maxY - minY);
@@ -2671,8 +2891,8 @@ MyProjectUIManager.fitNodesToView = function(padding = 80) {
         const scaleY = (canvasH - padding*2) / bboxH;
         // choose the smaller scale so everything fits
         let newScale = Math.min(scaleX, scaleY);
-        // clamp reasonable zoom range
-        newScale = Math.max(0.2, Math.min(newScale, 2.5));
+        // clamp reasonable zoom range: not too tiny, not over-magnified
+        newScale = Math.max(0.45, Math.min(newScale, 1.25));
         const centerX = (minX + maxX) / 2;
         const centerY = (minY + maxY) / 2;
         if (this.stateManager && typeof this.stateManager.setScale === 'function') this.stateManager.setScale(newScale);

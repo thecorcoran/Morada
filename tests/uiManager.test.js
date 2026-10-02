@@ -332,6 +332,27 @@ From Middle English morada, from Old French.
             expect(txt).toContain('MANUSCRIPT GLOSSARY & CERTIFIED LEXICON');
         });
 
+        test('should compile manuscript into Word Document (.doc) format with Word XML schemas and styles', () => {
+            const docx = UIManager.compileManuscript('docx', {
+                title: 'Word Document Edition',
+                includeCover: true,
+                includeToc: true,
+                includeComments: true,
+                includeCertifiedWords: true
+            });
+
+            expect(docx).toContain('xmlns:w="urn:schemas-microsoft-com:office:word"');
+            expect(docx).toContain('<w:WordDocument>');
+            expect(docx).toContain('Word Document Edition');
+            expect(docx).toContain('Table of Contents');
+            expect(docx).toContain('Prologue');
+            expect(docx).toContain('Notes & Annotations');
+            expect(docx).toContain('Check pacing');
+            expect(docx).toContain('Appendix: Certified Lexicon');
+            expect(docx).toContain('Morada');
+            expect(docx).toContain('A fortress');
+        });
+
         test('updateManuscriptStats should compute accurate totals', () => {
             const mockDoc = { textContent: '' };
             const mockWord = { textContent: '' };

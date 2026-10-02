@@ -347,8 +347,21 @@ window.MyProjectCanvasRenderer = {
 
       if (!isSheet) {
         const childCount = Array.isArray(node.children) ? node.children.length : 0;
+        let totalWords = 0;
+        if (this.getWordCountFunction && Array.isArray(node.children)) {
+          const countWordsRecursive = (items) => {
+            let sum = 0;
+            items.forEach(it => {
+              if (it.type === 'text') sum += this.getWordCountFunction(it.content || '');
+              if (it.children && it.children.length) sum += countWordsRecursive(it.children);
+            });
+            return sum;
+          };
+          totalWords = countWordsRecursive(node.children);
+        }
         const countText = childCount === 1 ? '1 sheet' : `${childCount} sheets`;
-        this.ctx.fillText(`📁 Portfolio · ${countText}`, innerX, badgeY);
+        const wordSummary = totalWords > 0 ? ` · ${totalWords.toLocaleString()} words` : '';
+        this.ctx.fillText(`📁 Portfolio · ${countText}${wordSummary}`, innerX, badgeY);
       } else {
         const wordCount = this.getWordCountFunction ? this.getWordCountFunction(node.content || '') : 0;
         this.ctx.fillText(`📄 Sheet`, innerX, badgeY);
@@ -408,38 +421,59 @@ window.MyProjectCanvasRenderer = {
           this.ctx.fillText('Empty sheet — double-click or press Enter to write...', innerX, bodyY + 6);
         }
       } else {
-        // Portfolio: list up to 3 children
+        // Portfolio: list up to 6 children in shelf view
         const children = Array.isArray(node.children) ? node.children : [];
         if (children.length > 0) {
-          this.ctx.textAlign = 'left';
-          this.ctx.textBaseline = 'top';
-          const maxShow = Math.min(3, children.length);
+          const maxShow = Math.min(6, children.length);
           for (let i = 0; i < maxShow; i++) {
-            if (i === 2 && children.length > 3) {
+            if (i === 5 && children.length > 6) {
               this.ctx.font = "italic 12px 'Vollkorn', serif";
               this.ctx.fillStyle = '#7c6f64';
-              this.ctx.fillText(`+ ${children.length - 2} more items inside...`, innerX, bodyY + (i * 20));
+              this.ctx.textAlign = 'left';
+              this.ctx.fillText(`+ ${children.length - 5} more items in this portfolio...`, innerX, bodyY + (i * 24));
               break;
             }
             const child = children[i];
-            const icon = child.type === 'text' ? '• ' : '📁 ';
+            const isChildSheet = (child.type === 'text');
+            const icon = isChildSheet ? '• ' : '📁 ';
             let itemText = icon + (child.title || 'Untitled');
-            this.ctx.font = "13px 'Vollkorn', serif";
-            this.ctx.fillStyle = '#504945';
-            if (this.ctx.measureText(itemText).width > innerW) {
-              while (itemText.length > 4 && this.ctx.measureText(itemText + '...').width > innerW) {
+            const itemRowY = bodyY + (i * 24);
+
+            this.ctx.font = "14px 'Vollkorn', serif";
+            this.ctx.fillStyle = '#3c3836';
+            this.ctx.textAlign = 'left';
+            this.ctx.textBaseline = 'top';
+
+            let wordBadge = '';
+            if (isChildSheet && this.getWordCountFunction) {
+              const childWords = this.getWordCountFunction(child.content || '');
+              wordBadge = `${childWords}w`;
+            }
+
+            const badgeWidth = wordBadge ? this.ctx.measureText(wordBadge).width + 16 : 0;
+            const maxTitleWidth = innerW - badgeWidth;
+
+            if (this.ctx.measureText(itemText).width > maxTitleWidth) {
+              while (itemText.length > 4 && this.ctx.measureText(itemText + '...').width > maxTitleWidth) {
                 itemText = itemText.slice(0, -1);
               }
               itemText += '...';
             }
-            this.ctx.fillText(itemText, innerX, bodyY + (i * 20));
+            this.ctx.fillText(itemText, innerX, itemRowY);
+
+            if (wordBadge) {
+              this.ctx.font = "11px 'Vollkorn', serif";
+              this.ctx.fillStyle = '#7c6f64';
+              this.ctx.textAlign = 'right';
+              this.ctx.fillText(wordBadge, rightX, itemRowY + 2);
+            }
           }
         } else {
-          this.ctx.font = "italic 13px 'Vollkorn', serif";
+          this.ctx.font = "italic 14px 'Vollkorn', serif";
           this.ctx.fillStyle = '#a89984';
           this.ctx.textAlign = 'left';
           this.ctx.textBaseline = 'top';
-          this.ctx.fillText('Empty portfolio — double-click to explore...', innerX, bodyY + 6);
+          this.ctx.fillText('Empty archival portfolio — double-click or press Enter to open drawer...', innerX, bodyY + 12);
         }
       }
 

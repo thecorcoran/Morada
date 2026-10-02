@@ -2,10 +2,18 @@ if (typeof window === 'undefined') {
     global.window = global;
 }
 window.AppConstants = {
-    // --- Node Dimensions & Appearance (Golden Ratio Index Cards) ---
-    /** @const {number} NODE_WIDTH - Default width for new nodes. */
+    // --- Node Dimensions & Appearance ---
+    /** @const {number} PORTFOLIO_WIDTH - Grand width for archival portfolio dossiers (2x+ graphical footprint). */
+    PORTFOLIO_WIDTH: 520,
+    /** @const {number} PORTFOLIO_HEIGHT - Grand height for archival portfolio dossiers. */
+    PORTFOLIO_HEIGHT: 330,
+    /** @const {number} SHEET_WIDTH - Standard width for manuscript sheet cards. */
+    SHEET_WIDTH: 340,
+    /** @const {number} SHEET_HEIGHT - Standard height for manuscript sheet cards. */
+    SHEET_HEIGHT: 210,
+    /** @const {number} NODE_WIDTH - Fallback width for new nodes. */
     NODE_WIDTH: 340,
-    /** @const {number} NODE_HEIGHT - Default height for new nodes. */
+    /** @const {number} NODE_HEIGHT - Fallback height for new nodes. */
     NODE_HEIGHT: 210,
     /** @const {number} NODE_BORDER_RADIUS - Clean corner radius for scholar's desk cards. */
     NODE_BORDER_RADIUS: 8,
@@ -32,9 +40,9 @@ window.AppConstants = {
     /** @const {string} EDITOR_DEFAULT_FONT_SIZE - Default font size for the TinyMCE editor. */
     EDITOR_DEFAULT_FONT_SIZE: '18px',
     /** @const {string} EDITOR_DEFAULT_LINE_HEIGHT - Default line height for the TinyMCE editor. */
-    EDITOR_DEFAULT_LINE_HEIGHT: '1.6',
-    /** @const {string} EDITOR_BACKGROUND_COLOR - Background color for the TinyMCE editor. */
-    EDITOR_BACKGROUND_COLOR: '#fdf5e6',
+    EDITOR_DEFAULT_LINE_HEIGHT: '1.7',
+    /** @const {string} EDITOR_BACKGROUND_COLOR - Background color for the manuscript sheet. */
+    EDITOR_BACKGROUND_COLOR: '#fdfaf4',
 
     // --- Default Titles (Scholar's Desk Paradigm) ---
     /** @const {string} ROOT_VIEW_TITLE - Title for root workspace. */

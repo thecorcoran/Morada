@@ -75,8 +75,13 @@ window.MyProjectNodeManager = {
    * @returns {Object} The newly created node object.
    */
   createNode: function(x, y, isTextType, id) {
-    const nodeWidth = (typeof AppConstants !== 'undefined' && AppConstants.NODE_WIDTH) || 340;
-    const nodeHeight = (typeof AppConstants !== 'undefined' && AppConstants.NODE_HEIGHT) || 210;
+    const portfolioWidth = (typeof AppConstants !== 'undefined' && AppConstants.PORTFOLIO_WIDTH) || 520;
+    const portfolioHeight = (typeof AppConstants !== 'undefined' && AppConstants.PORTFOLIO_HEIGHT) || 330;
+    const sheetWidth = (typeof AppConstants !== 'undefined' && AppConstants.SHEET_WIDTH) || 340;
+    const sheetHeight = (typeof AppConstants !== 'undefined' && AppConstants.SHEET_HEIGHT) || 210;
+
+    const nodeWidth = isTextType ? sheetWidth : portfolioWidth;
+    const nodeHeight = isTextType ? sheetHeight : portfolioHeight;
     const sheetTitle = (typeof AppConstants !== 'undefined' && (AppConstants.NEW_SHEET_TITLE || AppConstants.NEW_SCRIPTORIUM_TITLE)) || 'New Sheet';
     const portfolioTitle = (typeof AppConstants !== 'undefined' && (AppConstants.NEW_PORTFOLIO_TITLE || AppConstants.NEW_CHAMBER_TITLE)) || 'New Portfolio';
     return {

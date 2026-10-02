@@ -58,10 +58,12 @@
         <div id="editor-main-content">
       <div id="editor-toolbar" class="editor-toolbar">
         <button id="toggle-craft-drawer-btn" type="button" title="Toggle Craft Drawer (Ctrl+Shift+D)">Craft Drawer ▾</button>
+        <button id="editor-fullview-btn" type="button" title="Toggle Full View Focus Mode (F11 or Ctrl+Shift+F)">⛶ Full View</button>
         <button id="editor-comment-btn" type="button" title="Add Comment (Ctrl+M)">Comment</button>
         <button id="editor-certify-btn" type="button" title="Certify Word (Ctrl+Shift+C)">Certify</button>
         <button id="editor-etymology-btn" type="button" title="Look up Etymology (Ctrl+Shift+E)">Etymology</button>
         <button id="editor-saveclose-btn" type="button" title="Save and Close (Esc)">Save & Close</button>
+        <button id="exit-fullview-btn" class="hidden" type="button" title="Exit Full View (Esc / F11)">✕ Exit Full View</button>
       </div>
             <textarea id="main-editor"></textarea>
         </div>
@@ -69,6 +71,35 @@
             <div class="craft-drawer-header">
                 <h3>Craft Drawer</h3>
                 <span id="close-craft-drawer-btn" class="craft-close-btn" title="Close Drawer (Ctrl+Shift+D)">&times;</span>
+            </div>
+
+            <!-- The 55 Maxims of the Scenic Method (James, Gordon, O'Connor) -->
+            <div class="craft-section" id="scenic-maxims-panel">
+                <div class="craft-section-header">
+                    <h4>The Scenic Method <span class="craft-subtitle">(55 Maxims)</span></h4>
+                </div>
+                <div class="scenic-maxim-feature-card" id="scenic-featured-card">
+                    <div class="scenic-feature-tag">Maxim of the Moment</div>
+                    <div class="scenic-feature-quote" id="scenic-featured-quote">"Render, never report."</div>
+                    <div class="scenic-feature-meta" id="scenic-featured-meta">Maxim #2 · The Fictional Dream</div>
+                    <div class="scenic-feature-actions">
+                        <button type="button" id="scenic-shuffle-btn" class="scenic-action-btn" title="Draw another maxim">🎲 Draw Maxim</button>
+                        <button type="button" id="scenic-insert-btn" class="scenic-action-btn" title="Insert into text as footnote or comment">Insert into Sheet</button>
+                    </div>
+                </div>
+                <div class="scenic-filter-bar">
+                    <input type="text" id="scenic-search-input" placeholder="Search maxims (e.g. dialogue, verbs)..." />
+                    <select id="scenic-category-filter">
+                        <option value="all">All 55 Maxims</option>
+                        <option value="dream">The Fictional Dream & Sensory</option>
+                        <option value="conflict">Scene & Conflict</option>
+                        <option value="dialogue">Dialogue as Action</option>
+                        <option value="voice">Narrative Voice & Effacement</option>
+                        <option value="style">Prose Style & Strong Verbs</option>
+                        <option value="revision">Revision & Discipline</option>
+                    </select>
+                </div>
+                <div id="scenic-maxims-list" class="scenic-maxims-list"></div>
             </div>
 
             <!-- Strunk: The Vigorous Editor -->
@@ -210,6 +241,7 @@
           <label for="include-comments-checkbox"><input type="checkbox" id="include-comments-checkbox" checked> Footnotes / Notes</label>
           <label for="include-certified-words-checkbox"><input type="checkbox" id="include-certified-words-checkbox" checked> Certified Lexicon</label>
           <select id="compendium-format-select" class="compendium-select" title="Export Format">
+            <option value="docx">Word Document (.doc)</option>
             <option value="markdown">Markdown (.md)</option>
             <option value="txt">Plain Text (.txt)</option>
             <option value="html">HTML Document (.html)</option>
@@ -259,7 +291,9 @@
     <!-- Context Menu for Canvas Nodes -->
     <div id="canvas-context-menu" class="context-menu hidden">
       <ul>
+        <li id="open-node-option">Open / Enter</li>
         <li id="rename-node-option">Rename</li>
+        <li id="inspect-node-option">Inspect Contents</li>
       </ul>
     </div>
 
@@ -270,6 +304,7 @@
     <script src="js/canvasRenderer.js"></script>
     <script src="js/nodeManager.js"></script>
     <script src="js/strunkEngine.js"></script>
+    <script src="js/scenicMaxims.js"></script>
     <script src="js/editorManager.js"></script>
     <script src="js/uiManager.js"></script>
 
