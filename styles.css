@@ -1803,10 +1803,70 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
   background-color: #55500a;
 }
 
-/* Scenic Maxims Panel Styling (Craft Drawer) */
-#scenic-maxims-panel {
-  padding: 12px 14px;
+/* Hide duplicate outer toolbar when TinyMCE is active so options live in text window */
+#editor-main-content.tinymce-active #editor-toolbar {
+  display: none !important;
+}
+
+/* TinyMCE Window Menubar & Toolbar Scholar's Desk Styling */
+.tox .tox-menubar {
+  background-color: #f7f2e7 !important;
+  border-bottom: 1px solid #e0d5c1 !important;
+}
+
+.tox .tox-mbtn {
+  color: #3c3836 !important;
+  font-family: var(--font-primary) !important;
+  font-size: 13px !important;
+}
+
+.tox .tox-mbtn:hover:not(:disabled):not(.tox-mbtn--active) {
+  background-color: #ede2cf !important;
+}
+
+.tox .tox-mbtn--active {
+  background-color: #e5d8c1 !important;
+}
+
+.tox .tox-toolbar, .tox .tox-toolbar__overflow, .tox .tox-toolbar__primary {
+  background-color: #faf5ec !important;
+  border-bottom: 1px solid #e0d5c1 !important;
+}
+
+.tox .tox-tbtn {
+  color: #3c3836 !important;
+  font-family: var(--font-primary) !important;
+  border-radius: 3px !important;
+}
+
+.tox .tox-tbtn:hover {
+  background-color: #ede2cf !important;
+}
+
+.tox .tox-statusbar {
+  background-color: #f7f2e7 !important;
+  border-top: 1px solid #e0d5c1 !important;
+  color: #7c6f64 !important;
+  font-family: var(--font-primary) !important;
+}
+
+/* Scenic Maxims Panels (Craft Drawer) */
+#scenic-moment-panel {
+  padding: 12px 14px 6px 14px;
   border-bottom: 1px solid var(--color-border-light);
+}
+
+#scenic-catalog-panel {
+  padding: 12px 14px;
+  border-top: 1px solid var(--color-border-light);
+  background-color: #fcf9f2;
+}
+
+.scenic-catalog-hint {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+  margin-bottom: 8px;
 }
 
 .scenic-maxim-feature-card {
@@ -1815,7 +1875,7 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
   border-left: 3px solid #b57614;
   border-radius: 4px;
   padding: 10px 12px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   box-shadow: 0 1px 3px rgba(60, 56, 54, 0.05);
 }
 
@@ -1891,41 +1951,55 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
 }
 
 .scenic-maxims-list {
-  max-height: 220px;
+  max-height: 250px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
   padding-right: 2px;
 }
 
 .scenic-maxim-item {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
   padding: 6px 8px;
   background-color: #fdfaf4;
   border: 1px solid #e8decb;
-  border-radius: 3px;
+  border-radius: 4px;
   font-size: 12px;
   line-height: 1.4;
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition: all 0.15s ease;
 }
 
 .scenic-maxim-item:hover {
-  background-color: #efe6d5;
+  background-color: #f3ebd8;
   border-color: #bdae93;
 }
 
-.scenic-maxim-item.applied {
-  background-color: #f2ebe0;
+.scenic-maxim-item.active-featured {
+  background-color: #f9f2e3;
   border-color: #b57614;
+  box-shadow: 0 0 0 1px #b57614;
 }
 
-.scenic-maxim-item input[type="checkbox"] {
-  margin-top: 2px;
-  accent-color: #076678;
+.scenic-maxim-item.applied {
+  background-color: #f0f6ed;
+  border-color: #79740e;
+}
+
+.scenic-chk-wrap {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 2px;
+}
+
+.scenic-chk-box {
+  width: 14px;
+  height: 14px;
+  accent-color: #79740e;
   cursor: pointer;
 }
 
@@ -1933,12 +2007,49 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
   font-weight: 700;
   color: #b57614;
   font-size: 11px;
-  min-width: 18px;
+  min-width: 22px;
 }
 
 .scenic-maxim-text {
   color: #3c3836;
   flex-grow: 1;
+}
+
+.scenic-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.scenic-status-badge {
+  font-size: 9.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+}
+
+.scenic-item-insert-btn {
+  font-size: 10.5px;
+  font-family: var(--font-primary);
+  background-color: #f7f2e7;
+  border: 1px solid #d5c4a1;
+  border-radius: 3px;
+  padding: 2px 6px;
+  cursor: pointer;
+  color: #55500a;
+  transition: all 0.15s ease;
+}
+
+.scenic-item-insert-btn:hover {
+  background-color: #79740e;
+  color: #ffffff;
+  border-color: #55500a;
 }
 
 /* Etymology Modal Styling */

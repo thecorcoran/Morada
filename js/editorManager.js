@@ -45,8 +45,17 @@ window.MyProjectEditorManager = {
                     base_url: 'node_modules/tinymce',
                     suffix: '.min',
                     plugins: 'lists link wordcount',
-                    toolbar: 'undo redo | bold italic underline | bullist numlist | link',
-                    menubar: true,
+                    menu: {
+                        file: { title: 'File', items: 'newdocument | preview | print | saveclose_item' },
+                        edit: { title: 'Edit', items: 'undo redo | cut copy paste | selectall' },
+                        view: { title: 'View', items: 'fullview_item | visualaid visualchars visualblocks' },
+                        insert: { title: 'Insert', items: 'link insert_maxim_item | hr' },
+                        format: { title: 'Format', items: 'bold italic underline strikethrough superscript subscript | removeformat' },
+                        craft: { title: 'Craft', items: 'craftdrawer_item | comment_item certify_item etymology_item | maxim_item insert_maxim_item' },
+                        tools: { title: 'Tools', items: 'wordcount' }
+                    },
+                    menubar: 'file edit view insert format craft tools',
+                    toolbar: 'undo redo | bold italic underline | comment certify etymology | craftdrawer fullview saveclose',
                     statusbar: true,
                     content_css: false,
                     content_style: `
@@ -107,6 +116,85 @@ window.MyProjectEditorManager = {
                     setup: (editor) => {
                         this.tinymceEditor = editor;
                         this.tinyMCEAvailable = true;
+
+                        // Mark main content container as tinymce-active to hide redundant outer toolbar
+                        try {
+                            const editorMain = document.getElementById('editor-main-content');
+                            if (editorMain) editorMain.classList.add('tinymce-active');
+                        } catch (e) {}
+
+                        // Register custom text window toolbar buttons
+                        editor.ui.registry.addButton('craftdrawer', {
+                            text: 'Craft Drawer',
+                            tooltip: 'Toggle Craft Drawer (Ctrl+Shift+D)',
+                            onAction: () => this.toggleCraftDrawer()
+                        });
+                        editor.ui.registry.addButton('comment', {
+                            text: 'Comment',
+                            tooltip: 'Add Comment to Selection (Ctrl+M)',
+                            onAction: () => this.addCommentAtSelection()
+                        });
+                        editor.ui.registry.addButton('certify', {
+                            text: 'Certify',
+                            tooltip: 'Certify Highlighted Word (Ctrl+Shift+C)',
+                            onAction: () => this.certifySelection()
+                        });
+                        editor.ui.registry.addButton('etymology', {
+                            text: 'Etymology',
+                            tooltip: 'Look up Word Etymology (Ctrl+Shift+E)',
+                            onAction: () => this.lookupEtymologyAtSelection()
+                        });
+                        editor.ui.registry.addButton('fullview', {
+                            text: 'Full Screen',
+                            tooltip: 'Toggle Full Screen Mode (F11)',
+                            onAction: () => this.toggleFullView()
+                        });
+                        editor.ui.registry.addButton('saveclose', {
+                            text: 'Save & Close',
+                            tooltip: 'Save Sheet & Return to Desk (Esc)',
+                            onAction: () => this.closeEditorMode()
+                        });
+
+                        // Register custom menu items for menubar
+                        editor.ui.registry.addMenuItem('craftdrawer_item', {
+                            text: 'Toggle Craft Drawer',
+                            shortcut: 'Ctrl+Shift+D',
+                            onAction: () => this.toggleCraftDrawer()
+                        });
+                        editor.ui.registry.addMenuItem('comment_item', {
+                            text: 'Add Comment at Selection',
+                            shortcut: 'Ctrl+M',
+                            onAction: () => this.addCommentAtSelection()
+                        });
+                        editor.ui.registry.addMenuItem('certify_item', {
+                            text: 'Certify Word (Percy)',
+                            shortcut: 'Ctrl+Shift+C',
+                            onAction: () => this.certifySelection()
+                        });
+                        editor.ui.registry.addMenuItem('etymology_item', {
+                            text: 'Lookup Etymology (Wiktionary)',
+                            shortcut: 'Ctrl+Shift+E',
+                            onAction: () => this.lookupEtymologyAtSelection()
+                        });
+                        editor.ui.registry.addMenuItem('maxim_item', {
+                            text: 'Draw Scenic Maxim',
+                            onAction: () => this.drawRandomMaxim()
+                        });
+                        editor.ui.registry.addMenuItem('insert_maxim_item', {
+                            text: 'Insert Featured Maxim into Sheet',
+                            onAction: () => this.insertCurrentMaximIntoSheet()
+                        });
+                        editor.ui.registry.addMenuItem('fullview_item', {
+                            text: 'Toggle Full Screen Writing',
+                            shortcut: 'F11',
+                            onAction: () => this.toggleFullView()
+                        });
+                        editor.ui.registry.addMenuItem('saveclose_item', {
+                            text: 'Save & Close Sheet',
+                            shortcut: 'Esc',
+                            onAction: () => this.closeEditorMode()
+                        });
+
                         editor.on('keydown', (e) => {
                             if (e.key === 'F11' || (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f')) {
                                 e.preventDefault();
@@ -1040,16 +1128,26 @@ window.MyProjectEditorManager = {
 
         list.forEach(maxim => {
             const isChecked = checkedSet.has(maxim.id);
+            const isCurrentlyFeatured = this._currentFeaturedMaxim && this._currentFeaturedMaxim.id === maxim.id;
             const item = document.createElement('div');
-            item.className = 'scenic-maxim-item' + (isChecked ? ' applied' : '');
+            item.className = 'scenic-maxim-item' + (isChecked ? ' applied' : '') + (isCurrentlyFeatured ? ' active-featured' : '');
+            item.title = 'Click to feature this maxim at top. Check box to track as applied to scene.';
+
+            // Checklist container with explicit tooltip
+            const chkWrap = document.createElement('label');
+            chkWrap.className = 'scenic-chk-wrap';
+            chkWrap.title = isChecked ? 'Marked applied to scene (click to uncheck)' : 'Check off when applied to this scene';
 
             const chk = document.createElement('input');
             chk.type = 'checkbox';
+            chk.className = 'scenic-chk-box';
             chk.checked = isChecked;
             chk.addEventListener('change', (e) => {
                 e.stopPropagation();
                 this.toggleScenicMaximCheck(maxim.id);
             });
+
+            chkWrap.appendChild(chk);
 
             const num = document.createElement('span');
             num.className = 'scenic-maxim-num';
@@ -1059,14 +1157,40 @@ window.MyProjectEditorManager = {
             text.className = 'scenic-maxim-text';
             text.textContent = maxim.text;
 
-            item.appendChild(chk);
+            const actionsWrap = document.createElement('div');
+            actionsWrap.className = 'scenic-item-actions';
+
+            if (isChecked) {
+                const badge = document.createElement('span');
+                badge.className = 'scenic-status-badge badge-applied';
+                badge.textContent = '✓ Applied';
+                actionsWrap.appendChild(badge);
+            }
+
+            const insertBtn = document.createElement('button');
+            insertBtn.type = 'button';
+            insertBtn.className = 'scenic-item-insert-btn';
+            insertBtn.textContent = 'Insert';
+            insertBtn.title = 'Insert maxim into sheet';
+            insertBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this._currentFeaturedMaxim = maxim;
+                this.renderFeaturedMaxim(maxim);
+                this.insertCurrentMaximIntoSheet();
+            });
+            actionsWrap.appendChild(insertBtn);
+
+            item.appendChild(chkWrap);
             item.appendChild(num);
             item.appendChild(text);
+            item.appendChild(actionsWrap);
 
+            // Clicking on the item row sets it as the active Maxim of the Moment at the top
             item.addEventListener('click', (e) => {
-                if (e.target !== chk) {
-                    chk.checked = !chk.checked;
-                    this.toggleScenicMaximCheck(maxim.id);
+                if (e.target !== chk && e.target !== insertBtn && e.target !== chkWrap) {
+                    this._currentFeaturedMaxim = maxim;
+                    this.renderFeaturedMaxim(maxim);
+                    this.renderScenicMaximsList();
                 }
             });
 

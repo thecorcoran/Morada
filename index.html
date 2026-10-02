@@ -73,10 +73,10 @@
                 <span id="close-craft-drawer-btn" class="craft-close-btn" title="Close Drawer (Ctrl+Shift+D)">&times;</span>
             </div>
 
-            <!-- The 55 Maxims of the Scenic Method (James, Gordon, O'Connor) -->
-            <div class="craft-section" id="scenic-maxims-panel">
+            <!-- Maxim of the Moment (Inspiration Card at Top of Drawer) -->
+            <div class="craft-section" id="scenic-moment-panel">
                 <div class="craft-section-header">
-                    <h4>The Scenic Method <span class="craft-subtitle">(55 Maxims)</span></h4>
+                    <h4>The Scenic Method</h4>
                 </div>
                 <div class="scenic-maxim-feature-card" id="scenic-featured-card">
                     <div class="scenic-feature-tag">Maxim of the Moment</div>
@@ -84,22 +84,9 @@
                     <div class="scenic-feature-meta" id="scenic-featured-meta">Maxim #2 · The Fictional Dream</div>
                     <div class="scenic-feature-actions">
                         <button type="button" id="scenic-shuffle-btn" class="scenic-action-btn" title="Draw another maxim">🎲 Draw Maxim</button>
-                        <button type="button" id="scenic-insert-btn" class="scenic-action-btn" title="Insert into text as footnote or comment">Insert into Sheet</button>
+                        <button type="button" id="scenic-insert-btn" class="scenic-action-btn" title="Insert into text as quote or note">Insert into Sheet</button>
                     </div>
                 </div>
-                <div class="scenic-filter-bar">
-                    <input type="text" id="scenic-search-input" placeholder="Search maxims (e.g. dialogue, verbs)..." />
-                    <select id="scenic-category-filter">
-                        <option value="all">All 55 Maxims</option>
-                        <option value="dream">The Fictional Dream & Sensory</option>
-                        <option value="conflict">Scene & Conflict</option>
-                        <option value="dialogue">Dialogue as Action</option>
-                        <option value="voice">Narrative Voice & Effacement</option>
-                        <option value="style">Prose Style & Strong Verbs</option>
-                        <option value="revision">Revision & Discipline</option>
-                    </select>
-                </div>
-                <div id="scenic-maxims-list" class="scenic-maxims-list"></div>
             </div>
 
             <!-- Strunk: The Vigorous Editor -->
@@ -192,6 +179,27 @@
                         <div id="footnotes-list"></div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Scenic Craft Catalog & Scene Checklist (At Bottom of Drawer) -->
+            <div class="craft-section" id="scenic-catalog-panel">
+                <div class="craft-section-header">
+                    <h4>Scenic Craft Checklist <span class="craft-subtitle">(55 Maxims)</span></h4>
+                </div>
+                <div class="scenic-catalog-hint">Click any maxim to feature it or insert into sheet. Check off to track principles applied to this scene.</div>
+                <div class="scenic-filter-bar">
+                    <input type="text" id="scenic-search-input" placeholder="Search 55 maxims (e.g. dialogue, sensory)..." />
+                    <select id="scenic-category-filter">
+                        <option value="all">All 55 Maxims</option>
+                        <option value="dream">The Fictional Dream & Sensory</option>
+                        <option value="conflict">Scene & Conflict</option>
+                        <option value="dialogue">Dialogue as Action</option>
+                        <option value="voice">Narrative Voice & Effacement</option>
+                        <option value="style">Prose Style & Strong Verbs</option>
+                        <option value="revision">Revision & Discipline</option>
+                    </select>
+                </div>
+                <div id="scenic-maxims-list" class="scenic-maxims-list"></div>
             </div>
         </div>
         <div class="editor-instructions">Press 'Escape' to save and return to The Desk</div>
