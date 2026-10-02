@@ -2,13 +2,13 @@ if (typeof window === 'undefined') {
     global.window = global;
 }
 window.AppConstants = {
-    // --- Node Dimensions & Appearance ---
+    // --- Node Dimensions & Appearance (Golden Ratio Index Cards) ---
     /** @const {number} NODE_WIDTH - Default width for new nodes. */
-    NODE_WIDTH: 250,
+    NODE_WIDTH: 340,
     /** @const {number} NODE_HEIGHT - Default height for new nodes. */
-    NODE_HEIGHT: 150,
+    NODE_HEIGHT: 210,
     /** @const {number} NODE_BORDER_RADIUS - Clean corner radius for scholar's desk cards. */
-    NODE_BORDER_RADIUS: 6,
+    NODE_BORDER_RADIUS: 8,
     /** @const {string} NODE_DEFAULT_COLOR - Archival portfolio folder color. */
     NODE_DEFAULT_COLOR: '#f4ece1',
     /** @const {string} NODE_TEXT_COLOR - Crisp manuscript sheet paper color. */
@@ -86,6 +86,10 @@ window.AppConstants = {
     WORD_COUNT_FONT: "12px 'Vollkorn', serif",
     /** @const {string} WORD_COUNT_COLOR - Color for word count text on nodes. */
     WORD_COUNT_COLOR: '#666',
+    /** @const {string} EXCERPT_FONT - Font style for body text excerpts on sheet cards. */
+    EXCERPT_FONT: "13px 'Vollkorn', serif",
+    /** @const {string} EXCERPT_COLOR - Muted scholarly ink color for card excerpts. */
+    EXCERPT_COLOR: '#504945',
 };
 console.log("constants.js JSDoc comments added.");
 

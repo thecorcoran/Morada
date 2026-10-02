@@ -17,24 +17,39 @@
         <div id="outliner-list"></div>
       </div>
       <div class="content-area">
-        <div class="breadcrumb-bar" id="breadcrumb-bar">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <button id="breadcrumb-back-btn" title="Back to Parent Portfolio">⟵ Back</button>
-            <button id="toggle-outliner-btn" title="Toggle Outline Sidebar">Outline</button>
-            <button id="auto-tidy-btn" title="Auto-Tidy Desk (Ctrl+T)">Tidy Desk</button>
-            <button id="open-navigator-btn" title="Open Navigator">Navigator</button>
-            <button id="open-compendium-btn" title="Open Manuscript Press">Manuscript Press</button>
-            <button id="open-scriptorium-btn" title="Open Sheet for selected node">Open Sheet</button>
-            <button id="new-project-btn" title="Create a new Portfolio on The Desk">New Portfolio</button>
-            <button id="auto-fit-toggle" title="Toggle auto-fit of nodes">Auto-Fit: On</button>
-            <div class="desk-filter-container">
-              <input type="text" id="canvas-tag-filter" class="canvas-tag-filter-input" placeholder="Filter Desk by #tag or text..." title="Filter visible cards (Esc to clear)">
+        <header class="scholar-masthead" id="breadcrumb-bar">
+          <div class="masthead-left">
+            <span class="masthead-brand" title="Morada · The Scholar's Desk">MORADA</span>
+            <span class="masthead-divider">/</span>
+            <button id="breadcrumb-back-btn" class="masthead-btn back-btn hidden" title="Back to Parent Portfolio">⟵ Back</button>
+            <nav id="breadcrumb-path" class="masthead-breadcrumbs">The Desk</nav>
+          </div>
+
+          <div class="masthead-center">
+            <div class="masthead-search-container">
+              <span class="masthead-search-lens" aria-hidden="true">🔍</span>
+              <input type="text" id="canvas-tag-filter" class="canvas-tag-filter-input masthead-filter-input" placeholder="Search Desk (#tag or text)..." title="Filter visible cards (Esc to clear, Ctrl+K for search palette)">
               <button id="clear-canvas-filter-btn" class="clear-canvas-filter-btn hidden" title="Clear filter">&times;</button>
             </div>
           </div>
-          <div id="breadcrumb-path" style="margin-left:12px; font-weight:600;">The Desk</div>
-        </div>
-        <h2 id="view-title"></h2>
+
+          <div class="masthead-right">
+            <div class="masthead-btn-group creation-group">
+              <button id="new-sheet-btn" class="masthead-btn primary-btn" title="Create a new Sheet (+)">+ Sheet</button>
+              <button id="new-project-btn" class="masthead-btn" title="Create a new Portfolio on The Desk">+ Portfolio</button>
+            </div>
+            <div class="masthead-btn-group tool-group">
+              <button id="auto-tidy-btn" class="masthead-btn" title="Auto-Tidy Desk (Ctrl+T)">Tidy Desk</button>
+              <button id="toggle-outliner-btn" class="masthead-btn" title="Toggle Outline Sidebar">Outline</button>
+              <button id="open-compendium-btn" class="masthead-btn accent-btn" title="Open Manuscript Press">Manuscript Press</button>
+              <button id="open-navigator-btn" class="masthead-btn subtle-btn" title="Open Navigator">Navigator</button>
+              <button id="auto-fit-toggle" class="masthead-btn subtle-btn" title="Toggle auto-fit of nodes">Auto-Fit: On</button>
+              <button id="open-sheet-btn" class="masthead-btn hidden" title="Open Sheet for selected node">Open Sheet</button>
+            </div>
+          </div>
+        </header>
+
+        <h2 id="view-title" class="hidden" aria-hidden="true"></h2>
         <canvas id="nest-canvas"></canvas>
       </div>
     </div>

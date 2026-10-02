@@ -71,6 +71,62 @@ window.MyProjectCanvasRenderer = {
   },
 
   /**
+   * Strips HTML tags and entities to return clean prose excerpt.
+   * @param {string} html
+   * @returns {string}
+   */
+  _extractPlainText: function(html) {
+    if (!html || typeof html !== 'string') return '';
+    return html
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/\s+/g, ' ')
+      .trim();
+  },
+
+  /**
+   * Splits and word-wraps text into at most maxLines that fit within maxWidth.
+   * @param {string} text
+   * @param {number} maxWidth
+   * @param {number} maxLines
+   * @returns {Array<string>}
+   */
+  _wrapTextLines: function(text, maxWidth, maxLines) {
+    if (!text || !this.ctx) return [];
+    const words = text.split(' ');
+    const lines = [];
+    let currentLine = '';
+
+    for (let i = 0; i < words.length; i++) {
+      const testLine = currentLine ? currentLine + ' ' + words[i] : words[i];
+      const metrics = this.ctx.measureText(testLine);
+      if (metrics.width > maxWidth) {
+        if (currentLine) lines.push(currentLine);
+        if (lines.length >= maxLines) break;
+        currentLine = words[i];
+      } else {
+        currentLine = testLine;
+      }
+    }
+    if (lines.length < maxLines && currentLine) {
+      lines.push(currentLine);
+    }
+    if (lines.length === maxLines && words.length > 0) {
+      let last = lines[lines.length - 1];
+      while (last.length > 3 && this.ctx.measureText(last + '...').width > maxWidth) {
+        last = last.slice(0, -1);
+      }
+      lines[lines.length - 1] = last.trim() + '...';
+    }
+    return lines;
+  },
+
+  /**
    * Draws subtle Jeffersonian desk grid dots for spatial orientation without visual noise.
    */
   _drawDeskGrid: function(scale, offsetX, offsetY) {
@@ -236,14 +292,14 @@ window.MyProjectCanvasRenderer = {
       const spineColor = (isFilterActive && isFilterMatch) ? '#b57614' : (isSelected ? '#076678' : (isHovered ? '#a89984' : '#d5c4a1'));
       this.ctx.fillStyle = spineColor;
       this.ctx.beginPath();
-      this.ctx.roundRect(node.x, node.y, 4, node.height, [borderRadius, 0, 0, borderRadius]);
+      this.ctx.roundRect(node.x, node.y, 6, node.height, [borderRadius, 0, 0, borderRadius]);
       this.ctx.fill();
     } else {
       // Top tab indicator for Portfolios (Folders)
       const tabColor = (isFilterActive && isFilterMatch) ? '#b57614' : (isSelected ? '#076678' : (isHovered ? '#bdae93' : '#d5c4a1'));
       this.ctx.fillStyle = tabColor;
       this.ctx.beginPath();
-      this.ctx.roundRect(node.x + 12, node.y, Math.min(80, node.width - 24), 4, [2, 2, 0, 0]);
+      this.ctx.roundRect(node.x + 16, node.y, Math.min(100, node.width - 32), 5, [3, 3, 0, 0]);
       this.ctx.fill();
     }
 
@@ -278,9 +334,13 @@ window.MyProjectCanvasRenderer = {
     if (!node.isEditing) {
       this.ctx.globalAlpha = textAlpha;
 
-      // Header icon / badge
+      const innerX = node.x + 18;
+      const innerW = node.width - 36;
+      const rightX = node.x + node.width - 18;
+
+      // 1. Header row
       const badgeY = node.y + 18;
-      this.ctx.font = "11px 'Vollkorn', serif";
+      this.ctx.font = "12px 'Vollkorn', serif";
       this.ctx.fillStyle = isSelected ? '#076678' : '#7c6f64';
       this.ctx.textAlign = 'left';
       this.ctx.textBaseline = 'middle';
@@ -288,59 +348,154 @@ window.MyProjectCanvasRenderer = {
       if (!isSheet) {
         const childCount = Array.isArray(node.children) ? node.children.length : 0;
         const countText = childCount === 1 ? '1 sheet' : `${childCount} sheets`;
-        this.ctx.fillText(`📁 Portfolio · ${countText}`, node.x + 14, badgeY);
+        this.ctx.fillText(`📁 Portfolio · ${countText}`, innerX, badgeY);
       } else {
-        this.ctx.fillText(`📄 Sheet`, node.x + 14, badgeY);
+        const wordCount = this.getWordCountFunction ? this.getWordCountFunction(node.content || '') : 0;
+        this.ctx.fillText(`📄 Sheet`, innerX, badgeY);
+
+        // Header right: word count & read time
+        this.ctx.textAlign = 'right';
+        const readTime = Math.max(1, Math.round(wordCount / 200));
+        this.ctx.font = "11px 'Vollkorn', serif";
+        this.ctx.fillStyle = '#7c6f64';
+        this.ctx.fillText(`${wordCount}w · ~${readTime}m read`, rightX, badgeY);
       }
 
-      // Title
-      this.ctx.fillStyle = isSelected ? '#1d2021' : AppConstants.DEFAULT_TEXT_COLOR;
-      this.ctx.font = isSelected ? "bold 16px 'Vollkorn', serif" : AppConstants.DEFAULT_FONT_BOLD;
+      // 2. Title
+      this.ctx.fillStyle = isSelected ? '#1d2021' : (AppConstants.DEFAULT_TEXT_COLOR || '#282828');
+      this.ctx.font = isSelected ? "bold 17px 'Vollkorn', serif" : (AppConstants.DEFAULT_FONT_BOLD || "bold 17px 'Vollkorn', serif");
       this.ctx.textAlign = 'left';
-      this.ctx.textBaseline = 'middle';
+      this.ctx.textBaseline = 'top';
 
-      // Clip title text if longer than card width
-      const maxTitleWidth = node.width - 28;
       let displayTitle = node.title || 'Untitled';
-      if (this.ctx.measureText(displayTitle).width > maxTitleWidth) {
-        while (displayTitle.length > 3 && this.ctx.measureText(displayTitle + '...').width > maxTitleWidth) {
+      if (this.ctx.measureText(displayTitle).width > innerW) {
+        while (displayTitle.length > 3 && this.ctx.measureText(displayTitle + '...').width > innerW) {
           displayTitle = displayTitle.slice(0, -1);
         }
         displayTitle += '...';
       }
-      this.ctx.fillText(displayTitle, node.x + 14, node.y + node.height / 2 - 4);
+      this.ctx.fillText(displayTitle, innerX, node.y + 36);
 
-      // Metadata footer
-      if (isSheet && this.getWordCountFunction) {
-        const wordCount = this.getWordCountFunction(node.content || '');
-
-        // Subtle word density progress bar across bottom of sheet
-        const densityGoal = (node.wordGoal && node.wordGoal > 0) ? node.wordGoal : 1000;
-        const progress = Math.min(1.0, wordCount / densityGoal);
-        const barWidth = (node.width - 28) * progress;
-
-        this.ctx.fillStyle = 'rgba(189, 174, 147, 0.25)';
-        this.ctx.fillRect(node.x + 14, node.y + node.height - 18, node.width - 28, 2);
-
-        this.ctx.fillStyle = isSelected ? '#076678' : '#79740e';
-        this.ctx.fillRect(node.x + 14, node.y + node.height - 18, barWidth, 2);
-
-        // Word count text
-        this.ctx.font = AppConstants.WORD_COUNT_FONT || "12px 'Vollkorn', serif";
-        this.ctx.fillStyle = AppConstants.WORD_COUNT_COLOR || '#7c6f64';
-        this.ctx.textAlign = 'right';
-        this.ctx.textBaseline = 'bottom';
-        this.ctx.fillText(`${wordCount} words`, node.x + node.width - 14, node.y + node.height - 6);
+      // 3. Subtle separator rule below title
+      if (this.ctx.moveTo && this.ctx.lineTo) {
+        this.ctx.strokeStyle = 'rgba(189, 174, 147, 0.35)';
+        this.ctx.lineWidth = 1 / scale;
+        this.ctx.beginPath();
+        this.ctx.moveTo(innerX, node.y + 64);
+        this.ctx.lineTo(rightX, node.y + 64);
+        this.ctx.stroke();
       }
 
-      // Display primary tag pill if available
+      // 4. Body Content Preview / Children List
+      const bodyY = node.y + 74;
+      if (isSheet) {
+        const plainText = this._extractPlainText(node.content || '');
+        if (plainText) {
+          this.ctx.font = AppConstants.EXCERPT_FONT || "13px 'Vollkorn', serif";
+          this.ctx.fillStyle = AppConstants.EXCERPT_COLOR || '#504945';
+          this.ctx.textAlign = 'left';
+          this.ctx.textBaseline = 'top';
+
+          const lines = this._wrapTextLines(plainText, innerW, 3);
+          lines.forEach((line, idx) => {
+            this.ctx.fillText(line, innerX, bodyY + (idx * 19));
+          });
+        } else {
+          this.ctx.font = "italic 13px 'Vollkorn', serif";
+          this.ctx.fillStyle = '#a89984';
+          this.ctx.textAlign = 'left';
+          this.ctx.textBaseline = 'top';
+          this.ctx.fillText('Empty sheet — double-click or press Enter to write...', innerX, bodyY + 6);
+        }
+      } else {
+        // Portfolio: list up to 3 children
+        const children = Array.isArray(node.children) ? node.children : [];
+        if (children.length > 0) {
+          this.ctx.textAlign = 'left';
+          this.ctx.textBaseline = 'top';
+          const maxShow = Math.min(3, children.length);
+          for (let i = 0; i < maxShow; i++) {
+            if (i === 2 && children.length > 3) {
+              this.ctx.font = "italic 12px 'Vollkorn', serif";
+              this.ctx.fillStyle = '#7c6f64';
+              this.ctx.fillText(`+ ${children.length - 2} more items inside...`, innerX, bodyY + (i * 20));
+              break;
+            }
+            const child = children[i];
+            const icon = child.type === 'text' ? '• ' : '📁 ';
+            let itemText = icon + (child.title || 'Untitled');
+            this.ctx.font = "13px 'Vollkorn', serif";
+            this.ctx.fillStyle = '#504945';
+            if (this.ctx.measureText(itemText).width > innerW) {
+              while (itemText.length > 4 && this.ctx.measureText(itemText + '...').width > innerW) {
+                itemText = itemText.slice(0, -1);
+              }
+              itemText += '...';
+            }
+            this.ctx.fillText(itemText, innerX, bodyY + (i * 20));
+          }
+        } else {
+          this.ctx.font = "italic 13px 'Vollkorn', serif";
+          this.ctx.fillStyle = '#a89984';
+          this.ctx.textAlign = 'left';
+          this.ctx.textBaseline = 'top';
+          this.ctx.fillText('Empty portfolio — double-click to explore...', innerX, bodyY + 6);
+        }
+      }
+
+      // 5. Metadata Footer
+      const footerY = node.y + node.height - 14;
+
+      if (isSheet && this.getWordCountFunction) {
+        const wordCount = this.getWordCountFunction(node.content || '');
+        const densityGoal = (node.wordGoal && node.wordGoal > 0) ? node.wordGoal : 1000;
+        const progress = Math.min(1.0, wordCount / densityGoal);
+        const barWidth = innerW * progress;
+
+        // Density bar
+        this.ctx.fillStyle = 'rgba(189, 174, 147, 0.25)';
+        this.ctx.fillRect(innerX, node.y + node.height - 30, innerW, 2.5);
+
+        this.ctx.fillStyle = isSelected ? '#076678' : '#79740e';
+        this.ctx.fillRect(innerX, node.y + node.height - 30, barWidth, 2.5);
+      }
+
+      // Tags pills (bottom left)
       if (Array.isArray(node.tags) && node.tags.length > 0) {
-        const firstTag = '#' + node.tags[0];
+        let tagOffset = innerX;
+        node.tags.slice(0, 3).forEach(tag => {
+          const tagStr = '#' + tag;
+          this.ctx.font = "11px 'Vollkorn', serif";
+          const tagW = this.ctx.measureText(tagStr).width;
+          if (tagOffset + tagW + 12 < rightX - 60) {
+            // Draw tag pill background
+            this.ctx.fillStyle = 'rgba(213, 196, 161, 0.35)';
+            this.ctx.beginPath();
+            this.ctx.roundRect(tagOffset, footerY - 14, tagW + 10, 16, 3);
+            this.ctx.fill();
+
+            // Draw tag pill text
+            this.ctx.fillStyle = '#665c54';
+            this.ctx.textAlign = 'left';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText(tagStr, tagOffset + 5, footerY - 6);
+            tagOffset += tagW + 16;
+          }
+        });
+      }
+
+      // Comment / certification indicator badges on bottom right
+      const commentCount = Array.isArray(node.comments) ? node.comments.length : 0;
+      const certCount = Array.isArray(node.certifiedWords) ? node.certifiedWords.length : 0;
+      if (commentCount > 0 || certCount > 0) {
+        let badges = [];
+        if (commentCount > 0) badges.push(`💬 ${commentCount}`);
+        if (certCount > 0) badges.push(`✦ ${certCount}`);
         this.ctx.font = "11px 'Vollkorn', serif";
         this.ctx.fillStyle = '#7c6f64';
-        this.ctx.textAlign = 'left';
-        this.ctx.textBaseline = 'bottom';
-        this.ctx.fillText(firstTag, node.x + 14, node.y + node.height - 6);
+        this.ctx.textAlign = 'right';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText(badges.join('  '), rightX, footerY - 6);
       }
     }
 

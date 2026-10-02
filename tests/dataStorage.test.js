@@ -61,8 +61,8 @@ describe('MyProjectDataStorage', () => {
         expect(normalized.title).toBe('Old Node');
         expect(typeof normalized.x).toBe('number');
         expect(typeof normalized.y).toBe('number');
-        expect(normalized.width).toBe(250);
-        expect(normalized.height).toBe(150);
+        expect(normalized.width).toBe(340);
+        expect(normalized.height).toBe(210);
         expect(Array.isArray(normalized.tags)).toBe(true);
         expect(Array.isArray(normalized.children)).toBe(true);
         expect(normalized.type).toBe('container');

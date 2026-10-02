@@ -20,6 +20,8 @@ describe('MyProjectCanvasRenderer Unit Tests', () => {
             fillText: jest.fn(),
             measureText: jest.fn(() => ({ width: 50 })),
             roundRect: jest.fn(),
+            moveTo: jest.fn(),
+            lineTo: jest.fn(),
             quadraticCurveTo: jest.fn(),
             setLineDash: jest.fn(),
             fillStyle: '',
@@ -145,6 +147,61 @@ describe('MyProjectCanvasRenderer Unit Tests', () => {
 
             CanvasRenderer._drawNode(matchingNode, true, false, 1);
             expect(mockCtx.globalAlpha).toBe(1.0); // full alpha
+        });
+
+        test('should extract plain text from html content', () => {
+            const html = '<p>The <strong>quick</strong> brown fox &amp; the lazy dog.&nbsp;More text.</p>';
+            const plain = CanvasRenderer._extractPlainText(html);
+            expect(plain).toBe('The quick brown fox & the lazy dog. More text.');
+        });
+
+        test('should wrap text into lines respecting maxLines', () => {
+            mockCtx.measureText.mockImplementation((text) => ({ width: text.length * 8 }));
+            const text = 'This is a long sentence that should be wrapped across multiple lines on the card';
+            const lines = CanvasRenderer._wrapTextLines(text, 100, 2);
+            expect(lines.length).toBeLessThanOrEqual(2);
+            expect(lines[lines.length - 1].endsWith('...')).toBe(true);
+        });
+
+        test('should render prose excerpt on sheet cards and children on portfolio cards', () => {
+            const sheetNode = {
+                id: 's1',
+                x: 10,
+                y: 10,
+                width: 340,
+                height: 210,
+                type: 'text',
+                title: 'Essay Draft',
+                content: '<p>In the beginning was the Word, and the Word was with God.</p>',
+                tags: ['philosophy']
+            };
+            CanvasRenderer._drawNode(sheetNode, true, false, 1);
+            expect(mockCtx.fillText).toHaveBeenCalledWith(
+                expect.stringContaining('In the beginning'),
+                expect.any(Number),
+                expect.any(Number)
+            );
+
+            const portfolioNode = {
+                id: 'p1',
+                x: 10,
+                y: 10,
+                width: 340,
+                height: 210,
+                type: 'container',
+                title: 'Essays',
+                children: [
+                    { id: 'c1', type: 'text', title: 'Chapter 1' },
+                    { id: 'c2', type: 'text', title: 'Chapter 2' }
+                ],
+                tags: []
+            };
+            CanvasRenderer._drawNode(portfolioNode, true, false, 1);
+            expect(mockCtx.fillText).toHaveBeenCalledWith(
+                expect.stringContaining('Chapter 1'),
+                expect.any(Number),
+                expect.any(Number)
+            );
         });
     });
 });

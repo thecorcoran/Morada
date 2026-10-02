@@ -7,10 +7,10 @@ describe('MyProjectNodeManager', () => {
         expect(node.id).toBe('test-chamber-1');
         expect(node.type).toBe('container');
         expect(node.title).toBe('New Portfolio');
-        expect(node.width).toBe(250);
-        expect(node.height).toBe(150);
-        expect(node.x).toBe(500 - 125);
-        expect(node.y).toBe(400 - 75);
+        expect(node.width).toBe(340);
+        expect(node.height).toBe(210);
+        expect(node.x).toBe(500 - 170);
+        expect(node.y).toBe(400 - 105);
         expect(node.tags).toEqual([]);
         expect(node.children).toEqual([]);
         expect(node.content).toBe('');
@@ -21,8 +21,8 @@ describe('MyProjectNodeManager', () => {
         expect(node.id).toBe('test-text-1');
         expect(node.type).toBe('text');
         expect(node.title).toBe('New Sheet');
-        expect(node.width).toBe(250);
-        expect(node.height).toBe(150);
+        expect(node.width).toBe(340);
+        expect(node.height).toBe(210);
     });
 
     test('should add tags to node without introducing duplicates', () => {

@@ -206,8 +206,14 @@ window.MyProjectDataStorage = {
       node.id = node.id || Date.now() + Math.random().toString(36).substr(2, 9);
       node.x = typeof node.x === 'number' ? node.x : 0;
       node.y = typeof node.y === 'number' ? node.y : 0;
-      node.width = node.width || (window.AppConstants ? AppConstants.NODE_WIDTH : 250);
-      node.height = node.height || (window.AppConstants ? AppConstants.NODE_HEIGHT : 150);
+      const defaultW = (window.AppConstants ? AppConstants.NODE_WIDTH : 340);
+      const defaultH = (window.AppConstants ? AppConstants.NODE_HEIGHT : 210);
+      if (!node.width || (node.width === 250 && node.height === 150)) {
+        node.width = defaultW;
+      }
+      if (!node.height || (node.width === defaultW && node.height === 150)) {
+        node.height = defaultH;
+      }
 
       if (!Array.isArray(node.children)) node.children = [];
       if (typeof node.type !== 'string') node.type = 'container';

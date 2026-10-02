@@ -160,9 +160,9 @@ window.MyProjectUIManager = {
             }
         });
         this.compendiumFilter.addEventListener('input', () => this.refreshCompendiumView());
-        // Top-level compendium/scriptorium buttons
+        // Top-level toolbar buttons
         this.openCompendiumBtn = document.getElementById('open-compendium-btn');
-        this.openScriptoriumBtn = document.getElementById('open-scriptorium-btn');
+        this.openScriptoriumBtn = document.getElementById('open-sheet-btn') || document.getElementById('open-scriptorium-btn');
     this.openNavigatorBtn = document.getElementById('open-navigator-btn');
     if (this.openNavigatorBtn) this.openNavigatorBtn.addEventListener('click', () => this.showNavigatorPanel());
         this.autoFitToggleBtn = document.getElementById('auto-fit-toggle');
@@ -194,7 +194,27 @@ window.MyProjectUIManager = {
                 window.MyProjectEditorManager.openEditorMode(sel);
             }
         });
-        // New Project button (creates a container node on the current view - typically main floor)
+        // New Sheet button (+ Sheet)
+        this.newSheetBtn = document.getElementById('new-sheet-btn');
+        if (this.newSheetBtn) this.newSheetBtn.addEventListener('click', () => {
+            const id = 'node-' + Date.now() + '-' + Math.floor(Math.random()*10000);
+            const centerX = (this.canvas ? (this.canvas.width/2) : 0);
+            const centerY = (this.canvas ? (this.canvas.height/2) : 0);
+            const jitterX = (Math.random() - 0.5) * 40;
+            const jitterY = (Math.random() - 0.5) * 40;
+            const newNode = window.MyProjectNodeManager.createNode(centerX + jitterX, centerY + jitterY, true, id);
+            const current = this.stateManager.getCurrentNodes();
+            current.push(newNode);
+            this.stateManager.setCurrentNodes(current);
+            this.stateManager.setSelectedNode(newNode);
+            if (this.saveNodesFunction) this.saveNodesFunction();
+            if (this.drawFunction) this.drawFunction();
+            if (this.outlinerSidebar && !this.outlinerSidebar.classList.contains('hidden')) {
+                this.renderOutliner();
+            }
+            if (typeof this.fitNodesToView === 'function' && this._autoFit) this.fitNodesToView();
+        });
+        // New Portfolio button (creates a container node on current view)
         this.newProjectBtn = document.getElementById('new-project-btn');
         if (this.newProjectBtn) this.newProjectBtn.addEventListener('click', () => {
             const id = 'node-' + Date.now() + '-' + Math.floor(Math.random()*10000);
@@ -207,6 +227,9 @@ window.MyProjectUIManager = {
             this.stateManager.setSelectedNode(newNode);
             if (this.saveNodesFunction) this.saveNodesFunction();
             if (this.drawFunction) this.drawFunction();
+            if (this.outlinerSidebar && !this.outlinerSidebar.classList.contains('hidden')) {
+                this.renderOutliner();
+            }
             if (typeof this.fitNodesToView === 'function' && this._autoFit) this.fitNodesToView();
         });
         // Timer and word-goal elements
@@ -685,10 +708,10 @@ window.MyProjectUIManager = {
             });
 
             const newTextBtn = makeBtn('New Text', () => {
-                // Prevent creating text/scriptorium nodes on the main floor (root view).
+                // Prevent creating text/sheet nodes on the main floor (root view).
                 const viewStack = this.stateManager.getViewStack();
                 if (!viewStack || viewStack.length === 0) {
-                    const createContainer = confirm('Scriptoria (text editors) cannot be created on the main floor. Create a new Project container here instead?');
+                    const createContainer = confirm('Sheets are best organized inside Portfolios. Create a new Portfolio here instead?');
                     if (!createContainer) return;
                     // fall through to create container
                     const idc = 'node-' + Date.now() + '-' + Math.floor(Math.random()*10000);
@@ -967,7 +990,7 @@ window.MyProjectUIManager = {
     _createSearchResultItemElement: function(result) {
         const resultEl = document.createElement('div');
         resultEl.className = 'search-result-item';
-        const pathString = ['The Grounds', ...(result.path ? result.path.map(p => p.title) : [])].join(' / ');
+        const pathString = ['The Desk', ...(result.path ? result.path.map(p => p.title) : [])].join(' / ');
         resultEl.innerHTML = `<div class="result-text">${result.title}</div><div class="result-path">${pathString}</div>`;
         resultEl.addEventListener('click', () => {
             if (this.navigateToNodeFunction && result.path) {
@@ -1012,8 +1035,8 @@ window.MyProjectUIManager = {
         const currentNodes = this.stateManager.getCurrentNodes();
         if (!currentNodes || currentNodes.length === 0) return;
 
-        const nodeWidth = (window.AppConstants && AppConstants.NODE_WIDTH) || 250;
-        const nodeHeight = (window.AppConstants && AppConstants.NODE_HEIGHT) || 150;
+        const nodeWidth = (window.AppConstants && AppConstants.NODE_WIDTH) || 340;
+        const nodeHeight = (window.AppConstants && AppConstants.NODE_HEIGHT) || 210;
         const gapX = 36;
         const gapY = 36;
 
@@ -2058,8 +2081,8 @@ window.MyProjectUIManager = {
             const metaRow = document.createElement('div'); metaRow.className = 'node-inspector-meta';
             const statsDiv = document.createElement('div'); statsDiv.className = 'node-inspector-stats';
             const searchDiv = document.createElement('div'); searchDiv.className = 'node-inspector-searchwrap';
-            const searchInput = document.createElement('input'); searchInput.type = 'search'; searchInput.placeholder = 'Search scriptoriums by title...'; searchInput.className = 'node-inspector-search';
-            try { searchInput.setAttribute('aria-label', 'Search scriptoriums by title, content, or tags'); } catch (e) {}
+            const searchInput = document.createElement('input'); searchInput.type = 'search'; searchInput.placeholder = 'Search sheets by title...'; searchInput.className = 'node-inspector-search';
+            try { searchInput.setAttribute('aria-label', 'Search sheets by title, content, or tags'); } catch (e) {}
             searchDiv.appendChild(searchInput);
             metaRow.appendChild(statsDiv); metaRow.appendChild(searchDiv);
             panel.appendChild(metaRow);
@@ -2067,12 +2090,12 @@ window.MyProjectUIManager = {
             // list container
             const list = document.createElement('div'); list.className = 'node-inspector-list';
 
-            // gather scriptoriums
+            // gather sheets
             const children = (node.children || []).filter(c => c && c.type === 'text');
-            const totalScriptoria = children.length;
+            const totalSheets = children.length;
             let totalWords = 0, totalComments = 0, totalCertified = 0;
             children.forEach(c => { totalWords += this.getWordCount(c.content); totalComments += (c.comments||[]).length; totalCertified += (c.certifiedWords||[]).length; });
-            statsDiv.innerHTML = `<div class="stats-item">Scriptoria: ${totalScriptoria}</div><div class="stats-item">Words: ${totalWords}</div><div class="stats-item">Comments: ${totalComments}</div><div class="stats-item">Certified: ${totalCertified}</div>`;
+            statsDiv.innerHTML = `<div class="stats-item">Sheets: ${totalSheets}</div><div class="stats-item">Words: ${totalWords}</div><div class="stats-item">Comments: ${totalComments}</div><div class="stats-item">Certified: ${totalCertified}</div>`;
 
             // populate list
             children.forEach(c => {

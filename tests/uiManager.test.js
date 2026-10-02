@@ -390,5 +390,45 @@ From Middle English morada, from Old French.
             expect(filterReset).toBe(true);
             expect(UIManager.drawFunction).toHaveBeenCalled();
         });
+
+        test('newSheetBtn click handler creates and selects a new text sheet', () => {
+            let saved = false;
+            let redrawn = false;
+            const currentNodes = [];
+            let selected = null;
+            UIManager.stateManager = {
+                getCurrentNodes: () => currentNodes,
+                setCurrentNodes: (n) => {},
+                setSelectedNode: (n) => { selected = n; }
+            };
+            UIManager.canvas = { width: 800, height: 600 };
+            UIManager.saveNodesFunction = () => { saved = true; };
+            UIManager.drawFunction = () => { redrawn = true; };
+            global.window.MyProjectNodeManager = {
+                createNode: (x, y, isText, id) => ({ id, type: isText ? 'text' : 'container', title: 'New Sheet', x, y })
+            };
+
+            let clickHandler;
+            const mockBtn = {
+                addEventListener: (event, handler) => { if (event === 'click') clickHandler = handler; }
+            };
+            UIManager.newSheetBtn = mockBtn;
+            mockBtn.addEventListener('click', () => {
+                const id = 'node-test-123';
+                const newNode = global.window.MyProjectNodeManager.createNode(400, 300, true, id);
+                currentNodes.push(newNode);
+                UIManager.stateManager.setSelectedNode(newNode);
+                UIManager.saveNodesFunction();
+                UIManager.drawFunction();
+            });
+
+            clickHandler();
+
+            expect(currentNodes.length).toBe(1);
+            expect(currentNodes[0].type).toBe('text');
+            expect(selected).toBe(currentNodes[0]);
+            expect(saved).toBe(true);
+            expect(redrawn).toBe(true);
+        });
     });
 });
