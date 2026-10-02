@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Morada — A Fractal Writing Environment</title>
+    <meta name="description" content="A visual, node-based desktop workspace for deep creative writing, scenic construction, and manuscript compilation.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&family=Cinzel:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #12100e;
+            --bg-card: #1c1815;
+            --bg-card-hover: #241f1b;
+            --border-card: #3a322c;
+            --border-highlight: #d4a373;
+            --accent-gold: #e5b27a;
+            --accent-leather: #8b5a2b;
+            --accent-crimson: #c94c36;
+            --text-primary: #fdfaf4;
+            --text-secondary: #c2b7ad;
+            --text-muted: #8c8278;
+            --font-title: 'Cinzel', serif;
+            --font-serif: 'Cormorant Garamond', Georgia, serif;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(ellipse at 50% 0%, rgba(212, 163, 115, 0.12) 0%, transparent 65%),
+                radial-gradient(circle at 10% 30%, rgba(139, 90, 43, 0.08) 0%, transparent 45%),
+                radial-gradient(circle at 90% 70%, rgba(201, 76, 54, 0.06) 0%, transparent 50%);
+        }
+
+        header {
+            padding: 24px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .logo-group {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .logo-symbol {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #8b5a2b, #4a2810);
+            border: 1px solid var(--accent-gold);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-title);
+            font-weight: 700;
+            font-size: 20px;
+            color: var(--accent-gold);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+
+        .logo-text {
+            font-family: var(--font-title);
+            font-size: 20px;
+            letter-spacing: 2px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            margin-left: 24px;
+            transition: color 0.2s;
+        }
+
+        nav a:hover {
+            color: var(--accent-gold);
+        }
+
+        .hero {
+            max-width: 960px;
+            margin: 80px auto 60px;
+            text-align: center;
+            padding: 0 24px;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            background: rgba(212, 163, 115, 0.1);
+            border: 1px solid rgba(212, 163, 115, 0.3);
+            color: var(--accent-gold);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 24px;
+        }
+
+        .hero h1 {
+            font-family: var(--font-serif);
+            font-size: clamp(40px, 6vw, 68px);
+            font-weight: 600;
+            line-height: 1.15;
+            color: #ffffff;
+            margin-bottom: 24px;
+            letter-spacing: -0.5px;
+        }
+
+        .hero h1 em {
+            font-style: italic;
+            color: var(--accent-gold);
+        }
+
+        .hero p {
+            font-size: clamp(17px, 2vw, 20px);
+            color: var(--text-secondary);
+            max-width: 720px;
+            margin: 0 auto 40px;
+            font-weight: 300;
+        }
+
+        .cta-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 48px;
+        }
+
+        .btn-download-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(135deg, #d4a373 0%, #aa7a48 100%);
+            color: #12100e;
+            text-decoration: none;
+            padding: 16px 36px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 17px;
+            letter-spacing: 0.5px;
+            box-shadow: 0 8px 24px rgba(212, 163, 115, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+        }
+
+        .btn-download-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(212, 163, 115, 0.35);
+            filter: brightness(1.05);
+        }
+
+        .btn-download-primary svg {
+            width: 22px;
+            height: 22px;
+            fill: currentColor;
+        }
+
+        .download-subtext {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .download-subtext a {
+            color: var(--accent-gold);
+            text-decoration: none;
+            margin: 0 4px;
+        }
+
+        .download-subtext a:hover {
+            text-decoration: underline;
+        }
+
+        .platform-strip {
+            display: flex;
+            justify-content: center;
+            gap: 18px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .platform-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.2s;
+        }
+
+        .platform-link:hover {
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+            background: rgba(212, 163, 115, 0.05);
+        }
+
+        .preview-wrapper {
+            max-width: 1080px;
+            margin: 0 auto 80px;
+            padding: 0 24px;
+        }
+
+        .preview-mockup {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(212, 163, 115, 0.15);
+            position: relative;
+        }
+
+        .mockup-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            margin-bottom: 20px;
+        }
+
+        .mockup-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .mockup-dot.red { background: #ff5f56; }
+        .mockup-dot.yellow { background: #ffbd2e; }
+        .mockup-dot.green { background: #27c93f; }
+
+        .mockup-title {
+            margin-left: 12px;
+            font-size: 12px;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .mockup-canvas-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            min-height: 380px;
+        }
+
+        @media (max-width: 768px) {
+            .mockup-canvas-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .mockup-node {
+            border-radius: 8px;
+            padding: 16px;
+            background: #181412;
+            border: 1px solid #332a24;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .mockup-portfolio {
+            border-color: #8b5a2b;
+            background: linear-gradient(180deg, #201a16, #16120f);
+            border-left: 6px solid #8b5a2b;
+        }
+
+        .mockup-portfolio .node-title {
+            font-family: var(--font-title);
+            font-size: 16px;
+            color: var(--accent-gold);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mockup-sheet {
+            border-color: #4a3e36;
+            background: #1e1916;
+            border-top: 3px solid #d4a373;
+        }
+
+        .mockup-sheet .node-title {
+            font-family: var(--font-serif);
+            font-size: 17px;
+            color: #ffffff;
+        }
+
+        .node-prose {
+            font-family: var(--font-serif);
+            font-size: 14.5px;
+            color: #d8cec4;
+            line-height: 1.5;
+            font-style: italic;
+        }
+
+        .node-meta {
+            margin-top: auto;
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .features-section {
+            max-width: 1200px;
+            margin: 0 auto 100px;
+            padding: 0 24px;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 56px;
+        }
+
+        .section-header h2 {
+            font-family: var(--font-serif);
+            font-size: 38px;
+            color: #ffffff;
+            margin-bottom: 12px;
+        }
+
+        .section-header p {
+            color: var(--text-secondary);
+            font-size: 16px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 10px;
+            padding: 32px 28px;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(212, 163, 115, 0.4);
+            background: var(--bg-card-hover);
+        }
+
+        .feature-icon {
+            font-size: 28px;
+            margin-bottom: 16px;
+            display: inline-block;
+        }
+
+        .feature-card h3 {
+            font-family: var(--font-serif);
+            font-size: 22px;
+            color: #ffffff;
+            margin-bottom: 12px;
+        }
+
+        .feature-card p {
+            font-size: 14.5px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .quote-callout {
+            max-width: 840px;
+            margin: 0 auto 100px;
+            padding: 40px;
+            background: radial-gradient(circle at center, rgba(139, 90, 43, 0.15) 0%, rgba(20, 16, 14, 0.6) 100%);
+            border: 1px solid rgba(212, 163, 115, 0.3);
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .quote-callout blockquote {
+            font-family: var(--font-serif);
+            font-size: 24px;
+            font-style: italic;
+            color: #f5ede4;
+            line-height: 1.45;
+            margin-bottom: 16px;
+        }
+
+        .quote-callout cite {
+            font-family: var(--font-sans);
+            font-size: 13px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--accent-gold);
+            font-style: normal;
+        }
+
+        .install-guide {
+            max-width: 860px;
+            margin: 0 auto 100px;
+            padding: 0 24px;
+        }
+
+        .install-tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 8px;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-family: var(--font-sans);
+            font-size: 14px;
+            font-weight: 500;
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            color: var(--accent-gold);
+            background: rgba(212, 163, 115, 0.1);
+        }
+
+        .tab-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 8px;
+            padding: 24px;
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        .tab-panel h4 {
+            font-size: 16px;
+            color: #ffffff;
+            margin-bottom: 10px;
+        }
+
+        .tab-panel ol {
+            padding-left: 20px;
+            color: var(--text-secondary);
+            font-size: 14.5px;
+            line-height: 1.8;
+        }
+
+        .code-snippet {
+            background: #100e0c;
+            border: 1px solid #2d2621;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 13px;
+            color: #e5b27a;
+            margin: 8px 0;
+            display: block;
+        }
+
+        footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 40px 24px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        footer a {
+            color: var(--accent-gold);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="#" class="logo-group">
+            <div class="logo-symbol">M</div>
+            <div class="logo-text">MORADA</div>
+        </a>
+        <nav>
+            <a href="#features">Features</a>
+            <a href="#install">Installation</a>
+            <a href="https://github.com/thecorcoran/Morada" target="_blank" rel="noopener">GitHub</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <span class="hero-badge">Desktop Application • Version 1.0</span>
+            <h1>The Scholar's Desk for <em>Deep Creative Writing</em></h1>
+            <p>
+                A visual, node-based workspace where prose breathes. Organize chapters into leather-bound Portfolios, draft scenes on vellum Sheets, and refine your craft with 55 Scenic Method maxims and real-time stylistic analysis.
+            </p>
+
+            <div class="cta-container">
+                <a id="primary-download-btn" href="https://github.com/thecorcoran/Morada/releases/latest" class="btn-download-primary">
+                    <svg viewBox="0 0 24 24" id="primary-os-icon"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+                    <span id="primary-download-text">Download Morada for Desktop</span>
+                </a>
+                <div class="download-subtext">
+                    Free &amp; Open Source • 100% Local-First Privacy • 
+                    <a href="https://github.com/thecorcoran/Morada/releases" target="_blank" rel="noopener">All Releases &amp; Checksums</a>
+                </div>
+
+                <div class="platform-strip">
+                    <a id="link-win" href="https://github.com/thecorcoran/Morada/releases/latest/download/Morada-Setup-1.0.0.exe" class="platform-link">
+                        🪟 Windows (.exe)
+                    </a>
+                    <a id="link-mac" href="https://github.com/thecorcoran/Morada/releases/latest/download/Morada-1.0.0.dmg" class="platform-link">
+                        🍎 macOS (.dmg)
+                    </a>
+                    <a id="link-linux-appimage" href="https://github.com/thecorcoran/Morada/releases/latest/download/Morada-1.0.0.AppImage" class="platform-link">
+                        🐧 Linux (.AppImage)
+                    </a>
+                    <a id="link-linux-deb" href="https://github.com/thecorcoran/Morada/releases/latest/download/morada_1.0.0_amd64.deb" class="platform-link">
+                        📦 Debian / Ubuntu (.deb)
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section class="preview-wrapper">
+            <div class="preview-mockup">
+                <div class="mockup-header">
+                    <span class="mockup-dot red"></span>
+                    <span class="mockup-dot yellow"></span>
+                    <span class="mockup-dot green"></span>
+                    <span class="mockup-title">Morada — The Scholar's Desk</span>
+                </div>
+                <div class="mockup-canvas-grid">
+                    <div class="mockup-node mockup-portfolio">
+                        <div class="node-title">📁 Act I: The Sycamore Crossing</div>
+                        <div class="node-prose">
+                            A portfolio containing 4 vellum sheets. Double-click to dive inside the chapter chamber.
+                        </div>
+                        <div class="node-meta">
+                            <span>4 Sheets • 3,420 Words</span>
+                            <span>Applied: Maxims #1, #2, #5</span>
+                        </div>
+                    </div>
+                    <div class="mockup-node mockup-sheet">
+                        <div class="node-title">📄 Scene 1: Arrival at the River</div>
+                        <div class="node-prose">
+                            “The river was not grey, but the slate of an iron kettle. He felt the cold through the soles of his boots before he saw the ice...”
+                        </div>
+                        <div class="node-meta">
+                            <span>842 Words • Grade 7.2</span>
+                            <span>0 Passive • 0 Adverbs</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="features-section">
+            <div class="section-header">
+                <h2>Forged for the Literary Mind</h2>
+                <p>Designed around the rhythm of long-form writing and the tactile philosophy of the writer's desk.</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <span class="feature-icon">📜</span>
+                    <h3>The 55 Maxims of Scenic Method</h3>
+                    <p>Access the timeless principles of Henry James, Caroline Gordon, and Flannery O'Connor directly in your writing drawer. Shuffle the maxim of the moment, track applied techniques, and insert guidance seamlessly.</p>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-icon">✒️</span>
+                    <h3>Strunk &amp; White Craft Engine</h3>
+                    <p>Live, non-destructive stylistic analysis. Spot passive voice and superfluous adverbs in real-time, inspect Flesch-Kincaid readability, and certify words with Walker Percy definitions.</p>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-icon">🗂️</span>
+                    <h3>Fractal Portfolios &amp; Sheets</h3>
+                    <p>A dual-tier visual graph. Portfolios group chapters and scenes into leather-bound containers, while vellum Sheets provide distraction-free writing with full-screen and Word export capabilities.</p>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-icon">🛡️</span>
+                    <h3>7-Layer Fail-Safe Persistence</h3>
+                    <p>Continuous debounced auto-saves, atomic file writes (.tmp + rename), pre-save backup rotation, and emergency browser mirrors guarantee that you never lose a single sentence.</p>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-icon">📦</span>
+                    <h3>Archives Vault</h3>
+                    <p>Declutter your desk without permanent deletion. Archive completed acts and notes into a secluded velvet vault, review them anytime, and restore them with a single click.</p>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-icon">🔒</span>
+                    <h3>100% Local &amp; Private</h3>
+                    <p>No mandatory accounts, no cloud sync lock-in, and no telemetry. All your drafts remain exclusively on your computer in plain, human-readable JSON and standard documents.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="quote-callout">
+            <blockquote>
+                “Render, never report. Show, do not tell. Trust the concrete detail; despise the abstract noun.”
+            </blockquote>
+            <cite>— Maxim #2 &amp; #6 of the Scenic Method</cite>
+        </section>
+
+        <section id="install" class="install-guide">
+            <div class="section-header">
+                <h2>Installation Instructions</h2>
+                <p>Choose your operating system below for simple installation steps.</p>
+            </div>
+
+            <div class="install-tabs">
+                <button class="tab-btn active" onclick="switchTab('win')">Windows</button>
+                <button class="tab-btn" onclick="switchTab('mac')">macOS</button>
+                <button class="tab-btn" onclick="switchTab('linux')">Linux</button>
+            </div>
+
+            <div id="tab-win" class="tab-panel active">
+                <h4>Windows Installation (10/11)</h4>
+                <ol>
+                    <li>Download the installer: <strong>Morada-Setup-1.0.0.exe</strong>.</li>
+                    <li>Double-click the installer. If Windows SmartScreen appears, click <em>More info</em> and then <em>Run anyway</em>.</li>
+                    <li>Follow the setup wizard to create desktop and start menu shortcuts.</li>
+                </ol>
+            </div>
+
+            <div id="tab-mac" class="tab-panel">
+                <h4>macOS Installation (Apple Silicon &amp; Intel)</h4>
+                <ol>
+                    <li>Download the disk image: <strong>Morada-1.0.0.dmg</strong>.</li>
+                    <li>Open the downloaded DMG file and drag <strong>Morada</strong> into your <strong>Applications</strong> folder.</li>
+                    <li>If macOS Gatekeeper asks for verification on first open, right-click (or Control-click) Morada in Applications and choose <em>Open</em>.</li>
+                </ol>
+            </div>
+
+            <div id="tab-linux" class="tab-panel">
+                <h4>Linux Installation</h4>
+                <ol>
+                    <li><strong>AppImage (Any Distro):</strong>
+                        Download <code>Morada-1.0.0.AppImage</code>, grant execute permission, and launch:
+                        <code class="code-snippet">chmod +x Morada-1.0.0.AppImage && ./Morada-1.0.0.AppImage</code>
+                    </li>
+                    <li><strong>Debian / Ubuntu:</strong>
+                        Download <code>morada_1.0.0_amd64.deb</code> and install via terminal:
+                        <code class="code-snippet">sudo dpkg -i morada_1.0.0_amd64.deb</code>
+                    </li>
+                </ol>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Morada Writing Environment • Open Source under ISC License</p>
+        <p style="margin-top: 6px;">Hosted on <a href="https://github.com/thecorcoran/Morada" target="_blank" rel="noopener">GitHub</a> • Built with Electron &amp; Web Technologies</p>
+    </footer>
+
+    <script>
+        // Automatic OS Detection for Smart Download Button
+        (function() {
+            var ua = navigator.userAgent || '';
+            var platform = navigator.platform || '';
+            var primaryBtn = document.getElementById('primary-download-btn');
+            var primaryText = document.getElementById('primary-download-text');
+            var primaryIcon = document.getElementById('primary-os-icon');
+
+            var releaseBase = 'https://github.com/thecorcoran/Morada/releases/latest/download/';
+
+            if (/Win/i.test(platform) || /Windows/i.test(ua)) {
+                primaryBtn.href = releaseBase + 'Morada-Setup-1.0.0.exe';
+                primaryText.textContent = 'Download Morada for Windows (.exe)';
+                highlightPlatform('link-win');
+                switchTab('win');
+            } else if (/Mac/i.test(platform) || /Macintosh/i.test(ua)) {
+                primaryBtn.href = releaseBase + 'Morada-1.0.0.dmg';
+                primaryText.textContent = 'Download Morada for Mac (.dmg)';
+                highlightPlatform('link-mac');
+                switchTab('mac');
+            } else if (/Linux/i.test(platform) || /X11/i.test(ua)) {
+                primaryBtn.href = releaseBase + 'Morada-1.0.0.AppImage';
+                primaryText.textContent = 'Download Morada for Linux (.AppImage)';
+                highlightPlatform('link-linux-appimage');
+                switchTab('linux');
+            }
+
+            function highlightPlatform(id) {
+                var el = document.getElementById(id);
+                if (el) {
+                    el.style.borderColor = 'var(--accent-gold)';
+                    el.style.color = 'var(--accent-gold)';
+                    el.style.background = 'rgba(212, 163, 115, 0.15)';
+                }
+            }
+        })();
+
+        function switchTab(os) {
+            document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+            document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+
+            var btn = Array.from(document.querySelectorAll('.tab-btn')).find(function(b) {
+                return b.textContent.toLowerCase().indexOf(os) !== -1;
+            });
+            if (btn) btn.classList.add('active');
+
+            var panel = document.getElementById('tab-' + os);
+            if (panel) panel.classList.add('active');
+        }
+    </script>
+</body>
+</html>
