@@ -9,7 +9,7 @@ app.commandLine.appendSwitch('ignore-certificate-errors');
 const createWindow = () => {
   const mainWindow = new BrowserWindow({
     fullscreen: false,
-    fullscreenable: false,
+    fullscreenable: true,
     width: 1200,
     height: 800,
     center: true,

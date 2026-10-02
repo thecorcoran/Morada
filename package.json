@@ -8,9 +8,13 @@
     "postinstall": "mkdir -p ./assets && ncp node_modules/tinymce/skins ./assets/skins && ncp node_modules/tinymce/themes ./assets/themes",
     "test": "jest",
     "lint": "eslint .",
-    "dist": "electron-builder"
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "dist:linux": "electron-builder --linux",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac"
   },
-  "author": "",
+  "author": "Morada Authors",
   "license": "ISC",
   "devDependencies": {
     "electron": "^31.0.1",
@@ -25,11 +29,44 @@
     "sortablejs": "^1.15.6"
   },
   "build": {
-    "appId": "com.yourcompany.morada",
+    "appId": "com.morada.app",
     "productName": "Morada",
+    "copyright": "Copyright © 2026",
+    "directories": {
+      "output": "dist"
+    },
     "files": [
       "**/*",
-      "!**/*.test.js"
-    ]
+      "!**/*.test.js",
+      "!tests/**",
+      "!.*",
+      "!dist/**"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Office"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   }
 }
