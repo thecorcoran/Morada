@@ -55,7 +55,7 @@ window.MyProjectEditorManager = {
                         tools: { title: 'Tools', items: 'wordcount' }
                     },
                     menubar: 'file edit view insert format craft tools',
-                    toolbar: 'undo redo | bold italic underline | comment certify etymology | craftdrawer fullview saveclose',
+                    toolbar: 'undo redo | bold italic underline blockquote | bullist numlist | comment certify etymology | craftdrawer fullview | saveclose',
                     statusbar: true,
                     content_css: false,
                     content_style: `
@@ -117,42 +117,100 @@ window.MyProjectEditorManager = {
                         this.tinymceEditor = editor;
                         this.tinyMCEAvailable = true;
 
-                        // Mark main content container as tinymce-active to hide redundant outer toolbar
+                        // Mark main content container as tinymce-active to hide redundant outer fallback toolbar
                         try {
                             const editorMain = document.getElementById('editor-main-content');
                             if (editorMain) editorMain.classList.add('tinymce-active');
                         } catch (e) {}
 
-                        // Register custom text window toolbar buttons
-                        editor.ui.registry.addButton('craftdrawer', {
-                            text: 'Craft Drawer',
-                            tooltip: 'Toggle Craft Drawer (Ctrl+Shift+D)',
-                            onAction: () => this.toggleCraftDrawer()
-                        });
+                        // Register custom Scholar's Desk icons
+                        editor.ui.registry.addIcon('craft-quill', '<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M3 21v-3l11-11 3 3L6 21H3Zm14.7-12.3-3-3L16.4 4a1.4 1.4 0 0 1 2 0l1.6 1.6a1.4 1.4 0 0 1 0 2l-2.3 2.1Z"/></svg>');
+                        editor.ui.registry.addIcon('craft-book', '<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M19 2H6a3 3 0 0 0-3 3v14a3 3 0 0 0 3 3h13a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1ZM6 4h12v12H6a1 1 0 0 1-1-.1V5a1 1 0 0 1 1-1Zm12 16H6a1 1 0 0 1 0-2h12v2Z"/></svg>');
+                        editor.ui.registry.addIcon('craft-drawer', '<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Zm0 6H5V5h14v4Zm-5 2v2h-4v-2h4Zm5 8H5v-4h4v1a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1h4v4Z"/></svg>');
+                        editor.ui.registry.addIcon('craft-save', '<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2ZM5 5v14h14V7.8L16.2 5H5Zm2 2h8v3H7V7Zm0 7h10v5H7v-5Z"/></svg>');
+
+                        // 1. Scholar Annotation Tools (Group 4)
                         editor.ui.registry.addButton('comment', {
+                            icon: 'comment',
                             text: 'Comment',
                             tooltip: 'Add Comment to Selection (Ctrl+M)',
                             onAction: () => this.addCommentAtSelection()
                         });
                         editor.ui.registry.addButton('certify', {
+                            icon: 'craft-quill',
                             text: 'Certify',
-                            tooltip: 'Certify Highlighted Word (Ctrl+Shift+C)',
+                            tooltip: 'Certify Highlighted Word (Percy) (Ctrl+Shift+C)',
                             onAction: () => this.certifySelection()
                         });
                         editor.ui.registry.addButton('etymology', {
+                            icon: 'craft-book',
                             text: 'Etymology',
-                            tooltip: 'Look up Word Etymology (Ctrl+Shift+E)',
+                            tooltip: 'Look up Word Etymology (Wiktionary) (Ctrl+Shift+E)',
                             onAction: () => this.lookupEtymologyAtSelection()
                         });
-                        editor.ui.registry.addButton('fullview', {
-                            text: 'Full Screen',
-                            tooltip: 'Toggle Full Screen Mode (F11)',
-                            onAction: () => this.toggleFullView()
+
+                        // 2. Workspace & Layout Controls (Group 5: Right-Docked Toggle Buttons)
+                        editor.ui.registry.addToggleButton('craftdrawer', {
+                            icon: 'craft-drawer',
+                            text: 'Craft Drawer',
+                            tooltip: 'Toggle Craft Drawer Sidebar (Ctrl+Shift+D)',
+                            onAction: (api) => {
+                                this.toggleCraftDrawer();
+                                const sidebar = (this.uiManager && this.uiManager.editorInspectorSidebar)
+                                    ? this.uiManager.editorInspectorSidebar
+                                    : document.getElementById('editor-inspector-sidebar');
+                                const isOpen = sidebar && !sidebar.classList.contains('hidden');
+                                api.setActive(Boolean(isOpen));
+                            },
+                            onSetup: (api) => {
+                                this._tinymceCraftDrawerApi = api;
+                                const sidebar = (this.uiManager && this.uiManager.editorInspectorSidebar)
+                                    ? this.uiManager.editorInspectorSidebar
+                                    : document.getElementById('editor-inspector-sidebar');
+                                const isOpen = sidebar && !sidebar.classList.contains('hidden');
+                                api.setActive(Boolean(isOpen));
+                                return () => { this._tinymceCraftDrawerApi = null; };
+                            }
                         });
+                        editor.ui.registry.addToggleButton('fullview', {
+                            icon: 'fullscreen',
+                            text: 'Full Screen',
+                            tooltip: 'Toggle Full Screen Focus Mode (F11)',
+                            onAction: (api) => {
+                                this.toggleFullView();
+                                api.setActive(Boolean(this.isFullView));
+                            },
+                            onSetup: (api) => {
+                                this._tinymceFullViewApi = api;
+                                api.setActive(Boolean(this.isFullView));
+                                return () => { this._tinymceFullViewApi = null; };
+                            }
+                        });
+
+                        // 3. Primary Document Action: Save & Close Sheet (Group 6: Rightmost Exit)
                         editor.ui.registry.addButton('saveclose', {
+                            icon: 'craft-save',
                             text: 'Save & Close',
                             tooltip: 'Save Sheet & Return to Desk (Esc)',
                             onAction: () => this.closeEditorMode()
+                        });
+
+                        // Right-dock workspace controls dynamically after editor rendering
+                        editor.on('init', () => {
+                            try {
+                                const container = editor.editorContainer || document.querySelector('.tox.tox-tinymce');
+                                if (container) {
+                                    const drawerBtn = container.querySelector('[data-mce-name="craftdrawer"]') ||
+                                                      container.querySelector('[aria-label*="Craft Drawer"]') ||
+                                                      container.querySelector('[title*="Craft Drawer"]');
+                                    if (drawerBtn) {
+                                        const group = drawerBtn.closest('.tox-toolbar__group');
+                                        if (group) group.style.marginLeft = 'auto';
+                                    }
+                                }
+                            } catch (err) {
+                                console.warn('[editor] Failed to dock workspace group right:', err);
+                            }
                         });
 
                         // Register custom menu items for menubar
@@ -590,6 +648,10 @@ window.MyProjectEditorManager = {
         if (toggleBtn) {
             toggleBtn.textContent = shouldShow ? 'Craft Drawer ▾' : 'Craft Drawer ▸';
         }
+
+        if (this._tinymceCraftDrawerApi && typeof this._tinymceCraftDrawerApi.setActive === 'function') {
+            this._tinymceCraftDrawerApi.setActive(shouldShow);
+        }
     },
 
     /**
@@ -755,6 +817,13 @@ window.MyProjectEditorManager = {
 
         const toggleBtn = document.getElementById('toggle-craft-drawer-btn');
         if (toggleBtn) toggleBtn.textContent = 'Craft Drawer ▾';
+
+        if (this._tinymceCraftDrawerApi && typeof this._tinymceCraftDrawerApi.setActive === 'function') {
+            this._tinymceCraftDrawerApi.setActive(true);
+        }
+        if (this._tinymceFullViewApi && typeof this._tinymceFullViewApi.setActive === 'function') {
+            this._tinymceFullViewApi.setActive(Boolean(this.isFullView));
+        }
 
         // Populate Craft Drawer panels
         this.renderCraftCertifiedList(node);
@@ -965,6 +1034,10 @@ window.MyProjectEditorManager = {
         if (exitBtn) {
             if (shouldBeFull) exitBtn.classList.remove('hidden');
             else exitBtn.classList.add('hidden');
+        }
+
+        if (this._tinymceFullViewApi && typeof this._tinymceFullViewApi.setActive === 'function') {
+            this._tinymceFullViewApi.setActive(shouldBeFull);
         }
     },
 

@@ -1658,14 +1658,14 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
     cursor: pointer;
 }
 
-/* Editor Toolbar & Scholar Aesthetic */
+/* Editor Toolbar & Scholar Aesthetic (Fallback Editor Toolbar) */
 #editor-toolbar {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 10px;
-  padding: 8px 12px;
-  background-color: #f7f2e7;
+  padding: 6px 12px;
+  background-color: #faf5ec;
   border: 1px solid #d5c4a1;
   border-radius: var(--border-radius, 4px);
   box-shadow: 0 1px 3px rgba(60, 56, 54, 0.06);
@@ -1681,7 +1681,11 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
   font-family: var(--font-primary);
   font-size: 13px;
   font-weight: 500;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 #editor-toolbar button:hover {
@@ -1690,16 +1694,10 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
   color: #1d2021;
 }
 
-#editor-toolbar button#editor-saveclose-btn {
-  background-color: #3d2d24;
-  color: #fbf1c7;
-  border-color: #2b201a;
+#editor-toolbar button#toggle-craft-drawer-btn {
   margin-left: auto;
-}
-
-#editor-toolbar button#editor-saveclose-btn:hover {
-  background-color: #2b201a;
-  color: #ffffff;
+  background-color: #f7f2e7;
+  font-weight: 600;
 }
 
 #editor-toolbar button#editor-fullview-btn {
@@ -1712,6 +1710,21 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
 #editor-toolbar button#editor-fullview-btn:hover {
   background-color: #ebdccb;
   color: #55500a;
+}
+
+#editor-toolbar button#editor-saveclose-btn {
+  background-color: #3d2d24;
+  color: #fbf1c7;
+  border: 1px solid #2b201a;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(60, 56, 54, 0.15);
+}
+
+#editor-toolbar button#editor-saveclose-btn:hover {
+  background-color: #241b15;
+  color: #ffffff;
+  border-color: #120e0a;
+  box-shadow: 0 2px 5px rgba(60, 56, 54, 0.25);
 }
 
 /* Full View Focus Mode - Distraction-free genuine full-screen writing */
@@ -1808,16 +1821,23 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
   display: none !important;
 }
 
-/* TinyMCE Window Menubar & Toolbar Scholar's Desk Styling */
+/* ==========================================================================
+   TINYMCE SCHOLAR'S DESK TOOLBAR & ERGONOMIC BUTTON STYLES
+   ========================================================================== */
+
 .tox .tox-menubar {
   background-color: #f7f2e7 !important;
   border-bottom: 1px solid #e0d5c1 !important;
+  padding: 2px 6px !important;
 }
 
 .tox .tox-mbtn {
   color: #3c3836 !important;
   font-family: var(--font-primary) !important;
   font-size: 13px !important;
+  padding: 4px 8px !important;
+  border-radius: 3px !important;
+  transition: background-color 0.15s ease !important;
 }
 
 .tox .tox-mbtn:hover:not(:disabled):not(.tox-mbtn--active) {
@@ -1828,19 +1848,188 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
   background-color: #e5d8c1 !important;
 }
 
-.tox .tox-toolbar, .tox .tox-toolbar__overflow, .tox .tox-toolbar__primary {
+.tox .tox-toolbar,
+.tox .tox-toolbar__overflow,
+.tox .tox-toolbar__primary {
   background-color: #faf5ec !important;
   border-bottom: 1px solid #e0d5c1 !important;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 3px 6px !important;
 }
 
+.tox .tox-toolbar__group {
+  display: flex !important;
+  align-items: center !important;
+  padding: 0 4px !important;
+  gap: 3px !important;
+  border-right: 1px solid #e8decb !important;
+  flex-shrink: 0 !important;
+}
+
+.tox .tox-toolbar__group:last-child {
+  border-right: none !important;
+}
+
+/* Right-dock workspace controls (Craft Drawer, Full Screen) and Save & Close */
+.tox .tox-toolbar__group:has([data-mce-name="craftdrawer"]),
+.tox .tox-toolbar__group:has([aria-label*="Craft Drawer"]),
+.tox .tox-toolbar__group:has([title*="Craft Drawer"]) {
+  margin-left: auto !important;
+  border-left: 1px solid #e8decb !important;
+}
+
+.tox .tox-toolbar__group:has([data-mce-name="saveclose"]),
+.tox .tox-toolbar__group:has([aria-label*="Save & Close"]) {
+  border-right: none !important;
+  padding-left: 6px !important;
+}
+
+/* Toolbar buttons: fix 34px truncation, allow natural dynamic width, elegant padding */
 .tox .tox-tbtn {
+  width: auto !important;
+  min-width: 32px !important;
+  height: 28px !important;
+  margin: 1px 2px !important;
+  padding: 0 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
   color: #3c3836 !important;
   font-family: var(--font-primary) !important;
-  border-radius: 3px !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  border-radius: 4px !important;
+  border: 1px solid transparent !important;
+  transition: all 0.15s ease !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
 }
 
+/* Ensure text label inside toolbar button is completely visible without truncation */
+.tox .tox-tbtn .tox-tbtn__select-label {
+  max-width: none !important;
+  width: auto !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
+  font-family: var(--font-primary) !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+}
+
+/* Ensure icon wrapper doesn't push text outside button */
+.tox .tox-tbtn .tox-tbtn__icon-wrap,
+.tox .tox-tbtn .tox-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 16px !important;
+  height: 16px !important;
+  flex-shrink: 0 !important;
+}
+
+.tox .tox-tbtn svg {
+  width: 15px !important;
+  height: 15px !important;
+  fill: currentColor !important;
+  flex-shrink: 0 !important;
+  display: block !important;
+}
+
+/* Hover states */
 .tox .tox-tbtn:hover {
   background-color: #ede2cf !important;
+  border-color: #d5c4a1 !important;
+  color: #1d2021 !important;
+}
+
+/* Active / Pressed state for Toggle Buttons (Craft Drawer, Full Screen) */
+.tox .tox-tbtn.tox-tbtn--enabled,
+.tox .tox-tbtn.tox-tbtn--enabled:hover {
+  background-color: #e5d8c1 !important;
+  border-color: #bdae93 !important;
+  color: #1d2021 !important;
+  box-shadow: inset 0 1px 2px rgba(60, 56, 54, 0.15) !important;
+}
+
+/* Scholar Annotation Tool Stylings */
+.tox .tox-tbtn[data-mce-name="comment"],
+.tox .tox-tbtn[aria-label*="Comment"] {
+  color: #076678 !important;
+  background-color: rgba(7, 102, 120, 0.05) !important;
+  border-color: rgba(7, 102, 120, 0.15) !important;
+}
+.tox .tox-tbtn[data-mce-name="comment"]:hover,
+.tox .tox-tbtn[aria-label*="Comment"]:hover {
+  background-color: #e3eff2 !important;
+  border-color: #076678 !important;
+  color: #054f5c !important;
+}
+
+.tox .tox-tbtn[data-mce-name="certify"],
+.tox .tox-tbtn[aria-label*="Certify"] {
+  color: #2b7a3e !important;
+  background-color: rgba(43, 122, 62, 0.05) !important;
+  border-color: rgba(43, 122, 62, 0.15) !important;
+}
+.tox .tox-tbtn[data-mce-name="certify"]:hover,
+.tox .tox-tbtn[aria-label*="Certify"]:hover {
+  background-color: #e6f5e8 !important;
+  border-color: #2b7a3e !important;
+  color: #1d532a !important;
+}
+
+.tox .tox-tbtn[data-mce-name="etymology"],
+.tox .tox-tbtn[aria-label*="Etymology"] {
+  color: #8f3f71 !important;
+  background-color: rgba(143, 63, 113, 0.05) !important;
+  border-color: rgba(143, 63, 113, 0.15) !important;
+}
+.tox .tox-tbtn[data-mce-name="etymology"]:hover,
+.tox .tox-tbtn[aria-label*="Etymology"]:hover {
+  background-color: #f7e6f1 !important;
+  border-color: #8f3f71 !important;
+  color: #6a2a52 !important;
+}
+
+/* Primary Action Button: Save & Close (Prominent, High-Contrast Scholar's Desk Exit) */
+.tox .tox-tbtn[data-mce-name="saveclose"],
+.tox .tox-tbtn[aria-label*="Save & Close"],
+.tox .tox-tbtn[title*="Save & Close"] {
+  background-color: #3d2d24 !important;
+  color: #fbf1c7 !important;
+  border: 1px solid #2b201a !important;
+  font-weight: 600 !important;
+  padding: 0 12px !important;
+  box-shadow: 0 1px 3px rgba(60, 56, 54, 0.18) !important;
+}
+
+.tox .tox-tbtn[data-mce-name="saveclose"]:hover,
+.tox .tox-tbtn[aria-label*="Save & Close"]:hover,
+.tox .tox-tbtn[title*="Save & Close"]:hover {
+  background-color: #241b15 !important;
+  color: #ffffff !important;
+  border-color: #120e0a !important;
+  box-shadow: 0 2px 5px rgba(60, 56, 54, 0.28) !important;
+}
+
+.tox .tox-tbtn[data-mce-name="saveclose"] svg,
+.tox .tox-tbtn[aria-label*="Save & Close"] svg {
+  fill: #fbf1c7 !important;
+}
+
+.tox .tox-tbtn[data-mce-name="saveclose"]:hover svg,
+.tox .tox-tbtn[aria-label*="Save & Close"]:hover svg {
+  fill: #ffffff !important;
 }
 
 .tox .tox-statusbar {
@@ -1848,6 +2037,16 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
   border-top: 1px solid #e0d5c1 !important;
   color: #7c6f64 !important;
   font-family: var(--font-primary) !important;
+  padding: 0 10px !important;
+}
+
+/* Responsive collapse on smaller displays */
+@media (max-width: 1050px) {
+  .tox .tox-tbtn[data-mce-name="comment"] .tox-tbtn__select-label,
+  .tox .tox-tbtn[data-mce-name="certify"] .tox-tbtn__select-label,
+  .tox .tox-tbtn[data-mce-name="etymology"] .tox-tbtn__select-label {
+    display: none !important;
+  }
 }
 
 /* Scenic Maxims Panels (Craft Drawer) */
