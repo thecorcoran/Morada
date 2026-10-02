@@ -41,16 +41,35 @@ beforeAll(() => {
                 get innerHTML() {
                     return content;
                 },
+                dataset: {},
+                classList: {
+                    add: jest.fn(),
+                    remove: jest.fn(),
+                    contains: jest.fn(() => false),
+                    toggle: jest.fn()
+                },
+                appendChild: jest.fn(),
+                removeChild: jest.fn(),
+                addEventListener: jest.fn(),
+                setAttribute: jest.fn(),
+                getAttribute: jest.fn(),
                 querySelectorAll: (sel) => {
                     if (sel === '.comment-highlight') return spans.filter(s => s.className === 'comment-highlight');
                     if (sel === '.certified-word') return spans.filter(s => s.className === 'certified-word');
                     return [];
                 },
+                querySelector: () => null,
                 get textContent() {
                     return (content || '').replace(/<[^>]*>/g, '');
                 },
+                set textContent(val) {
+                    content = val || '';
+                },
                 get innerText() {
                     return (content || '').replace(/<[^>]*>/g, '');
+                },
+                set innerText(val) {
+                    content = val || '';
                 }
             };
         },
@@ -229,6 +248,147 @@ From Middle English morada, from Old French.
             expect(nodes[0].y).toBe(nodes[1].y); // row 0
             expect(nodes[2].y).toBeGreaterThan(nodes[0].y); // row 1
             expect(nodes[2].x).toBe(nodes[0].x); // col 0
+        });
+    });
+
+    describe('Manuscript Press Multi-Format Publishing Engine', () => {
+        const sampleManuscript = [
+            {
+                id: 'm1',
+                title: 'Prologue',
+                type: 'text',
+                content: '<p>The ancient sanctuary of <span class="certified-word" id="cw1" data-definition="A fortress">Morada</span> stood resolute.</p>',
+                certifiedWords: [{ id: 'cw1', word: 'Morada', definition: 'A fortress' }],
+                comments: [{ id: 'c1', text: 'Check pacing' }]
+            },
+            {
+                id: 'm2',
+                title: 'Book One',
+                type: 'container',
+                includeNotes: true,
+                content: '<p>Introductory commentary for Book One.</p>'
+            }
+        ];
+
+        beforeEach(() => {
+            global.window.MyProjectDataStorage = {
+                getManuscriptList: () => sampleManuscript
+            };
+        });
+
+        test('should compile manuscript into Markdown with cover, TOC, and glossary', () => {
+            const md = UIManager.compileManuscript('markdown', {
+                title: 'The Morada Chronicles',
+                includeCover: true,
+                includeToc: true,
+                includeComments: true,
+                includeCertifiedWords: true
+            });
+
+            expect(md).toContain('# The Morada Chronicles');
+            expect(md).toContain('## Table of Contents');
+            expect(md).toContain('[Prologue](#prologue)');
+            expect(md).toContain('[Book One](#book-one)');
+            expect(md).toContain('## Prologue');
+            expect(md).toContain('# BOOK ONE');
+            expect(md).toContain('## Appendix: Certified Lexicon & Glossary');
+            expect(md).toContain('* **Morada**: A fortress');
+        });
+
+        test('should compile manuscript into HTML with semantic document structure', () => {
+            const html = UIManager.compileManuscript('html', {
+                title: 'HTML Edition',
+                includeCover: true,
+                includeToc: true,
+                includeComments: true,
+                includeCertifiedWords: true
+            });
+
+            expect(html).toContain('<!DOCTYPE html>');
+            expect(html).toContain('<title>HTML Edition</title>');
+            expect(html).toContain('<header class="manuscript-cover">');
+            expect(html).toContain('<nav class="manuscript-toc">');
+            expect(html).toContain('<article class="sheet-article" id="node-m1">');
+            expect(html).toContain('<section class="portfolio-section" id="node-m2">');
+            expect(html).toContain('<section class="manuscript-glossary">');
+            expect(html).toContain('<dt>Morada</dt>');
+            expect(html).toContain('<dd>A fortress</dd>');
+        });
+
+        test('should compile manuscript into Plain Text with ASCII dividers', () => {
+            const txt = UIManager.compileManuscript('txt', {
+                title: 'Plain Text Edition',
+                includeCover: true,
+                includeToc: true,
+                includeComments: false,
+                includeCertifiedWords: true
+            });
+
+            expect(txt).toContain('MANUSCRIPT: PLAIN TEXT EDITION');
+            expect(txt).toContain('TABLE OF CONTENTS');
+            expect(txt).toContain('Prologue');
+            expect(txt).toContain('2. Book One');
+            expect(txt).toContain('### Prologue ###');
+            expect(txt).toContain('MANUSCRIPT GLOSSARY & CERTIFIED LEXICON');
+        });
+
+        test('updateManuscriptStats should compute accurate totals', () => {
+            const mockDoc = { textContent: '' };
+            const mockWord = { textContent: '' };
+            const mockTime = { textContent: '' };
+            UIManager.compendiumDocCount = mockDoc;
+            UIManager.compendiumWordCount = mockWord;
+            UIManager.compendiumReadTime = mockTime;
+
+            UIManager.updateManuscriptStats();
+
+            expect(mockDoc.textContent).toBe('2 documents');
+            expect(mockWord.textContent).toContain('words');
+            expect(mockTime.textContent).toContain('min read');
+        });
+    });
+
+    describe('Outliner Reordering and Canvas Tag Filter Actions', () => {
+        test('moveNodeInCurrentView should reorder nodes and update state', () => {
+            const nodes = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
+            let saved = false;
+            let redrawn = false;
+
+            UIManager.stateManager = {
+                getCurrentNodes: () => nodes,
+                setCurrentNodes: (n) => {},
+                getViewStack: () => [],
+                setRootNodes: (n) => {}
+            };
+            UIManager.saveNodesFunction = () => { saved = true; };
+            UIManager.drawFunction = () => { redrawn = true; };
+            UIManager.outlinerList = { innerHTML: '', appendChild: () => {} };
+
+            UIManager.moveNodeInCurrentView(0, 2);
+
+            expect(nodes.map(n => n.id)).toEqual(['b', 'c', 'a']);
+            expect(saved).toBe(true);
+            expect(redrawn).toBe(true);
+        });
+
+        test('clearCanvasFilter should reset input and canvas renderer active filter', () => {
+            let filterReset = false;
+            global.window.MyProjectCanvasRenderer = {
+                setActiveTagFilter: (f) => { if (f === null) filterReset = true; }
+            };
+
+            const mockInput = { value: '#tag' };
+            const mockClearBtn = { classList: { add: jest.fn() } };
+            UIManager.canvasTagFilter = mockInput;
+            UIManager.clearCanvasFilterBtn = mockClearBtn;
+            UIManager.drawFunction = jest.fn();
+
+            UIManager.clearCanvasFilter();
+
+            expect(mockInput.value).toBe('');
+            expect(mockClearBtn.classList.add).toHaveBeenCalledWith('hidden');
+            expect(filterReset).toBe(true);
+            expect(UIManager.drawFunction).toHaveBeenCalled();
         });
     });
 });

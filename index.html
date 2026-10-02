@@ -12,12 +12,13 @@
       <div id="outliner-sidebar" class="hidden">
         <div class="outliner-header">
           <h3>Outline</h3>
+          <span class="outliner-subtitle">Drag to reorder · Click to view</span>
         </div>
         <div id="outliner-list"></div>
       </div>
       <div class="content-area">
         <div class="breadcrumb-bar" id="breadcrumb-bar">
-          <div style="display:flex;align-items:center;gap:8px;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
             <button id="breadcrumb-back-btn" title="Back to Parent Portfolio">⟵ Back</button>
             <button id="toggle-outliner-btn" title="Toggle Outline Sidebar">Outline</button>
             <button id="auto-tidy-btn" title="Auto-Tidy Desk (Ctrl+T)">Tidy Desk</button>
@@ -26,6 +27,10 @@
             <button id="open-scriptorium-btn" title="Open Sheet for selected node">Open Sheet</button>
             <button id="new-project-btn" title="Create a new Portfolio on The Desk">New Portfolio</button>
             <button id="auto-fit-toggle" title="Toggle auto-fit of nodes">Auto-Fit: On</button>
+            <div class="desk-filter-container">
+              <input type="text" id="canvas-tag-filter" class="canvas-tag-filter-input" placeholder="Filter Desk by #tag or text..." title="Filter visible cards (Esc to clear)">
+              <button id="clear-canvas-filter-btn" class="clear-canvas-filter-btn hidden" title="Clear filter">&times;</button>
+            </div>
           </div>
           <div id="breadcrumb-path" style="margin-left:12px; font-weight:600;">The Desk</div>
         </div>
@@ -181,12 +186,25 @@
             </div>
       </div>
       <div class="compendium-footer">
-        <div class="compendium-options">
-          <label for="include-comments-checkbox"><input type="checkbox" id="include-comments-checkbox"> Include Comments as Footnotes</label>
-          <label for="include-certified-words-checkbox"><input type="checkbox" id="include-certified-words-checkbox"> Include Certified Words as Lexicon</label>
+        <div class="compendium-stats-bar" id="compendium-stats-bar">
+          <span id="compendium-doc-count">0 documents</span> · <span id="compendium-word-count">0 words</span> · <span id="compendium-read-time">~0 min read</span>
         </div>
-        <button id="generate-btn">Compile Manuscript (.txt)</button>
-        <button id="export-tags-btn" title="Export all tags as CSV">Export Tags</button>
+        <div class="compendium-options">
+          <label for="include-cover-checkbox"><input type="checkbox" id="include-cover-checkbox" checked> Cover Page</label>
+          <label for="include-toc-checkbox"><input type="checkbox" id="include-toc-checkbox" checked> Table of Contents</label>
+          <label for="include-comments-checkbox"><input type="checkbox" id="include-comments-checkbox" checked> Footnotes / Notes</label>
+          <label for="include-certified-words-checkbox"><input type="checkbox" id="include-certified-words-checkbox" checked> Certified Lexicon</label>
+          <select id="compendium-format-select" class="compendium-select" title="Export Format">
+            <option value="markdown">Markdown (.md)</option>
+            <option value="txt">Plain Text (.txt)</option>
+            <option value="html">HTML Document (.html)</option>
+          </select>
+        </div>
+        <div class="compendium-actions">
+          <button id="generate-btn">Export Manuscript</button>
+          <button id="copy-manuscript-btn">Copy to Clipboard</button>
+          <button id="export-tags-btn" title="Export all tags as CSV">Export Tags</button>
+        </div>
       </div>
     </div>
 

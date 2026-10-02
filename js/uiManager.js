@@ -15,10 +15,16 @@ window.MyProjectUIManager = {
     compendiumModal: null, closeCompendiumBtn: null,
     compendiumLibrary: null, compendiumManuscript: null,
     generateBtn: null, compendiumFilter: null,
+    canvasTagFilter: null, clearCanvasFilterBtn: null,
+    copyManuscriptBtn: null, compendiumFormatSelect: null,
+    includeCoverCheckbox: null, includeTocCheckbox: null,
+    compendiumStatsBar: null, compendiumDocCount: null,
+    compendiumWordCount: null, compendiumReadTime: null,
 
     // --- STATE & DEPENDENCIES (to be initialized) ---
     stateManager: null,
     sortableInstance: null,
+    outlinerSortable: null,
     drawFunction: null,
     saveNodesFunction: null,
     navigateToNodeFunction: null,
@@ -54,6 +60,16 @@ window.MyProjectUIManager = {
         this.compendiumFilter = document.getElementById('compendium-filter');
         this.includeCommentsCheckbox = document.getElementById('include-comments-checkbox');
         this.includeCertifiedWordsCheckbox = document.getElementById('include-certified-words-checkbox');
+        this.includeCoverCheckbox = document.getElementById('include-cover-checkbox');
+        this.includeTocCheckbox = document.getElementById('include-toc-checkbox');
+        this.compendiumFormatSelect = document.getElementById('compendium-format-select');
+        this.compendiumStatsBar = document.getElementById('compendium-stats-bar');
+        this.compendiumDocCount = document.getElementById('compendium-doc-count');
+        this.compendiumWordCount = document.getElementById('compendium-word-count');
+        this.compendiumReadTime = document.getElementById('compendium-read-time');
+        this.copyManuscriptBtn = document.getElementById('copy-manuscript-btn');
+        this.canvasTagFilter = document.getElementById('canvas-tag-filter');
+        this.clearCanvasFilterBtn = document.getElementById('clear-canvas-filter-btn');
         this.outlinerSidebar = document.getElementById('outliner-sidebar');
         this.outlinerList = document.getElementById('outliner-list');
         this.toggleOutlinerBtn = document.getElementById('toggle-outliner-btn');
@@ -96,8 +112,44 @@ window.MyProjectUIManager = {
                 this.tagInput.value = '';
             }
         });
-        this.closeCompendiumBtn.addEventListener('click', () => this.closeCompendium());
-        this.generateBtn.addEventListener('click', () => this.compileAndDownload());
+        if (this.closeCompendiumBtn) this.closeCompendiumBtn.addEventListener('click', () => this.closeCompendium());
+        if (this.generateBtn) this.generateBtn.addEventListener('click', () => this.compileAndDownload());
+        if (this.copyManuscriptBtn) this.copyManuscriptBtn.addEventListener('click', () => this.copyManuscriptToClipboard());
+        if (this.compendiumFormatSelect && this.generateBtn) {
+            this.compendiumFormatSelect.addEventListener('change', () => {
+                const fmt = this.compendiumFormatSelect.value;
+                const ext = fmt === 'markdown' ? '.md' : (fmt === 'html' ? '.html' : '.txt');
+                this.generateBtn.textContent = `Export Manuscript (${ext})`;
+            });
+        }
+        if (this.canvasTagFilter) {
+            this.canvasTagFilter.addEventListener('input', () => {
+                const val = this.canvasTagFilter.value;
+                if (window.MyProjectCanvasRenderer && typeof window.MyProjectCanvasRenderer.setActiveTagFilter === 'function') {
+                    window.MyProjectCanvasRenderer.setActiveTagFilter(val);
+                }
+                if (this.clearCanvasFilterBtn) {
+                    if (val && val.trim().length > 0) {
+                        this.clearCanvasFilterBtn.classList.remove('hidden');
+                    } else {
+                        this.clearCanvasFilterBtn.classList.add('hidden');
+                    }
+                }
+                if (this.drawFunction) this.drawFunction();
+            });
+
+            this.canvasTagFilter.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    this.clearCanvasFilter();
+                    this.canvasTagFilter.blur();
+                }
+            });
+        }
+        if (this.clearCanvasFilterBtn) {
+            this.clearCanvasFilterBtn.addEventListener('click', () => {
+                this.clearCanvasFilter();
+            });
+        }
         this.searchInput.addEventListener('input', () => {
             const query = this.searchInput.value;
             if (query.length > 1 || (query.startsWith('#') && query.length > 1)) {
@@ -1023,18 +1075,87 @@ window.MyProjectUIManager = {
             return;
         }
 
-        currentNodes.forEach(node => {
+        currentNodes.forEach((node, index) => {
             const item = document.createElement('div');
             item.className = 'outliner-item';
-            const icon = node.type === 'container' ? '📁 ' : '📄 ';
-            item.textContent = icon + (node.title || 'Untitled');
+            if (!item.dataset) item.dataset = {};
             item.dataset.nodeId = node.id;
+            item.dataset.index = String(index);
+
+            // Drag handle
+            const handle = document.createElement('span');
+            handle.className = 'outliner-drag-handle';
+            handle.title = 'Drag to reorder';
+            handle.textContent = '⋮⋮';
+
+            // Node info wrapper
+            const info = document.createElement('span');
+            info.className = 'outliner-item-info';
+            const icon = node.type === 'container' ? '📁 ' : '📄 ';
+            const titleSpan = document.createElement('span');
+            titleSpan.className = 'outliner-item-title';
+            titleSpan.textContent = icon + (node.title || 'Untitled');
+            info.appendChild(titleSpan);
+
+            // Word count / sheet badge
+            if (node.type === 'text') {
+                const words = this.getWordCount(node.content || '');
+                const badge = document.createElement('span');
+                badge.className = 'outliner-word-badge';
+                badge.textContent = `${words}w`;
+                info.appendChild(badge);
+            }
+
+            // Controls (move up, move down, open)
+            const controls = document.createElement('div');
+            controls.className = 'outliner-item-controls';
+
+            const upBtn = document.createElement('button');
+            upBtn.type = 'button';
+            upBtn.className = 'outliner-reorder-btn';
+            upBtn.title = 'Move up';
+            upBtn.textContent = '▲';
+            if (index === 0) upBtn.disabled = true;
+            upBtn.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                this.moveNodeInCurrentView(index, index - 1);
+            });
+
+            const downBtn = document.createElement('button');
+            downBtn.type = 'button';
+            downBtn.className = 'outliner-reorder-btn';
+            downBtn.title = 'Move down';
+            downBtn.textContent = '▼';
+            if (index === currentNodes.length - 1) downBtn.disabled = true;
+            downBtn.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                this.moveNodeInCurrentView(index, index + 1);
+            });
+
+            const openBtn = document.createElement('button');
+            openBtn.type = 'button';
+            openBtn.className = 'outliner-open-btn';
+            openBtn.title = node.type === 'container' ? 'Open Portfolio' : 'Open Sheet';
+            openBtn.textContent = '↗';
+            openBtn.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                this._openOutlinerNode(node);
+            });
+
+            controls.appendChild(upBtn);
+            controls.appendChild(downBtn);
+            controls.appendChild(openBtn);
+
+            item.appendChild(handle);
+            item.appendChild(info);
+            item.appendChild(controls);
 
             const selected = this.stateManager && typeof this.stateManager.getSelectedNode === 'function' ? this.stateManager.getSelectedNode() : null;
             if (selected && selected.id === node.id) {
                 item.classList.add('selected');
             }
 
+            // Single click: select node and center on canvas
             item.addEventListener('click', () => {
                 const prev = this.outlinerList.querySelector('.outliner-item.selected');
                 if (prev) prev.classList.remove('selected');
@@ -1043,21 +1164,74 @@ window.MyProjectUIManager = {
                 if (this.stateManager && typeof this.stateManager.setSelectedNode === 'function') {
                     this.stateManager.setSelectedNode(node);
                 }
-
-                if (node.type === 'container') {
-                    if (typeof this.navigateToNodeFunction === 'function') {
-                        this.navigateToNodeFunction(node);
-                    }
-                } else if (node.type === 'text') {
-                    if (window.MyProjectEditorManager && typeof window.MyProjectEditorManager.openEditorMode === 'function') {
-                        window.MyProjectEditorManager.openEditorMode(node);
-                    }
+                if (typeof this.ensureNodeVisible === 'function') {
+                    this.ensureNodeVisible(node, 100);
                 }
                 if (typeof this.drawFunction === 'function') this.drawFunction();
             });
 
+            // Double click: open
+            item.addEventListener('dblclick', () => {
+                this._openOutlinerNode(node);
+            });
+
             this.outlinerList.appendChild(item);
         });
+
+        // Initialize SortableJS for drag and drop
+        if (typeof Sortable !== 'undefined') {
+            if (this.outlinerSortable) {
+                this.outlinerSortable.destroy();
+                this.outlinerSortable = null;
+            }
+            this.outlinerSortable = Sortable.create(this.outlinerList, {
+                handle: '.outliner-drag-handle',
+                animation: 150,
+                onEnd: (evt) => {
+                    if (evt.oldIndex !== evt.newIndex) {
+                        this.moveNodeInCurrentView(evt.oldIndex, evt.newIndex);
+                    }
+                }
+            });
+        }
+    },
+
+    moveNodeInCurrentView: function(fromIndex, toIndex) {
+        const currentNodes = this.stateManager ? this.stateManager.getCurrentNodes() : [];
+        if (!currentNodes || fromIndex < 0 || fromIndex >= currentNodes.length || toIndex < 0 || toIndex >= currentNodes.length) {
+            return;
+        }
+        if (window.MyProjectNodeManager && typeof window.MyProjectNodeManager.reorderNode === 'function') {
+            window.MyProjectNodeManager.reorderNode(currentNodes, fromIndex, toIndex);
+        } else {
+            const moved = currentNodes.splice(fromIndex, 1)[0];
+            currentNodes.splice(toIndex, 0, moved);
+        }
+        this.stateManager.setCurrentNodes(currentNodes);
+
+        const viewStack = this.stateManager.getViewStack ? this.stateManager.getViewStack() : [];
+        if (viewStack && viewStack.length > 0) {
+            viewStack[viewStack.length - 1].children = currentNodes;
+        } else if (this.stateManager.setRootNodes) {
+            this.stateManager.setRootNodes(currentNodes);
+        }
+
+        if (this.saveNodesFunction) this.saveNodesFunction();
+        this.renderOutliner();
+        if (this.drawFunction) this.drawFunction();
+    },
+
+    _openOutlinerNode: function(node) {
+        if (!node) return;
+        if (node.type === 'container') {
+            if (typeof this.navigateToNodeFunction === 'function') {
+                this.navigateToNodeFunction(node);
+            }
+        } else if (node.type === 'text') {
+            if (window.MyProjectEditorManager && typeof window.MyProjectEditorManager.openEditorMode === 'function') {
+                window.MyProjectEditorManager.openEditorMode(node);
+            }
+        }
     },
 
     getWordCount: function(content) {
@@ -1076,6 +1250,15 @@ window.MyProjectUIManager = {
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = content;
         return (tempDiv.textContent || tempDiv.innerText || '').trim();
+    },
+
+    clearCanvasFilter: function() {
+        if (this.canvasTagFilter) this.canvasTagFilter.value = '';
+        if (this.clearCanvasFilterBtn) this.clearCanvasFilterBtn.classList.add('hidden');
+        if (window.MyProjectCanvasRenderer && typeof window.MyProjectCanvasRenderer.setActiveTagFilter === 'function') {
+            window.MyProjectCanvasRenderer.setActiveTagFilter(null);
+        }
+        if (this.drawFunction) this.drawFunction();
     },
 
     updateEditorWordCount: function(content) {
@@ -1615,6 +1798,7 @@ window.MyProjectUIManager = {
         if (!this.compendiumManuscript) return;
         this.compendiumManuscript.innerHTML = '';
         const manuscriptList = window.MyProjectDataStorage.getManuscriptList();
+        this.updateManuscriptStats();
 
         if (manuscriptList.length === 0) {
             if (this.sortableInstance) { this.sortableInstance.destroy(); this.sortableInstance = null; }
@@ -2145,45 +2329,293 @@ window.MyProjectUIManager = {
         return sectionOutput;
     },
 
-    compileAndDownload: function() {
-        let output = '';
-        const currentManuscriptList = window.MyProjectDataStorage.getManuscriptList();
-        const includeComments = this.includeCommentsCheckbox ? this.includeCommentsCheckbox.checked : (document.getElementById('include-comments-checkbox')?.checked || false);
-        const includeCertifiedWords = this.includeCertifiedWordsCheckbox ? this.includeCertifiedWordsCheckbox.checked : (document.getElementById('include-certified-words-checkbox')?.checked || false);
-        const masterGlossary = new Map();
+    updateManuscriptStats: function() {
+        const list = (window.MyProjectDataStorage && typeof window.MyProjectDataStorage.getManuscriptList === 'function') ? window.MyProjectDataStorage.getManuscriptList() : [];
+        let totalWords = 0;
+        list.forEach(n => {
+            if (n.content) totalWords += this.getWordCount(n.content);
+        });
+        const readTime = Math.max(1, Math.ceil(totalWords / 225));
+        const docCountEl = this.compendiumDocCount || (typeof document !== 'undefined' ? document.getElementById('compendium-doc-count') : null);
+        const wordCountEl = this.compendiumWordCount || (typeof document !== 'undefined' ? document.getElementById('compendium-word-count') : null);
+        const readTimeEl = this.compendiumReadTime || (typeof document !== 'undefined' ? document.getElementById('compendium-read-time') : null);
 
-        currentManuscriptList.forEach(node => {
+        if (docCountEl) docCountEl.textContent = `${list.length} ${list.length === 1 ? 'document' : 'documents'}`;
+        if (wordCountEl) wordCountEl.textContent = `${totalWords.toLocaleString()} words`;
+        if (readTimeEl) readTimeEl.textContent = `~${readTime} min read`;
+    },
+
+    compileManuscript: function(format = 'markdown', options = {}) {
+        const currentManuscriptList = (window.MyProjectDataStorage && typeof window.MyProjectDataStorage.getManuscriptList === 'function') ? window.MyProjectDataStorage.getManuscriptList() : [];
+        const includeComments = options.includeComments !== undefined ? options.includeComments : (this.includeCommentsCheckbox ? this.includeCommentsCheckbox.checked : (typeof document !== 'undefined' && document.getElementById('include-comments-checkbox')?.checked || false));
+        const includeCertifiedWords = options.includeCertifiedWords !== undefined ? options.includeCertifiedWords : (this.includeCertifiedWordsCheckbox ? this.includeCertifiedWordsCheckbox.checked : (typeof document !== 'undefined' && document.getElementById('include-certified-words-checkbox')?.checked || false));
+        const includeCover = options.includeCover !== undefined ? options.includeCover : (this.includeCoverCheckbox ? this.includeCoverCheckbox.checked : (typeof document !== 'undefined' && document.getElementById('include-cover-checkbox')?.checked || false));
+        const includeToc = options.includeToc !== undefined ? options.includeToc : (this.includeTocCheckbox ? this.includeTocCheckbox.checked : (typeof document !== 'undefined' && document.getElementById('include-toc-checkbox')?.checked || false));
+        const title = options.title || 'Manuscript';
+
+        const masterGlossary = new Map();
+        let totalWordCount = 0;
+        currentManuscriptList.forEach(n => {
+            if (n.content) totalWordCount += this.getWordCount(n.content);
+        });
+
+        const compileOptions = {
+            title,
+            includeComments,
+            includeCertifiedWords,
+            includeCover,
+            includeToc,
+            totalWordCount,
+            masterGlossary
+        };
+
+        if (format === 'html') {
+            return this._compileToHtml(currentManuscriptList, compileOptions);
+        } else if (format === 'txt' || format === 'text') {
+            return this._compileToPlainText(currentManuscriptList, compileOptions);
+        } else {
+            return this._compileToMarkdown(currentManuscriptList, compileOptions);
+        }
+    },
+
+    _compileToMarkdown: function(nodes, options) {
+        let output = '';
+        const title = options.title || 'Manuscript';
+        const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+        if (options.includeCover) {
+            output += `# ${title}\n\n`;
+            output += `*Compiled on ${dateStr} · Word Count: ${options.totalWordCount.toLocaleString()} words*\n\n`;
+            output += `---\n\n`;
+        }
+
+        if (options.includeToc && nodes.length > 0) {
+            output += `## Table of Contents\n\n`;
+            nodes.forEach((node, i) => {
+                const prefix = node.type === 'container' ? `${i + 1}. ` : `   - `;
+                const anchor = (node.title || 'untitled').toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
+                output += `${prefix}[${node.title || 'Untitled'}](#${anchor})\n`;
+            });
+            output += `\n---\n\n`;
+        }
+
+        nodes.forEach(node => {
             if (node.type === 'container') {
-                output += `\n\n## ${node.title.toUpperCase()} ##\n\n`;
+                output += `\n# ${node.title.toUpperCase()}\n\n`;
                 if (node.includeNotes && node.content) {
-                    output += this._processNodeContentForExport(node, includeComments, includeCertifiedWords, masterGlossary);
+                    output += this._processNodeContentForExport(node, options.includeComments, options.includeCertifiedWords, options.masterGlossary);
                 }
             } else if (node.type === 'text') {
-                output += `\n\n### ${node.title} ###\n\n`;
+                output += `\n## ${node.title}\n\n`;
                 if (node.content) {
-                    output += this._processNodeContentForExport(node, includeComments, includeCertifiedWords, masterGlossary);
+                    output += this._processNodeContentForExport(node, options.includeComments, options.includeCertifiedWords, options.masterGlossary);
                 }
             }
         });
 
-        if (includeCertifiedWords && masterGlossary.size > 0) {
-            output += `\n${'='.repeat(70)}\n`;
-            output += `MANUSCRIPT GLOSSARY & CERTIFIED LEXICON\n`;
-            output += `${'='.repeat(70)}\n\n`;
-            const sortedWords = Array.from(masterGlossary.keys()).sort((a, b) => a.localeCompare(b));
+        if (options.includeCertifiedWords && options.masterGlossary.size > 0) {
+            output += `\n---\n\n`;
+            output += `## Appendix: Certified Lexicon & Glossary\n\n`;
+            const sortedWords = Array.from(options.masterGlossary.keys()).sort((a, b) => a.localeCompare(b));
             sortedWords.forEach(w => {
-                output += `• ${w}: ${masterGlossary.get(w)}\n`;
+                output += `* **${w}**: ${options.masterGlossary.get(w)}\n`;
             });
             output += `\n`;
         }
 
-        const blob = new Blob([output], { type: 'text/plain;charset=utf-8' });
+        return output;
+    },
+
+    _compileToHtml: function(nodes, options) {
+        const title = this._escapeHtml(options.title || 'Manuscript');
+        const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+        let bodyContent = '';
+
+        if (options.includeCover) {
+            bodyContent += `<header class="manuscript-cover">\n`;
+            bodyContent += `  <h1>${title}</h1>\n`;
+            bodyContent += `  <p class="cover-meta">Compiled on ${dateStr} &middot; ${options.totalWordCount.toLocaleString()} words</p>\n`;
+            bodyContent += `</header>\n<hr class="manuscript-divider" />\n`;
+        }
+
+        if (options.includeToc && nodes.length > 0) {
+            bodyContent += `<nav class="manuscript-toc">\n  <h2>Table of Contents</h2>\n  <ul>\n`;
+            nodes.forEach(node => {
+                const nodeTitle = this._escapeHtml(node.title || 'Untitled');
+                bodyContent += `    <li class="toc-${node.type}"><a href="#node-${node.id}">${nodeTitle}</a></li>\n`;
+            });
+            bodyContent += `  </ul>\n</nav>\n<hr class="manuscript-divider" />\n`;
+        }
+
+        nodes.forEach(node => {
+            const nodeTitle = this._escapeHtml(node.title || 'Untitled');
+            const cleanContent = node.content || '';
+            if (node.type === 'container') {
+                bodyContent += `<section class="portfolio-section" id="node-${node.id}">\n`;
+                bodyContent += `  <h2>${nodeTitle}</h2>\n`;
+                if (node.includeNotes && cleanContent) {
+                    bodyContent += `  <div class="portfolio-content">${cleanContent}</div>\n`;
+                }
+                bodyContent += `</section>\n`;
+            } else if (node.type === 'text') {
+                bodyContent += `<article class="sheet-article" id="node-${node.id}">\n`;
+                bodyContent += `  <h3>${nodeTitle}</h3>\n`;
+                if (cleanContent) {
+                    bodyContent += `  <div class="sheet-content">${cleanContent}</div>\n`;
+                }
+                if (options.includeComments && Array.isArray(node.comments) && node.comments.length > 0) {
+                    bodyContent += `  <aside class="sheet-footnotes">\n    <h4>Notes</h4>\n    <ol>\n`;
+                    node.comments.forEach(c => {
+                        bodyContent += `      <li>${this._escapeHtml(c.text)}</li>\n`;
+                    });
+                    bodyContent += `    </ol>\n  </aside>\n`;
+                }
+                bodyContent += `</article>\n`;
+            }
+            if (options.includeCertifiedWords && Array.isArray(node.certifiedWords)) {
+                node.certifiedWords.forEach(cw => {
+                    if (cw.word && cw.definition) options.masterGlossary.set(cw.word, cw.definition);
+                });
+            }
+        });
+
+        if (options.includeCertifiedWords && options.masterGlossary.size > 0) {
+            bodyContent += `<section class="manuscript-glossary">\n  <h2>Appendix: Certified Lexicon</h2>\n  <dl>\n`;
+            const sortedWords = Array.from(options.masterGlossary.keys()).sort((a, b) => a.localeCompare(b));
+            sortedWords.forEach(w => {
+                bodyContent += `    <dt>${this._escapeHtml(w)}</dt>\n    <dd>${this._escapeHtml(options.masterGlossary.get(w))}</dd>\n`;
+            });
+            bodyContent += `  </dl>\n</section>\n`;
+        }
+
+        return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>${title}</title>
+  <style>
+    body { font-family: 'Vollkorn', Georgia, serif; max-width: 760px; margin: 40px auto; padding: 0 24px; line-height: 1.7; color: #282828; background: #fffcf9; }
+    h1, h2, h3 { font-family: 'Vollkorn', Georgia, serif; color: #1d2021; }
+    h1 { font-size: 2.2em; margin-bottom: 6px; }
+    .cover-meta { color: #7c6f64; font-style: italic; margin-bottom: 24px; }
+    .manuscript-divider { border: none; border-top: 1px solid #d5c4a1; margin: 30px 0; }
+    .manuscript-toc { background: #f4ece1; padding: 18px 24px; border-radius: 6px; margin: 24px 0; }
+    .manuscript-toc ul { list-style: none; padding-left: 0; }
+    .manuscript-toc li { margin-bottom: 6px; }
+    .manuscript-toc a { color: #076678; text-decoration: none; }
+    .manuscript-toc a:hover { text-decoration: underline; }
+    .toc-text { padding-left: 20px; }
+    .sheet-article { margin: 40px 0; padding-bottom: 20px; border-bottom: 1px solid #f4ece1; }
+    .sheet-footnotes { background: #fdf6e2; padding: 12px 18px; border-radius: 4px; font-size: 0.9em; margin-top: 18px; }
+    .manuscript-glossary { margin-top: 50px; padding: 24px; background: #f4ece1; border-radius: 6px; }
+    .manuscript-glossary dt { font-weight: bold; color: #076678; margin-top: 10px; }
+    .manuscript-glossary dd { margin-left: 18px; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+${bodyContent}
+</body>
+</html>`;
+    },
+
+    _compileToPlainText: function(nodes, options) {
+        let output = '';
+        const title = options.title || 'Manuscript';
+        const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+        if (options.includeCover) {
+            output += `${'='.repeat(70)}\n`;
+            output += `MANUSCRIPT: ${title.toUpperCase()}\n`;
+            output += `Compiled: ${dateStr} · Total Words: ${options.totalWordCount.toLocaleString()}\n`;
+            output += `${'='.repeat(70)}\n\n`;
+        }
+
+        if (options.includeToc && nodes.length > 0) {
+            output += `TABLE OF CONTENTS\n`;
+            output += `${'-'.repeat(40)}\n`;
+            nodes.forEach((node, i) => {
+                const prefix = node.type === 'container' ? `${i + 1}. ` : `   - `;
+                output += `${prefix}${node.title || 'Untitled'}\n`;
+            });
+            output += `\n${'='.repeat(70)}\n\n`;
+        }
+
+        nodes.forEach(node => {
+            if (node.type === 'container') {
+                output += `\n\n## ${node.title.toUpperCase()} ##\n\n`;
+                if (node.includeNotes && node.content) {
+                    output += this._processNodeContentForExport(node, options.includeComments, options.includeCertifiedWords, options.masterGlossary);
+                }
+            } else if (node.type === 'text') {
+                output += `\n\n### ${node.title} ###\n\n`;
+                if (node.content) {
+                    output += this._processNodeContentForExport(node, options.includeComments, options.includeCertifiedWords, options.masterGlossary);
+                }
+            }
+        });
+
+        if (options.includeCertifiedWords && options.masterGlossary.size > 0) {
+            output += `\n${'='.repeat(70)}\n`;
+            output += `MANUSCRIPT GLOSSARY & CERTIFIED LEXICON\n`;
+            output += `${'='.repeat(70)}\n\n`;
+            const sortedWords = Array.from(options.masterGlossary.keys()).sort((a, b) => a.localeCompare(b));
+            sortedWords.forEach(w => {
+                output += `• ${w}: ${options.masterGlossary.get(w)}\n`;
+            });
+            output += `\n`;
+        }
+
+        return output;
+    },
+
+    compileAndDownload: function() {
+        const formatSelect = this.compendiumFormatSelect || (typeof document !== 'undefined' ? document.getElementById('compendium-format-select') : null);
+        const format = formatSelect ? formatSelect.value : 'markdown';
+        const output = this.compileManuscript(format);
+
+        const mimeMap = {
+            markdown: 'text/markdown;charset=utf-8',
+            html: 'text/html;charset=utf-8',
+            txt: 'text/plain;charset=utf-8'
+        };
+        const extMap = {
+            markdown: 'md',
+            html: 'html',
+            txt: 'txt'
+        };
+
+        const mime = mimeMap[format] || 'text/plain;charset=utf-8';
+        const ext = extMap[format] || 'txt';
+
+        const blob = new Blob([output], { type: mime });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'Morada_Export.txt';
+        a.download = `Morada_Export.${ext}`;
         a.click();
         URL.revokeObjectURL(url);
+    },
+
+    copyManuscriptToClipboard: async function() {
+        const formatSelect = this.compendiumFormatSelect || (typeof document !== 'undefined' ? document.getElementById('compendium-format-select') : null);
+        const format = formatSelect ? formatSelect.value : 'markdown';
+        const output = this.compileManuscript(format);
+        const copyBtn = this.copyManuscriptBtn || (typeof document !== 'undefined' ? document.getElementById('copy-manuscript-btn') : null);
+
+        try {
+            if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(output);
+            }
+            if (copyBtn) {
+                const origText = copyBtn.textContent;
+                copyBtn.textContent = 'Copied to Clipboard!';
+                setTimeout(() => { copyBtn.textContent = origText; }, 1800);
+            }
+        } catch (err) {
+            console.warn('Copy manuscript to clipboard failed', err);
+            alert('Could not copy to clipboard automatically.');
+        }
     },
 
     isCompendiumOpen: function() {

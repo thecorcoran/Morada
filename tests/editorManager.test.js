@@ -1,4 +1,4 @@
-const StrunkEngine = require('../js/strunkEngine.js');
+require('../js/strunkEngine.js');
 const EditorManager = require('../js/editorManager.js');
 
 describe('MyProjectEditorManager & Craft Drawer Integration Tests', () => {

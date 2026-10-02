@@ -136,6 +136,23 @@ window.MyProjectNodeManager = {
       }
     }
     return null;
+  },
+
+  /**
+   * Reorders a node in an array from one index to another in place.
+   * @param {Array<Object>} nodeList - Array of nodes.
+   * @param {number} fromIndex - Starting index.
+   * @param {number} toIndex - Destination index.
+   * @returns {Array<Object>} The reordered array.
+   */
+  reorderNode: function(nodeList, fromIndex, toIndex) {
+    if (!Array.isArray(nodeList)) return nodeList;
+    if (fromIndex < 0 || fromIndex >= nodeList.length || toIndex < 0 || toIndex >= nodeList.length) {
+      return nodeList;
+    }
+    const item = nodeList.splice(fromIndex, 1)[0];
+    nodeList.splice(toIndex, 0, item);
+    return nodeList;
   }
 };
 

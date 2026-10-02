@@ -1,4 +1,7 @@
 // canvasRenderer.js
+if (typeof window === 'undefined') {
+  global.window = global;
+}
 // This module handles all drawing operations for the Scholar's Desk canvas.
 // Implements Tufte-style minimalist typography, desk grid guides, and tag trellis lines.
 console.log("canvasRenderer.js loaded (Scholar's Desk edition)");
@@ -21,6 +24,50 @@ window.MyProjectCanvasRenderer = {
 
   setHoveredNode: function(node) {
     this.hoveredNode = node;
+  },
+
+  /** @type {string|null} Active tag or search filter string for spatial canvas highlighting. */
+  activeTagFilter: null,
+
+  setActiveTagFilter: function(filter) {
+    this.activeTagFilter = (filter && typeof filter === 'string' && filter.trim().length > 0) ? filter.trim() : null;
+  },
+
+  getActiveTagFilter: function() {
+    return this.activeTagFilter;
+  },
+
+  /**
+   * Checks if a node matches the active tag or search filter.
+   * @param {Object} node
+   * @param {string|null} filter
+   * @returns {boolean}
+   */
+  nodeMatchesFilter: function(node, filter) {
+    if (!filter) return true;
+    if (!node) return false;
+    const cleanFilter = filter.trim().toLowerCase();
+    if (!cleanFilter) return true;
+
+    if (cleanFilter.startsWith('#')) {
+      const tagTerm = cleanFilter.slice(1).toLowerCase();
+      if (!Array.isArray(node.tags) || node.tags.length === 0) return false;
+      return node.tags.some(t => {
+        const lower = String(t).toLowerCase();
+        return lower === tagTerm || lower.includes(tagTerm);
+      });
+    }
+
+    if (Array.isArray(node.tags) && node.tags.some(t => String(t).toLowerCase().includes(cleanFilter))) {
+      return true;
+    }
+    if (node.title && String(node.title).toLowerCase().includes(cleanFilter)) {
+      return true;
+    }
+    if (node.content && String(node.content).toLowerCase().includes(cleanFilter)) {
+      return true;
+    }
+    return false;
   },
 
   /**
@@ -97,6 +144,46 @@ window.MyProjectCanvasRenderer = {
   },
 
   /**
+   * Draws Trellis Lines connecting all visible nodes matching the active filter.
+   */
+  _drawFilterTrellisLines: function(currentNodes, filter, scale) {
+    if (!Array.isArray(currentNodes) || !filter) return;
+    const matchingNodes = currentNodes.filter(n => this.nodeMatchesFilter(n, filter));
+    if (matchingNodes.length < 2) return;
+
+    this.ctx.save();
+    for (let i = 0; i < matchingNodes.length - 1; i++) {
+      const source = matchingNodes[i];
+      const target = matchingNodes[i + 1];
+
+      const sourceX = source.x + source.width / 2;
+      const sourceY = source.y + source.height / 2;
+      const targetX = target.x + target.width / 2;
+      const targetY = target.y + target.height / 2;
+
+      this.ctx.beginPath();
+      this.ctx.strokeStyle = 'rgba(181, 118, 20, 0.45)';
+      this.ctx.lineWidth = 2 / scale;
+      this.ctx.setLineDash([5 / scale, 3 / scale]);
+
+      const midX = (sourceX + targetX) / 2;
+      const midY = (sourceY + targetY) / 2 - 25;
+
+      this.ctx.quadraticCurveTo(midX, midY, targetX, targetY);
+      this.ctx.stroke();
+      this.ctx.setLineDash([]);
+
+      const labelText = filter.startsWith('#') ? filter : '#' + filter;
+      this.ctx.font = `bold ${Math.max(10, 11 / scale)}px 'Vollkorn', serif`;
+      this.ctx.fillStyle = 'rgba(181, 118, 20, 0.9)';
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+      this.ctx.fillText(labelText, midX, midY - 6);
+    }
+    this.ctx.restore();
+  },
+
+  /**
    * Draws a single node following the Tufte Scholar's Desk design:
    * text-first elegance, clean paper cards, borders on hover/selection only.
    */
@@ -105,9 +192,16 @@ window.MyProjectCanvasRenderer = {
     const isHovered = (this.hoveredNode && this.hoveredNode.id === node.id);
     const isSheet = (node.type === 'text');
     const borderRadius = AppConstants.NODE_BORDER_RADIUS || 6;
+    const isFilterActive = !!this.activeTagFilter;
+    const isFilterMatch = isFilterActive ? this.nodeMatchesFilter(node, this.activeTagFilter) : true;
 
     let fillAlpha = isCurrentLevel ? AppConstants.CURRENT_LEVEL_FILL_ALPHA : (isAncestor ? AppConstants.ANCESTOR_FILL_ALPHA : AppConstants.OTHER_LEVEL_FILL_ALPHA);
     let textAlpha = isCurrentLevel ? AppConstants.CURRENT_LEVEL_TEXT_ALPHA : (isAncestor ? AppConstants.ANCESTOR_TEXT_ALPHA : AppConstants.OTHER_LEVEL_TEXT_ALPHA);
+
+    if (isFilterActive && !isFilterMatch) {
+      fillAlpha = 0.2;
+      textAlpha = 0.25;
+    }
 
     this.ctx.save();
     this.ctx.globalAlpha = fillAlpha;
@@ -118,9 +212,15 @@ window.MyProjectCanvasRenderer = {
 
     // Very subtle natural paper dropshadow when current level
     if (isCurrentLevel) {
-      this.ctx.shadowColor = isSelected ? 'rgba(7, 102, 120, 0.25)' : (isHovered ? 'rgba(60, 56, 54, 0.18)' : 'rgba(60, 56, 54, 0.08)');
-      this.ctx.shadowBlur = isSelected ? 12 / scale : (isHovered ? 8 / scale : 4 / scale);
-      this.ctx.shadowOffsetY = (isSelected || isHovered) ? 3 / scale : 1 / scale;
+      if (isFilterActive && isFilterMatch) {
+        this.ctx.shadowColor = 'rgba(181, 118, 20, 0.4)';
+        this.ctx.shadowBlur = 10 / scale;
+        this.ctx.shadowOffsetY = 2 / scale;
+      } else {
+        this.ctx.shadowColor = isSelected ? 'rgba(7, 102, 120, 0.25)' : (isHovered ? 'rgba(60, 56, 54, 0.18)' : 'rgba(60, 56, 54, 0.08)');
+        this.ctx.shadowBlur = isSelected ? 12 / scale : (isHovered ? 8 / scale : 4 / scale);
+        this.ctx.shadowOffsetY = (isSelected || isHovered) ? 3 / scale : 1 / scale;
+      }
     }
 
     this.ctx.beginPath();
@@ -133,25 +233,28 @@ window.MyProjectCanvasRenderer = {
 
     // Left binding spine indicator for Manuscript Sheets
     if (isSheet) {
-      const spineColor = isSelected ? '#076678' : (isHovered ? '#a89984' : '#d5c4a1');
+      const spineColor = (isFilterActive && isFilterMatch) ? '#b57614' : (isSelected ? '#076678' : (isHovered ? '#a89984' : '#d5c4a1'));
       this.ctx.fillStyle = spineColor;
       this.ctx.beginPath();
       this.ctx.roundRect(node.x, node.y, 4, node.height, [borderRadius, 0, 0, borderRadius]);
       this.ctx.fill();
     } else {
       // Top tab indicator for Portfolios (Folders)
-      const tabColor = isSelected ? '#076678' : (isHovered ? '#bdae93' : '#d5c4a1');
+      const tabColor = (isFilterActive && isFilterMatch) ? '#b57614' : (isSelected ? '#076678' : (isHovered ? '#bdae93' : '#d5c4a1'));
       this.ctx.fillStyle = tabColor;
       this.ctx.beginPath();
       this.ctx.roundRect(node.x + 12, node.y, Math.min(80, node.width - 24), 4, [2, 2, 0, 0]);
       this.ctx.fill();
     }
 
-    // Border: Revealed on hover or selection (Tufte minimalist pass)
+    // Border: Revealed on hover, selection, or filter match
     let strokeColor = null;
     let strokeWidth = 1 / scale;
 
-    if (isSelected) {
+    if (isFilterActive && isFilterMatch) {
+      strokeColor = '#b57614';
+      strokeWidth = 2.5 / scale;
+    } else if (isSelected) {
       strokeColor = AppConstants.NODE_SELECTED_STROKE_COLOR || '#076678';
       strokeWidth = 2.5 / scale;
     } else if (isHovered) {
@@ -262,8 +365,10 @@ window.MyProjectCanvasRenderer = {
     // 1. Draw subtle Jeffersonian desk grid
     this._drawDeskGrid(scale, offsetX, offsetY);
 
-    // 2. Draw Trellis lines linking semantic tags when a node is selected
-    if (selectedNodeGlobal) {
+    // 2. Draw Trellis lines (active filter trellis or selected node trellis)
+    if (this.activeTagFilter) {
+      this._drawFilterTrellisLines(currentNodes, this.activeTagFilter, scale);
+    } else if (selectedNodeGlobal) {
       this._drawTrellisLines(selectedNodeGlobal, currentNodes, scale);
     }
 

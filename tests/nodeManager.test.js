@@ -1,4 +1,3 @@
-const AppConstants = require('../js/constants.js');
 const NodeManager = require('../js/nodeManager.js');
 const StateManager = require('../js/stateManager.js');
 
@@ -113,5 +112,32 @@ describe('MyProjectNodeManager', () => {
         // Click outside the node: (400, 400)
         const miss = NodeManager.getNodeAtPosition(400, 400);
         expect(miss).toBeNull();
+    });
+
+    describe('reorderNode', () => {
+        test('should move an item from one index to another in place', () => {
+            const list = [
+                { id: 'a', title: 'Chapter A' },
+                { id: 'b', title: 'Chapter B' },
+                { id: 'c', title: 'Chapter C' }
+            ];
+
+            NodeManager.reorderNode(list, 0, 2);
+            expect(list.map(n => n.id)).toEqual(['b', 'c', 'a']);
+
+            NodeManager.reorderNode(list, 2, 1);
+            expect(list.map(n => n.id)).toEqual(['b', 'a', 'c']);
+        });
+
+        test('should return unmodified list when given out of bounds indices', () => {
+            const list = [{ id: '1' }, { id: '2' }];
+            NodeManager.reorderNode(list, -1, 1);
+            expect(list.map(n => n.id)).toEqual(['1', '2']);
+
+            NodeManager.reorderNode(list, 0, 5);
+            expect(list.map(n => n.id)).toEqual(['1', '2']);
+
+            expect(NodeManager.reorderNode(null, 0, 1)).toBeNull();
+        });
     });
 });
