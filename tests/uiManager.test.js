@@ -205,4 +205,30 @@ From Middle English morada, from Old French.
             expect(masterGlossary.get('Morada')).toBe('A fortress');
         });
     });
+
+    describe('autoTidyDesk', () => {
+        test('should arrange disorganized nodes into a clean grid', () => {
+            const nodes = [
+                { id: '1', x: 999, y: 888, width: 250, height: 150 },
+                { id: '2', x: -500, y: 300, width: 250, height: 150 },
+                { id: '3', x: 200, y: -400, width: 250, height: 150 },
+                { id: '4', x: 12, y: 99, width: 250, height: 150 }
+            ];
+
+            UIManager.stateManager = {
+                getCurrentNodes: () => nodes
+            };
+            UIManager.saveNodesFunction = () => {};
+            UIManager.fitNodesToView = () => {};
+            UIManager.drawFunction = () => {};
+
+            UIManager.autoTidyDesk();
+
+            // 4 nodes in a 2x2 grid
+            expect(nodes[0].x).toBeLessThan(nodes[1].x);
+            expect(nodes[0].y).toBe(nodes[1].y); // row 0
+            expect(nodes[2].y).toBeGreaterThan(nodes[0].y); // row 1
+            expect(nodes[2].x).toBe(nodes[0].x); // col 0
+        });
+    });
 });

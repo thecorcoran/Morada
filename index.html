@@ -18,15 +18,16 @@
       <div class="content-area">
         <div class="breadcrumb-bar" id="breadcrumb-bar">
           <div style="display:flex;align-items:center;gap:8px;">
-            <button id="breadcrumb-back-btn" title="Back">⟵ Back</button>
+            <button id="breadcrumb-back-btn" title="Back to Parent Portfolio">⟵ Back</button>
             <button id="toggle-outliner-btn" title="Toggle Outline Sidebar">Outline</button>
+            <button id="auto-tidy-btn" title="Auto-Tidy Desk (Ctrl+T)">Tidy Desk</button>
             <button id="open-navigator-btn" title="Open Navigator">Navigator</button>
-            <button id="open-compendium-btn" title="Open Compendium">Compendium</button>
-            <button id="open-scriptorium-btn" title="Open Scriptorium for selected node">Scriptorium</button>
-            <button id="new-project-btn" title="Create a new Project on the main floor">New Project</button>
+            <button id="open-compendium-btn" title="Open Manuscript Press">Manuscript Press</button>
+            <button id="open-scriptorium-btn" title="Open Sheet for selected node">Open Sheet</button>
+            <button id="new-project-btn" title="Create a new Portfolio on The Desk">New Portfolio</button>
             <button id="auto-fit-toggle" title="Toggle auto-fit of nodes">Auto-Fit: On</button>
           </div>
-          <div id="breadcrumb-path" style="margin-left:12px; font-weight:600;">The Grounds</div>
+          <div id="breadcrumb-path" style="margin-left:12px; font-weight:600;">The Desk</div>
         </div>
         <h2 id="view-title"></h2>
         <canvas id="nest-canvas"></canvas>
@@ -71,7 +72,7 @@
                 </div>
             </div>
         </div>
-        <div class="editor-instructions">Press 'Escape' to save and close</div>
+        <div class="editor-instructions">Press 'Escape' to save and return to The Desk</div>
     </div>
 <!-- Comment Modal -->
 <div id="comment-modal" class="modal hidden">
@@ -98,7 +99,7 @@
 
     <div id="compendium-modal" class="hidden">
       <div class="compendium-header">
-        <h2>The Compendium</h2>
+        <h2>Manuscript Press</h2>
         <input type="text" id="compendium-filter" placeholder="Filter by text or #tag...">
         <button id="close-compendium-btn">×</button>
       </div>
@@ -111,9 +112,9 @@
       <div class="compendium-footer">
         <div class="compendium-options">
           <label for="include-comments-checkbox"><input type="checkbox" id="include-comments-checkbox"> Include Comments as Footnotes</label>
-          <label for="include-certified-words-checkbox"><input type="checkbox" id="include-certified-words-checkbox"> Include Certified Words as Footnotes</label>
+          <label for="include-certified-words-checkbox"><input type="checkbox" id="include-certified-words-checkbox"> Include Certified Words as Lexicon</label>
         </div>
-        <button id="generate-btn">Generate .txt File</button>
+        <button id="generate-btn">Compile Manuscript (.txt)</button>
         <button id="export-tags-btn" title="Export all tags as CSV">Export Tags</button>
       </div>
     </div>

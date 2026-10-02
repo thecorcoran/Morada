@@ -188,6 +188,30 @@ function onMouseDown(e) {
         // Clicked empty space: clear selection and close any node inspector
         MyProjectStateManager.setSelectedNode(null);
         try { const m = document.getElementById('node-inspector-modal'); if (m) m.remove(); } catch (e) {}
+
+        if (e.detail === 2) {
+            // Double click empty space: create a new node
+            // Shift + double-click -> Sheet (text)
+            // Normal double-click -> Portfolio (container)
+            const isText = !!e.shiftKey;
+            const id = 'node-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
+            const scale = MyProjectStateManager.getScale();
+            const offsetX = MyProjectStateManager.getOffsetX();
+            const offsetY = MyProjectStateManager.getOffsetY();
+            const worldPos = MyProjectCanvasRenderer.getCanvasWorldPosition(e.clientX, e.clientY, canvas, scale, offsetX, offsetY);
+            const newNode = MyProjectNodeManager.createNode(worldPos.x, worldPos.y, isText, id);
+            const current = MyProjectStateManager.getCurrentNodes();
+            current.push(newNode);
+            MyProjectStateManager.setCurrentNodes(current);
+            MyProjectStateManager.setSelectedNode(newNode);
+            MyProjectDataStorage.saveNodes(MyProjectStateManager.getRootNodes());
+            if (window.MyProjectUIManager && typeof window.MyProjectUIManager.renderOutliner === 'function') {
+                window.MyProjectUIManager.renderOutliner();
+            }
+            draw();
+            return;
+        }
+
         isDragging = true; // For panning
         dragStart = { x, y };
     }
@@ -196,6 +220,7 @@ function onMouseDown(e) {
 
 function onMouseUp(e) {
     isDragging = false;
+    canvas.style.cursor = (MyProjectCanvasRenderer.hoveredNode) ? 'pointer' : 'default';
     const sel = MyProjectStateManager.getSelectedNode();
     if (sel) {
         try {
@@ -212,9 +237,19 @@ function onMouseUp(e) {
 }
 
 function onMouseMove(e) {
-    if (!isDragging) return;
-
     const { x, y } = getMousePos(e);
+
+    if (!isDragging) {
+        const hovered = MyProjectNodeManager.getNodeAtPosition(x, y);
+        const prevHovered = MyProjectCanvasRenderer.hoveredNode;
+        if (hovered !== prevHovered) {
+            MyProjectCanvasRenderer.setHoveredNode(hovered);
+            canvas.style.cursor = hovered ? 'pointer' : 'default';
+            draw();
+        }
+        return;
+    }
+
     const dx = x - lastMousePosition.x;
     const dy = y - lastMousePosition.y;
     const scale = MyProjectStateManager.getScale();
@@ -223,9 +258,11 @@ function onMouseMove(e) {
     if (selectedNode) { // Dragging a node
         selectedNode.x += dx / scale;
         selectedNode.y += dy / scale;
+        canvas.style.cursor = 'grabbing';
     } else { // Panning the canvas
         MyProjectStateManager.setOffsetX(MyProjectStateManager.getOffsetX() - dx / scale);
         MyProjectStateManager.setOffsetY(MyProjectStateManager.getOffsetY() - dy / scale);
+        canvas.style.cursor = 'grabbing';
     }
 
     lastMousePosition = { x, y };
@@ -308,7 +345,16 @@ function onKeyDown(e) {
             break;
         case 'c':
             if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
                 MyProjectUIManager.openCompendium();
+            }
+            break;
+        case 't':
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                if (window.MyProjectUIManager && typeof window.MyProjectUIManager.autoTidyDesk === 'function') {
+                    window.MyProjectUIManager.autoTidyDesk();
+                }
             }
             break;
         case 'f':

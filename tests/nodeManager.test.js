@@ -1,3 +1,4 @@
+const AppConstants = require('../js/constants.js');
 const NodeManager = require('../js/nodeManager.js');
 const StateManager = require('../js/stateManager.js');
 
@@ -6,7 +7,7 @@ describe('MyProjectNodeManager', () => {
         const node = NodeManager.createNode(500, 400, false, 'test-chamber-1');
         expect(node.id).toBe('test-chamber-1');
         expect(node.type).toBe('container');
-        expect(node.title).toBe('New Chamber');
+        expect(node.title).toBe('New Portfolio');
         expect(node.width).toBe(250);
         expect(node.height).toBe(150);
         expect(node.x).toBe(500 - 125);
@@ -20,7 +21,7 @@ describe('MyProjectNodeManager', () => {
         const node = NodeManager.createNode(100, 200, true, 'test-text-1');
         expect(node.id).toBe('test-text-1');
         expect(node.type).toBe('text');
-        expect(node.title).toBe('New Scriptorium');
+        expect(node.title).toBe('New Sheet');
         expect(node.width).toBe(250);
         expect(node.height).toBe(150);
     });

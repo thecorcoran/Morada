@@ -7,12 +7,22 @@ window.AppConstants = {
     NODE_WIDTH: 250,
     /** @const {number} NODE_HEIGHT - Default height for new nodes. */
     NODE_HEIGHT: 150,
-    /** @const {string} NODE_DEFAULT_COLOR - Default background color for container nodes. */
-    NODE_DEFAULT_COLOR: '#f5f5f5',
-    /** @const {string} NODE_TEXT_COLOR - Default background color for text nodes. */
-    NODE_TEXT_COLOR: '#fdf5e6',
-    /** @const {string} NODE_SELECTED_STROKE_COLOR - Stroke color for selected nodes. */
-    NODE_SELECTED_STROKE_COLOR: '#007bff',
+    /** @const {number} NODE_BORDER_RADIUS - Clean corner radius for scholar's desk cards. */
+    NODE_BORDER_RADIUS: 6,
+    /** @const {string} NODE_DEFAULT_COLOR - Archival portfolio folder color. */
+    NODE_DEFAULT_COLOR: '#f4ece1',
+    /** @const {string} NODE_TEXT_COLOR - Crisp manuscript sheet paper color. */
+    NODE_TEXT_COLOR: '#ffffff',
+    /** @const {string} NODE_PORTFOLIO_COLOR - Archival portfolio folder color. */
+    NODE_PORTFOLIO_COLOR: '#f4ece1',
+    /** @const {string} NODE_SHEET_COLOR - Crisp manuscript sheet paper color. */
+    NODE_SHEET_COLOR: '#ffffff',
+    /** @const {string} NODE_SELECTED_STROKE_COLOR - Scholarly focus stroke color. */
+    NODE_SELECTED_STROKE_COLOR: '#076678',
+    /** @const {string} NODE_HOVER_STROKE_COLOR - Subtle hover stroke color. */
+    NODE_HOVER_STROKE_COLOR: '#a89984',
+    /** @const {string} DESK_GRID_DOT_COLOR - Desk surface alignment dot grid. */
+    DESK_GRID_DOT_COLOR: 'rgba(189, 174, 147, 0.45)',
 
     // --- Canvas Settings ---
     /** @const {number} CANVAS_ZOOM_INTENSITY - Multiplier for zoom operations. */
@@ -26,11 +36,17 @@ window.AppConstants = {
     /** @const {string} EDITOR_BACKGROUND_COLOR - Background color for the TinyMCE editor. */
     EDITOR_BACKGROUND_COLOR: '#fdf5e6',
 
-    // --- Default Node Titles ---
-    /** @const {string} NEW_CHAMBER_TITLE - Default title for new container nodes. */
-    NEW_CHAMBER_TITLE: 'New Chamber',
-    /** @const {string} NEW_SCRIPTORIUM_TITLE - Default title for new text nodes. */
-    NEW_SCRIPTORIUM_TITLE: 'New Scriptorium',
+    // --- Default Titles (Scholar's Desk Paradigm) ---
+    /** @const {string} ROOT_VIEW_TITLE - Title for root workspace. */
+    ROOT_VIEW_TITLE: 'The Desk',
+    /** @const {string} NEW_PORTFOLIO_TITLE - Default title for new container nodes. */
+    NEW_PORTFOLIO_TITLE: 'New Portfolio',
+    /** @const {string} NEW_SHEET_TITLE - Default title for new text nodes. */
+    NEW_SHEET_TITLE: 'New Sheet',
+    /** @const {string} NEW_CHAMBER_TITLE - Backwards compatibility alias for containers. */
+    NEW_CHAMBER_TITLE: 'New Portfolio',
+    /** @const {string} NEW_SCRIPTORIUM_TITLE - Backwards compatibility alias for text nodes. */
+    NEW_SCRIPTORIUM_TITLE: 'New Sheet',
 
     // --- UI Interaction Keys ---
     /** @const {string} KEY_ENTER - String representation for the 'Enter' key. */

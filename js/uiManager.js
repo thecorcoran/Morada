@@ -133,6 +133,8 @@ window.MyProjectUIManager = {
             if (this.drawFunction) this.drawFunction();
         });
         if (this.openCompendiumBtn) this.openCompendiumBtn.addEventListener('click', () => this.openCompendium());
+        this.autoTidyBtn = document.getElementById('auto-tidy-btn');
+        if (this.autoTidyBtn) this.autoTidyBtn.addEventListener('click', () => this.autoTidyDesk());
         if (this.openScriptoriumBtn) this.openScriptoriumBtn.addEventListener('click', () => {
             const sel = this.stateManager.getSelectedNode();
             if (!sel) return alert('No node selected');
@@ -922,12 +924,11 @@ window.MyProjectUIManager = {
     updateUIChrome: function() {
         if (!this.breadcrumbBar || !this.viewTitle) return;
         const viewStack = this.stateManager.getViewStack();
-        let path = 'The Grounds';
+        let path = 'The Desk';
         viewStack.forEach(node => { path += ` / ${node.title}`; });
         if (this.breadcrumbPath) {
             this.breadcrumbPath.textContent = path;
         } else {
-            // fallback: set textContent of container but preserve buttons
             this.breadcrumbBar.textContent = path;
         }
         // Toggle Back button visibility
@@ -936,13 +937,54 @@ window.MyProjectUIManager = {
                 if (viewStack.length > 0) this.breadcrumbBackBtn.classList.remove('hidden'); else this.breadcrumbBackBtn.classList.add('hidden');
             }
         } catch (err) { /* ignore */ }
-        this.viewTitle.textContent = viewStack.length === 0 ? 'The Castle Grounds' : viewStack[viewStack.length - 1].title;
+        this.viewTitle.textContent = viewStack.length === 0 ? "The Scholar's Desk" : viewStack[viewStack.length - 1].title;
         // Synchronize outliner if it is open
         try {
             if (this.outlinerSidebar && !this.outlinerSidebar.classList.contains('hidden')) {
                 this.renderOutliner();
             }
         } catch (err) { /* non-fatal */ }
+    },
+
+    /**
+     * Auto-Tidy Desk: Arranges all current nodes into a clean, disciplined Jeffersonian
+     * multi-column grid centered on the desk, eliminating spatial drift.
+     */
+    autoTidyDesk: function() {
+        const currentNodes = this.stateManager.getCurrentNodes();
+        if (!currentNodes || currentNodes.length === 0) return;
+
+        const nodeWidth = (window.AppConstants && AppConstants.NODE_WIDTH) || 250;
+        const nodeHeight = (window.AppConstants && AppConstants.NODE_HEIGHT) || 150;
+        const gapX = 36;
+        const gapY = 36;
+
+        const total = currentNodes.length;
+        let cols = Math.ceil(Math.sqrt(total));
+        if (cols < 2 && total > 1) cols = 2;
+        if (cols > 4) cols = 4;
+
+        const totalGridWidth = cols * nodeWidth + (cols - 1) * gapX;
+        const rows = Math.ceil(total / cols);
+        const totalGridHeight = rows * nodeHeight + (rows - 1) * gapY;
+
+        const startX = -totalGridWidth / 2;
+        const startY = -totalGridHeight / 2;
+
+        currentNodes.forEach((node, idx) => {
+            const col = idx % cols;
+            const row = Math.floor(idx / cols);
+            node.x = startX + col * (nodeWidth + gapX);
+            node.y = startY + row * (nodeHeight + gapY);
+        });
+
+        if (this.saveNodesFunction) this.saveNodesFunction();
+        if (typeof this.fitNodesToView === 'function') this.fitNodesToView(60);
+        if (this.drawFunction) this.drawFunction();
+
+        if (this.outlinerSidebar && !this.outlinerSidebar.classList.contains('hidden')) {
+            this.renderOutliner();
+        }
     },
 
     toggleOutliner: function() {
