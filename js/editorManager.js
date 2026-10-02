@@ -189,6 +189,15 @@ window.MyProjectEditorManager = {
             console.error('[editor] TinyMCE init failed:', err);
             this.tinyMCEAvailable = false;
         }
+
+        if (typeof document !== 'undefined' && !this._fullscreenListenerAdded) {
+            this._fullscreenListenerAdded = true;
+            document.addEventListener('fullscreenchange', () => {
+                if (!document.fullscreenElement && this.isFullView) {
+                    this.toggleFullView(false);
+                }
+            });
+        }
     },
 
     /**
@@ -805,6 +814,16 @@ window.MyProjectEditorManager = {
                 this.uiManager.editorInspectorSidebar.classList.add('hidden');
             }
         } catch (err) { /* ignore */ }
+
+        // Return desk view to what makes sense: ensure the edited sheet or parent container is visible
+        try {
+            if (selectedNode && this.uiManager && typeof this.uiManager.ensureNodeVisible === 'function') {
+                this.uiManager.ensureNodeVisible(selectedNode, 100);
+            } else if (this.uiManager && typeof this.uiManager.fitNodesToView === 'function') {
+                this.uiManager.fitNodesToView(80);
+            }
+        } catch (err) { /* non-fatal */ }
+
         try { this.drawFunction(); } catch (err) { /* ignore draw errors */ }
     },
 
@@ -833,8 +852,20 @@ window.MyProjectEditorManager = {
 
         if (shouldBeFull) {
             editorMode.classList.add('full-view-mode');
+            try {
+                if (typeof document !== 'undefined' && !document.fullscreenElement && document.documentElement && typeof document.documentElement.requestFullscreen === 'function') {
+                    const p = document.documentElement.requestFullscreen();
+                    if (p && typeof p.catch === 'function') p.catch(() => {});
+                }
+            } catch (e) { /* ignore */ }
         } else {
             editorMode.classList.remove('full-view-mode');
+            try {
+                if (typeof document !== 'undefined' && document.fullscreenElement && typeof document.exitFullscreen === 'function') {
+                    const p = document.exitFullscreen();
+                    if (p && typeof p.catch === 'function') p.catch(() => {});
+                }
+            } catch (e) { /* ignore */ }
         }
 
         const fullviewBtn = document.getElementById('editor-fullview-btn');

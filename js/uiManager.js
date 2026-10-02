@@ -177,11 +177,17 @@ window.MyProjectUIManager = {
             const viewStack = this.stateManager.getViewStack();
             if (viewStack.length === 0) return;
             // Pop and restore parent nodes
-            viewStack.pop();
+            const popped = viewStack.pop();
             const parent = viewStack.length > 0 ? viewStack[viewStack.length - 1].children : this.stateManager.getRootNodes();
             this.stateManager.setCurrentNodes(parent);
             this.stateManager.setViewStack(viewStack);
+            if (popped) {
+                this.stateManager.setSelectedNode(popped);
+            }
             this.updateUIChrome();
+            if (typeof this.fitNodesToView === 'function') {
+                this.fitNodesToView(80);
+            }
             if (this.drawFunction) this.drawFunction();
         });
         if (this.openCompendiumBtn) this.openCompendiumBtn.addEventListener('click', () => this.openCompendium());
@@ -2872,7 +2878,15 @@ ${bodyContent}
 MyProjectUIManager.fitNodesToView = function(padding = 80) {
     try {
         const nodes = (this.stateManager && this.stateManager.getCurrentNodes && this.stateManager.getCurrentNodes()) || (this.stateManager.getRootNodes && this.stateManager.getRootNodes()) || [];
-        if (!nodes || nodes.length === 0) return;
+        if (!nodes || nodes.length === 0) {
+            if (this.stateManager) {
+                if (typeof this.stateManager.setScale === 'function') this.stateManager.setScale(1.0);
+                if (typeof this.stateManager.setOffsetX === 'function') this.stateManager.setOffsetX(0);
+                if (typeof this.stateManager.setOffsetY === 'function') this.stateManager.setOffsetY(0);
+            }
+            if (typeof this.drawFunction === 'function') this.drawFunction();
+            return;
+        }
         // Compute bounding box in world coordinates
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         nodes.forEach(n => {
@@ -2895,9 +2909,16 @@ MyProjectUIManager.fitNodesToView = function(padding = 80) {
         newScale = Math.max(0.45, Math.min(newScale, 1.25));
         const centerX = (minX + maxX) / 2;
         const centerY = (minY + maxY) / 2;
+        // In the canvas transformation:
+        // screenX = (worldX - canvasW/2 - offsetX) * scale + canvasW/2
+        // To place world center (centerX, centerY) at the screen center (canvasW/2, canvasH/2):
+        // offsetX = centerX - canvasW / 2
+        // offsetY = centerY - canvasH / 2
+        const newOffsetX = centerX - canvasW / 2;
+        const newOffsetY = centerY - canvasH / 2;
         if (this.stateManager && typeof this.stateManager.setScale === 'function') this.stateManager.setScale(newScale);
-        if (this.stateManager && typeof this.stateManager.setOffsetX === 'function') this.stateManager.setOffsetX(centerX);
-        if (this.stateManager && typeof this.stateManager.setOffsetY === 'function') this.stateManager.setOffsetY(centerY);
+        if (this.stateManager && typeof this.stateManager.setOffsetX === 'function') this.stateManager.setOffsetX(newOffsetX);
+        if (this.stateManager && typeof this.stateManager.setOffsetY === 'function') this.stateManager.setOffsetY(newOffsetY);
         if (typeof this.drawFunction === 'function') this.drawFunction();
     } catch (err) {
         console.warn('fitNodesToView failed', err);
@@ -2907,26 +2928,43 @@ MyProjectUIManager.fitNodesToView = function(padding = 80) {
 MyProjectUIManager.ensureNodeVisible = function(node, margin = 80) {
     try {
         if (!node) return;
-        const scale = this.stateManager.getScale();
-        const offsetX = this.stateManager.getOffsetX();
-        const offsetY = this.stateManager.getOffsetY();
+        const scale = (this.stateManager && typeof this.stateManager.getScale === 'function') ? this.stateManager.getScale() : 1;
+        const offsetX = (this.stateManager && typeof this.stateManager.getOffsetX === 'function') ? this.stateManager.getOffsetX() : 0;
+        const offsetY = (this.stateManager && typeof this.stateManager.getOffsetY === 'function') ? this.stateManager.getOffsetY() : 0;
         const canvasW = (this.canvas && this.canvas.width) || window.innerWidth;
         const canvasH = (this.canvas && this.canvas.height) || window.innerHeight;
-        let screenX = (node.x - offsetX) * scale + canvasW / 2;
-        let screenY = (node.y - offsetY) * scale + canvasH / 2;
-        let changed = false;
-        let desiredScreenX = screenX;
-        let desiredScreenY = screenY;
-        if (screenX < margin) { desiredScreenX = margin; changed = true; }
-        if (screenX > canvasW - margin) { desiredScreenX = canvasW - margin; changed = true; }
-        if (screenY < margin) { desiredScreenY = margin; changed = true; }
-        if (screenY > canvasH - margin) { desiredScreenY = canvasH - margin; changed = true; }
-        if (!changed) return;
-        // compute new offsets that would place node at desired screen position
-        const newOffsetX = node.x - (desiredScreenX - canvasW/2) / scale;
-    const newOffsetY = node.y - (desiredScreenY - canvasH/2) / scale;
-        if (typeof this.stateManager.setOffsetX === 'function') this.stateManager.setOffsetX(newOffsetX);
-        if (typeof this.stateManager.setOffsetY === 'function') this.stateManager.setOffsetY(newOffsetY);
+        const nodeW = node.width || (node.type === 'container' ? 520 : 340);
+        const nodeH = node.height || (node.type === 'container' ? 330 : 210);
+
+        // Screen coordinates of node bounding box
+        const screenLeft = (node.x - canvasW / 2 - offsetX) * scale + canvasW / 2;
+        const screenTop = (node.y - canvasH / 2 - offsetY) * scale + canvasH / 2;
+        const screenRight = (node.x + nodeW - canvasW / 2 - offsetX) * scale + canvasW / 2;
+        const screenBottom = (node.y + nodeH - canvasH / 2 - offsetY) * scale + canvasH / 2;
+
+        let deltaScreenX = 0;
+        let deltaScreenY = 0;
+
+        if (screenLeft < margin) {
+            deltaScreenX = screenLeft - margin;
+        } else if (screenRight > canvasW - margin) {
+            deltaScreenX = screenRight - (canvasW - margin);
+        }
+
+        if (screenTop < margin) {
+            deltaScreenY = screenTop - margin;
+        } else if (screenBottom > canvasH - margin) {
+            deltaScreenY = screenBottom - (canvasH - margin);
+        }
+
+        if (deltaScreenX === 0 && deltaScreenY === 0) return;
+
+        // Shift offsets in world coordinates to bring the node comfortably within margin
+        const newOffsetX = offsetX + deltaScreenX / scale;
+        const newOffsetY = offsetY + deltaScreenY / scale;
+
+        if (this.stateManager && typeof this.stateManager.setOffsetX === 'function') this.stateManager.setOffsetX(newOffsetX);
+        if (this.stateManager && typeof this.stateManager.setOffsetY === 'function') this.stateManager.setOffsetY(newOffsetY);
         if (typeof this.drawFunction === 'function') this.drawFunction();
     } catch (err) {
         console.warn('ensureNodeVisible failed', err);

@@ -238,10 +238,12 @@ From Middle English morada, from Old French.
                 getCurrentNodes: () => nodes
             };
             UIManager.saveNodesFunction = () => {};
+            const origFit = UIManager.fitNodesToView;
             UIManager.fitNodesToView = () => {};
             UIManager.drawFunction = () => {};
 
             UIManager.autoTidyDesk();
+            UIManager.fitNodesToView = origFit;
 
             // 4 nodes in a 2x2 grid
             expect(nodes[0].x).toBeLessThan(nodes[1].x);
@@ -452,4 +454,82 @@ From Middle English morada, from Old French.
             expect(redrawn).toBe(true);
         });
     });
+
+    describe('fitNodesToView and ensureNodeVisible centering math', () => {
+        let mockState;
+
+        beforeEach(() => {
+            mockState = {
+                scale: 1,
+                offsetX: 0,
+                offsetY: 0,
+                currentNodes: [],
+                getScale: function() { return this.scale; },
+                setScale: function(s) { this.scale = s; },
+                getOffsetX: function() { return this.offsetX; },
+                setOffsetX: function(x) { this.offsetX = x; },
+                getOffsetY: function() { return this.offsetY; },
+                setOffsetY: function(y) { this.offsetY = y; },
+                getCurrentNodes: function() { return this.currentNodes; }
+            };
+            UIManager.stateManager = mockState;
+            UIManager.canvas = { width: 1000, height: 800 };
+            UIManager.drawFunction = jest.fn();
+        });
+
+        test('fitNodesToView centers bounding box at screen center with correct offsets', () => {
+            // Two cards
+            mockState.currentNodes = [
+                { id: '1', x: -200, y: -100, width: 340, height: 210 },
+                { id: '2', x: 200, y: 100, width: 340, height: 210 }
+            ];
+
+            UIManager.fitNodesToView(80);
+
+            // minX = -200, maxX = 540 => centerX = 170
+            // minY = -100, maxY = 310 => centerY = 105
+            // canvasW = 1000, canvasH = 800
+            // expectedOffsetX = 170 - 500 = -330
+            // expectedOffsetY = 105 - 400 = -295
+            expect(mockState.offsetX).toBeCloseTo(-330);
+            expect(mockState.offsetY).toBeCloseTo(-295);
+
+            // Screen projection of bounding box center (170, 105):
+            // screenX = (worldX - canvasW/2 - offsetX) * scale + canvasW/2
+            const screenX = (170 - 500 - mockState.offsetX) * mockState.scale + 500;
+            const screenY = (105 - 400 - mockState.offsetY) * mockState.scale + 400;
+            expect(screenX).toBeCloseTo(500); // Exact screen center X!
+            expect(screenY).toBeCloseTo(400); // Exact screen center Y!
+            expect(UIManager.drawFunction).toHaveBeenCalled();
+        });
+
+        test('fitNodesToView safely resets viewport when node list is empty', () => {
+            mockState.currentNodes = [];
+            mockState.scale = 0.5;
+            mockState.offsetX = 200;
+            mockState.offsetY = 150;
+
+            UIManager.fitNodesToView(80);
+
+            expect(mockState.scale).toBe(1.0);
+            expect(mockState.offsetX).toBe(0);
+            expect(mockState.offsetY).toBe(0);
+            expect(UIManager.drawFunction).toHaveBeenCalled();
+        });
+
+        test('ensureNodeVisible adjusts offset when a node lies outside margin', () => {
+            const farNode = { id: 'far', x: 2000, y: 1500, width: 340, height: 210 };
+            mockState.scale = 1;
+            mockState.offsetX = 0;
+            mockState.offsetY = 0;
+
+            UIManager.ensureNodeVisible(farNode, 80);
+
+            // Offset should shift so the node is visible within margins
+            expect(mockState.offsetX).toBeGreaterThan(0);
+            expect(mockState.offsetY).toBeGreaterThan(0);
+            expect(UIManager.drawFunction).toHaveBeenCalled();
+        });
+    });
 });
+

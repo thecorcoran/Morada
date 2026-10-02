@@ -137,6 +137,9 @@ function onMouseDown(e) {
                             MyProjectStateManager.pushToViewStack(clickedNode);
                             MyProjectStateManager.setCurrentNodes(clickedNode.children || []);
                             MyProjectUIManager.updateUIChrome();
+                            if (window.MyProjectUIManager && typeof window.MyProjectUIManager.fitNodesToView === 'function') {
+                                window.MyProjectUIManager.fitNodesToView(80);
+                            }
                             draw();
                         }
                     };
@@ -193,6 +196,9 @@ function onMouseDown(e) {
                 MyProjectStateManager.pushToViewStack(clickedNode);
                 MyProjectStateManager.setCurrentNodes(clickedNode.children || []);
                 MyProjectUIManager.updateUIChrome();
+                if (window.MyProjectUIManager && typeof window.MyProjectUIManager.fitNodesToView === 'function') {
+                    window.MyProjectUIManager.fitNodesToView(80);
+                }
                 draw();
                 return;
             }
@@ -334,18 +340,27 @@ function onKeyDown(e) {
                     MyProjectEditorManager.openEditorMode(selectedNode);
                 } else {
                     MyProjectStateManager.pushToViewStack(selectedNode);
-                    MyProjectStateManager.setCurrentNodes(selectedNode.children);
+                    MyProjectStateManager.setCurrentNodes(selectedNode.children || []);
                     MyProjectUIManager.updateUIChrome();
+                    if (window.MyProjectUIManager && typeof window.MyProjectUIManager.fitNodesToView === 'function') {
+                        window.MyProjectUIManager.fitNodesToView(80);
+                    }
                     draw();
                 }
             }
             break;
         case 'Backspace':
             if (viewStack.length > 0) {
-                MyProjectStateManager.popFromViewStack();
+                const popped = MyProjectStateManager.popFromViewStack();
                 const newCurrentNodes = viewStack.length > 0 ? viewStack[viewStack.length - 1].children : MyProjectStateManager.getRootNodes();
                 MyProjectStateManager.setCurrentNodes(newCurrentNodes);
+                if (popped) {
+                    MyProjectStateManager.setSelectedNode(popped);
+                }
                 MyProjectUIManager.updateUIChrome();
+                if (window.MyProjectUIManager && typeof window.MyProjectUIManager.fitNodesToView === 'function') {
+                    window.MyProjectUIManager.fitNodesToView(80);
+                }
                 draw();
             }
             break;
@@ -412,11 +427,18 @@ function resizeCanvas() {
 }
 
 function navigateToNode(path, nodeId) {
+    if (!nodeId && path && path.id) {
+        nodeId = path.id;
+        path = [path];
+    }
     const node = MyProjectNodeManager.findNodeByIdPath(nodeId, MyProjectStateManager.getRootNodes());
     if (node) {
         MyProjectStateManager.setViewStack(path);
-        MyProjectStateManager.setCurrentNodes(node.children);
+        MyProjectStateManager.setCurrentNodes(node.children || []);
         MyProjectUIManager.updateUIChrome();
+        if (window.MyProjectUIManager && typeof window.MyProjectUIManager.fitNodesToView === 'function') {
+            window.MyProjectUIManager.fitNodesToView(80);
+        }
         draw();
     }
 }

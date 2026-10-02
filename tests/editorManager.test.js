@@ -104,7 +104,9 @@ describe('MyProjectEditorManager & Craft Drawer Integration Tests', () => {
             renderFootnotes: jest.fn(),
             openCertifyModal: jest.fn(),
             openCommentModal: jest.fn(),
-            showEtymologyFor: jest.fn()
+            showEtymologyFor: jest.fn(),
+            ensureNodeVisible: jest.fn(),
+            fitNodesToView: jest.fn()
         };
 
         mockDataStorage = {
@@ -209,6 +211,7 @@ describe('MyProjectEditorManager & Craft Drawer Integration Tests', () => {
         expect(mockDataStorage.saveNodes).toHaveBeenCalled();
         expect(mockUIManager.editorMode.classList.contains('hidden')).toBe(true);
         expect(mockUIManager.editorInspectorSidebar.classList.contains('hidden')).toBe(true);
+        expect(mockUIManager.ensureNodeVisible).toHaveBeenCalledWith(node, 100);
     });
 
     test('toggleFullView should toggle full-view-mode class and update buttons', () => {
