@@ -2,6 +2,9 @@
 // This module is responsible for data storage, including loading, saving,
 // and normalizing node data, as well as managing application-level selections
 // like the currently selected node and the manuscript list for compilation.
+if (typeof window === 'undefined') {
+  global.window = global;
+}
 console.log("dataStorage.js loaded");
 
 window.MyProjectDataStorage = {
@@ -53,7 +56,11 @@ window.MyProjectDataStorage = {
     try {
       // Backup the current data file before saving
       if (await window.electronAPI.fs.exists(this._activeDataPath)) {
-        await window.electronAPI.fs.copyFile(this._activeDataPath, this._backupDataPath);
+        try {
+          await window.electronAPI.fs.copyFile(this._activeDataPath, this._backupDataPath);
+        } catch (backupErr) {
+          console.warn("[Storage] Backup creation skipped:", backupErr && backupErr.message);
+        }
       }
       const data = JSON.stringify(rootNodesToSave, null, 2);
       await window.electronAPI.fs.writeFile(this._activeDataPath, data);
@@ -309,3 +316,7 @@ window.MyProjectDataStorage = {
   }
 };
 console.log("dataStorage.js has been refactored to use secure IPC for file access and includes a backup system.");
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = window.MyProjectDataStorage;
+}

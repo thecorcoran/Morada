@@ -961,7 +961,7 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
 
 /* Hover Tooltip for Comments & Certified Words */
 #hover-tooltip {
-  position: absolute;
+  position: fixed;
   background-color: var(--color-bg-light-primary);
   /* Light background */
   border: 1px solid var(--color-border-light);
@@ -1026,19 +1026,30 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
   padding: 0;
 }
 
-#footnotes-list li {
-  margin-bottom: 10px;
-  padding: var(--spacing-small);
+#footnotes-list li,
+.footnote-item {
+  margin-bottom: 8px;
+  padding: var(--spacing-small) 10px;
   background-color: var(--color-bg-light-primary);
-  border: 1px solid var(--color-bg-light-secondary);
+  border: 1px solid var(--color-border-light, #ddd);
   border-radius: var(--border-radius);
   cursor: pointer;
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.4;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
-#footnotes-list li:hover {
+#footnotes-list li:hover,
+.footnote-item:hover {
   background-color: var(--color-bg-light-secondary);
+}
+
+.footnote-item.comment-item {
+  border-left: 4px solid #dab600;
+}
+
+.footnote-item.certified-item {
+  border-left: 4px solid #2ea043;
 }
 
 /* Collapsed State for Footnotes */
@@ -1087,4 +1098,79 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
 .certified-word {
     background-color: #e6ffed;
     cursor: pointer;
+}
+
+/* Editor Toolbar */
+#editor-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+#editor-toolbar button {
+  padding: 6px 14px;
+  background-color: var(--color-bg-dark-tertiary, #2c3e50);
+  color: #f0f0f0;
+  border: 1px solid var(--color-border-light, #555);
+  border-radius: var(--border-radius, 4px);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+#editor-toolbar button:hover {
+  background-color: var(--color-accent-primary, #6366f1);
+  color: white;
+}
+
+/* Etymology Modal Styling */
+#etymology-modal .modal-content {
+  max-width: 650px;
+}
+
+#etymology-result-area {
+  max-height: 420px;
+  overflow-y: auto;
+  line-height: 1.6;
+  font-size: 14px;
+  padding: 12px;
+  background: var(--color-bg-light-primary, #ffffff);
+  color: var(--color-text-dark, #222222);
+  border-radius: var(--border-radius, 4px);
+  border: 1px solid var(--color-border-light, #ddd);
+}
+
+#etymology-result-area h4 {
+  margin: 14px 0 6px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-accent-primary, #4f46e5);
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 4px;
+}
+
+#etymology-result-area p {
+  margin: 6px 0;
+}
+
+#etymology-result-area ul {
+  padding-left: 20px;
+  margin: 6px 0;
+}
+
+.etymology-certify-btn {
+  margin-top: 10px;
+  padding: 6px 14px;
+  background-color: #2ea043;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.etymology-certify-btn:hover {
+  background-color: #2c974b;
 }

@@ -61,25 +61,28 @@ async function init() {
     // Event Listeners
     setupEventListeners();
     console.log('[renderer] init: completed');
-    // Add a small debug overlay so users can visually confirm the renderer
-    // finished initialization. Click to dismiss.
+    // In development mode, add a small debug overlay to visually confirm renderer init.
     try {
-        const overlay = document.createElement('div');
-        overlay.id = 'renderer-ready-overlay';
-        overlay.textContent = 'Renderer initialized — click to dismiss';
-        Object.assign(overlay.style, {
-            position: 'fixed',
-            right: '12px',
-            bottom: '12px',
-            background: 'rgba(0,0,0,0.75)',
-            color: '#fff',
-            padding: '8px 12px',
-            borderRadius: '6px',
-            zIndex: 99999,
-            cursor: 'pointer'
-        });
-        overlay.addEventListener('click', () => overlay.remove());
-        document.body.appendChild(overlay);
+        const isDev = (typeof process !== 'undefined' && process.env && (process.env.NODE_ENV === 'development' || (process.argv && process.argv.includes('--dev')))) ||
+                      (typeof window !== 'undefined' && window.location && window.location.search.includes('dev=true'));
+        if (isDev) {
+            const overlay = document.createElement('div');
+            overlay.id = 'renderer-ready-overlay';
+            overlay.textContent = 'Renderer initialized — click to dismiss';
+            Object.assign(overlay.style, {
+                position: 'fixed',
+                right: '12px',
+                bottom: '12px',
+                background: 'rgba(0,0,0,0.75)',
+                color: '#fff',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                zIndex: 99999,
+                cursor: 'pointer'
+            });
+            overlay.addEventListener('click', () => overlay.remove());
+            document.body.appendChild(overlay);
+        }
     } catch (err) {
         console.error('[renderer] overlay creation failed:', err);
     }

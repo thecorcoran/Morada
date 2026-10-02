@@ -1,6 +1,6 @@
-// nodeManager.js
-// This module is responsible for managing nodes: creating, deleting, finding, 
-// adding tags, and handling title editing.
+if (typeof window === 'undefined') {
+  global.window = global;
+}
 console.log("nodeManager.js loaded");
 
 window.MyProjectNodeManager = {
@@ -75,13 +75,17 @@ window.MyProjectNodeManager = {
    * @returns {Object} The newly created node object.
    */
   createNode: function(x, y, isTextType, id) {
+    const nodeWidth = (typeof AppConstants !== 'undefined' && AppConstants.NODE_WIDTH) || 250;
+    const nodeHeight = (typeof AppConstants !== 'undefined' && AppConstants.NODE_HEIGHT) || 150;
+    const scriptoriumTitle = (typeof AppConstants !== 'undefined' && AppConstants.NEW_SCRIPTORIUM_TITLE) || 'New Scriptorium';
+    const chamberTitle = (typeof AppConstants !== 'undefined' && AppConstants.NEW_CHAMBER_TITLE) || 'New Chamber';
     return {
       id: id,
-      x: x - AppConstants.NODE_WIDTH / 2,
-      y: y - AppConstants.NODE_HEIGHT / 2,
-      width: AppConstants.NODE_WIDTH,
-      height: AppConstants.NODE_HEIGHT,
-      title: isTextType ? AppConstants.NEW_SCRIPTORIUM_TITLE : AppConstants.NEW_CHAMBER_TITLE,
+      x: x - nodeWidth / 2,
+      y: y - nodeHeight / 2,
+      width: nodeWidth,
+      height: nodeHeight,
+      title: isTextType ? scriptoriumTitle : chamberTitle,
       content: '',
       tags: [],
       children: [],
@@ -134,3 +138,7 @@ window.MyProjectNodeManager = {
     return null;
   }
 };
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = window.MyProjectNodeManager;
+}

@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <title>Morada</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdn.tiny.cloud/1/5g985h5nnoarje29szp3x7g2z6a811y9wsvvp2wylg5s6u4i/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="node_modules/tinymce/tinymce.min.js"></script>
+    <script src="node_modules/sortablejs/Sortable.min.js"></script>
   </head>
   <body>
     <div class="main-container">
@@ -19,6 +19,7 @@
         <div class="breadcrumb-bar" id="breadcrumb-bar">
           <div style="display:flex;align-items:center;gap:8px;">
             <button id="breadcrumb-back-btn" title="Back">⟵ Back</button>
+            <button id="toggle-outliner-btn" title="Toggle Outline Sidebar">Outline</button>
             <button id="open-navigator-btn" title="Open Navigator">Navigator</button>
             <button id="open-compendium-btn" title="Open Compendium">Compendium</button>
             <button id="open-scriptorium-btn" title="Open Scriptorium for selected node">Scriptorium</button>
@@ -28,7 +29,6 @@
           <div id="breadcrumb-path" style="margin-left:12px; font-weight:600;">The Grounds</div>
         </div>
         <h2 id="view-title"></h2>
-        <button id="add-shelf-btn" class="hidden" title="Add a new shelf with a book">+</button>
         <canvas id="nest-canvas"></canvas>
       </div>
     </div>
@@ -38,6 +38,7 @@
       <div id="editor-toolbar" class="editor-toolbar">
         <button id="editor-comment-btn" type="button" title="Add Comment (Ctrl+M)">Comment</button>
         <button id="editor-certify-btn" type="button" title="Certify Word (Ctrl+Shift+C)">Certify</button>
+        <button id="editor-etymology-btn" type="button" title="Look up Etymology (Ctrl+Shift+E)">Etymology</button>
         <button id="editor-saveclose-btn" type="button" title="Save and Close (Esc)">Save & Close</button>
       </div>
             <textarea id="main-editor"></textarea>
@@ -141,6 +142,7 @@
         </div>
         <div class="modal-footer">
           <button id="save-certification-btn">Save Definition</button>
+          <button id="delete-certification-btn" class="delete-button hidden">Delete Certification</button>
           <button id="cancel-certification-btn">Cancel</button>
         </div>
       </div>

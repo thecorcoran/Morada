@@ -1,0 +1,208 @@
+const UIManager = require('../js/uiManager.js');
+
+// Global mock DOM setup for uiManager tests
+beforeAll(() => {
+    global.document = {
+        createElement: (tag) => {
+            let content = '';
+            const spans = [];
+            return {
+                tagName: tag,
+                set innerHTML(val) {
+                    content = val || '';
+                    // Match comment spans: <span class="comment-highlight" id="c1" data-comment="Check this">text</span>
+                    const commentRegex = /<span class="comment-highlight"[^>]*id="([^"]*)"[^>]*data-comment="([^"]*)"[^>]*>([^<]*)<\/span>/g;
+                    let match;
+                    while ((match = commentRegex.exec(content)) !== null) {
+                        spans.push({
+                            className: 'comment-highlight',
+                            id: match[1],
+                            getAttribute: (attr) => attr === 'data-comment' ? match[2] : null,
+                            textContent: match[3],
+                            parentNode: {
+                                insertBefore: (marker) => {
+                                    content = content.replace(match[0], match[3] + marker.textContent);
+                                },
+                                appendChild: () => {}
+                            }
+                        });
+                    }
+                    // Match certified word spans
+                    const certRegex = /<span class="certified-word"[^>]*id="([^"]*)"[^>]*data-definition="([^"]*)"[^>]*>([^<]*)<\/span>/g;
+                    while ((match = certRegex.exec(content)) !== null) {
+                        spans.push({
+                            className: 'certified-word',
+                            id: match[1],
+                            getAttribute: (attr) => attr === 'data-definition' ? match[2] : null,
+                            textContent: match[3]
+                        });
+                    }
+                },
+                get innerHTML() {
+                    return content;
+                },
+                querySelectorAll: (sel) => {
+                    if (sel === '.comment-highlight') return spans.filter(s => s.className === 'comment-highlight');
+                    if (sel === '.certified-word') return spans.filter(s => s.className === 'certified-word');
+                    return [];
+                },
+                get textContent() {
+                    return (content || '').replace(/<[^>]*>/g, '');
+                },
+                get innerText() {
+                    return (content || '').replace(/<[^>]*>/g, '');
+                }
+            };
+        },
+        createTextNode: (text) => ({ textContent: text })
+    };
+});
+
+describe('MyProjectUIManager Unit Tests', () => {
+    describe('_escapeHtml', () => {
+        test('should escape special HTML entities properly', () => {
+            const raw = `<script>alert("hello" & 'world')</script>`;
+            const escaped = UIManager._escapeHtml(raw);
+            expect(escaped).toBe('&lt;script&gt;alert(&quot;hello&quot; &amp; &#039;world&#039;)&lt;/script&gt;');
+        });
+
+        test('should return empty string for null or empty input', () => {
+            expect(UIManager._escapeHtml('')).toBe('');
+            expect(UIManager._escapeHtml(null)).toBe('');
+            expect(UIManager._escapeHtml(undefined)).toBe('');
+        });
+    });
+
+    describe('_parseWiktionaryExtract', () => {
+        test('should parse Wiktionary extract with Etymology and Definitions and attach Certify button', () => {
+            const sampleWiki = `
+== English ==
+=== Etymology ===
+From Middle English morada, from Old French.
+=== Noun ===
+* A fortress or sanctuary.
+* A fractal chamber of thought.
+            `.trim();
+
+            const html = UIManager._parseWiktionaryExtract(sampleWiki, 'Morada');
+            expect(html).toContain('<h4>Etymology</h4>');
+            expect(html).toContain('From Middle English morada');
+            expect(html).toContain('Definitions</h4>');
+            expect(html).toContain('A fortress or sanctuary.');
+            expect(html).toContain('id="certify-from-etymology-btn"');
+            expect(html).toContain('Certify "Morada"');
+        });
+
+        test('should preserve error notice while retaining Certify button', () => {
+            const errorHtml = '<p style="color: #856404;">Unable to reach Wiktionary (Network error).</p>';
+            const result = UIManager._parseWiktionaryExtract(errorHtml, 'Sanctum');
+            expect(result).toContain('Unable to reach Wiktionary');
+            expect(result).toContain('id="certify-from-etymology-btn"');
+            expect(result).toContain('Certify "Sanctum"');
+        });
+    });
+
+    describe('filterTree', () => {
+        const sampleTree = [
+            {
+                id: '1',
+                title: 'The Great Gate',
+                content: 'Standing before the obsidian archway.',
+                tags: ['intro', 'prologue'],
+                children: []
+            },
+            {
+                id: '2',
+                title: 'The Catacombs',
+                content: 'Damp tunnels beneath the citadel.',
+                tags: ['dungeon'],
+                children: [
+                    {
+                        id: '2-1',
+                        title: 'Vault of Antiquity',
+                        content: 'Ancient scrolls and glowing relics.',
+                        tags: ['archive'],
+                        children: []
+                    }
+                ]
+            }
+        ];
+
+        test('should filter tree by title text search', () => {
+            const matches = UIManager.filterTree(sampleTree, 'gate', false);
+            expect(matches).toHaveLength(1);
+            expect(matches[0].id).toBe('1');
+        });
+
+        test('should filter tree by content text search', () => {
+            const matches = UIManager.filterTree(sampleTree, 'citadel', false);
+            expect(matches).toHaveLength(1);
+            expect(matches[0].id).toBe('2');
+        });
+
+        test('should filter tree recursively matching child nodes', () => {
+            const matches = UIManager.filterTree(sampleTree, 'scrolls', false);
+            expect(matches).toHaveLength(1);
+            expect(matches[0].id).toBe('2');
+            expect(matches[0].children).toHaveLength(1);
+            expect(matches[0].children[0].id).toBe('2-1');
+        });
+
+        test('should filter tree by tag search using # prefix', () => {
+            const matches = UIManager.filterTree(sampleTree, 'dungeon', true);
+            expect(matches).toHaveLength(1);
+            expect(matches[0].id).toBe('2');
+
+            const archiveMatches = UIManager.filterTree(sampleTree, 'archive', true);
+            expect(archiveMatches).toHaveLength(1);
+            expect(archiveMatches[0].children[0].id).toBe('2-1');
+        });
+    });
+
+    describe('Modal visibility state checkers', () => {
+        test('isCompendiumOpen should accurately report modal visibility', () => {
+            UIManager.compendiumModal = { classList: { contains: (cls) => cls === 'hidden' } };
+            expect(UIManager.isCompendiumOpen()).toBe(false);
+
+            UIManager.compendiumModal = { classList: { contains: () => false } };
+            expect(UIManager.isCompendiumOpen()).toBe(true);
+
+            UIManager.compendiumModal = null;
+            expect(UIManager.isCompendiumOpen()).toBeFalsy();
+        });
+
+        test('isSearchOpen should accurately report search palette visibility', () => {
+            UIManager.searchPalette = { classList: { contains: (cls) => cls === 'hidden' } };
+            expect(UIManager.isSearchOpen()).toBe(false);
+
+            UIManager.searchPalette = { classList: { contains: () => false } };
+            expect(UIManager.isSearchOpen()).toBe(true);
+
+            UIManager.searchPalette = null;
+            expect(UIManager.isSearchOpen()).toBeFalsy();
+        });
+    });
+
+    describe('_processNodeContentForExport with footnotes and glossary', () => {
+        test('should process node content with footnotes and glossary entries', () => {
+            const mockNode = {
+                id: 'node-test',
+                title: 'Chapter I',
+                type: 'text',
+                content: '<p>The ancient <span class="certified-word" id="cw1" data-definition="A fortress">Morada</span> was grand. <span class="comment-highlight" id="c1" data-comment="Revise pacing here">He walked slowly</span> towards it.</p>',
+                comments: [{ id: 'c1', text: 'Revise pacing here' }],
+                certifiedWords: [{ id: 'cw1', word: 'Morada', definition: 'A fortress' }]
+            };
+
+            const masterGlossary = new Map();
+            const output = UIManager._processNodeContentForExport(mockNode, true, true, masterGlossary);
+
+            expect(output).toContain('[^1]');
+            expect(output).toContain('--- Comments & Notes ---');
+            expect(output).toContain('[^1] "He walked slowly": Revise pacing here');
+            expect(output).toContain('--- Certified Lexicon ---');
+            expect(output).toContain('• Morada: A fortress');
+            expect(masterGlossary.get('Morada')).toBe('A fortress');
+        });
+    });
+});

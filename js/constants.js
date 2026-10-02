@@ -1,10 +1,6 @@
-// js/constants.js
-/**
- * @fileOverview AppConstants provides a centralized object for widely used
- * constant values across the application. This helps in maintaining consistency
- * and makes updates easier.
- * @namespace AppConstants
- */
+if (typeof window === 'undefined') {
+    global.window = global;
+}
 window.AppConstants = {
     // --- Node Dimensions & Appearance ---
     /** @const {number} NODE_WIDTH - Default width for new nodes. */
@@ -76,3 +72,7 @@ window.AppConstants = {
     WORD_COUNT_COLOR: '#666',
 };
 console.log("constants.js JSDoc comments added.");
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = window.AppConstants;
+}

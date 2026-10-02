@@ -1,5 +1,6 @@
-// stateManager.js
-// This module centralizes the application's state management.
+if (typeof window === 'undefined') {
+    global.window = global;
+}
 console.log("stateManager.js loaded");
 
 window.MyProjectStateManager = {
@@ -80,3 +81,7 @@ window.MyProjectStateManager = {
         return this._state.viewStack.pop();
     },
 };
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = window.MyProjectStateManager;
+}

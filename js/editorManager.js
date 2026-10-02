@@ -32,12 +32,43 @@ window.MyProjectEditorManager = {
             if (typeof tinymce !== 'undefined' && tinymce && typeof tinymce.init === 'function') {
                 tinymce.init({
                     selector: '#main-editor', // From index.html
+                    license_key: 'gpl',
+                    base_url: 'node_modules/tinymce',
+                    suffix: '.min',
                     plugins: 'lists link wordcount',
                     toolbar: 'undo redo | bold italic underline | bullist numlist | link',
                     menubar: true,
                     statusbar: true,
                     content_css: false,
-                    content_style: ` body { font-family: 'Vollkorn', serif; font-size: ${AppConstants.EDITOR_DEFAULT_FONT_SIZE}; line-height: ${AppConstants.EDITOR_DEFAULT_LINE_HEIGHT}; background-color: ${AppConstants.EDITOR_BACKGROUND_COLOR}; padding: 2em; }`,
+                    content_style: `
+                        body {
+                            font-family: 'Vollkorn', serif;
+                            font-size: ${AppConstants.EDITOR_DEFAULT_FONT_SIZE};
+                            line-height: ${AppConstants.EDITOR_DEFAULT_LINE_HEIGHT};
+                            background-color: ${AppConstants.EDITOR_BACKGROUND_COLOR};
+                            padding: 2em;
+                        }
+                        .comment-highlight {
+                            background-color: #fff275;
+                            border-bottom: 2px solid #dab600;
+                            border-radius: 2px;
+                            padding: 1px 2px;
+                            cursor: pointer;
+                        }
+                        .comment-highlight:hover {
+                            background-color: #ffe600;
+                        }
+                        .certified-word {
+                            background-color: #c7f9cc;
+                            border-bottom: 2px solid #38b000;
+                            border-radius: 2px;
+                            padding: 1px 2px;
+                            cursor: pointer;
+                        }
+                        .certified-word:hover {
+                            background-color: #80ed99;
+                        }
+                    `,
                     height: "100%",
                     width: "100%",
                     setup: (editor) => {
@@ -48,8 +79,51 @@ window.MyProjectEditorManager = {
                                 e.stopPropagation();
                                 this.closeEditorMode();
                             }
+                            if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'm') {
+                                e.preventDefault();
+                                this.addCommentAtSelection();
+                            }
+                            if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'c') {
+                                e.preventDefault();
+                                this.certifySelection();
+                            }
+                            if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'e') {
+                                e.preventDefault();
+                                this.lookupEtymologyAtSelection();
+                            }
                         });
-                        editor.on('input', () => {
+                        try {
+                            editor.ui.registry.addMenuItem('lookupetymology', {
+                                text: 'Look up Etymology',
+                                icon: 'search',
+                                onAction: () => {
+                                    this.lookupEtymologyAtSelection();
+                                }
+                            });
+                        } catch (err) {}
+                        editor.on('click', (ev) => {
+                            let target = ev.target;
+                            while (target && target !== editor.getBody()) {
+                                if (target.classList && target.classList.contains('comment-highlight')) {
+                                    if (this.uiManager && typeof this.uiManager.openCommentModal === 'function') {
+                                        this.uiManager.openCommentModal(target.id, target.textContent);
+                                    }
+                                    break;
+                                }
+                                if (target.classList && target.classList.contains('certified-word')) {
+                                    if (this.uiManager && typeof this.uiManager.openCertifyModal === 'function') {
+                                        this.uiManager.openCertifyModal(target.id, target.textContent);
+                                    }
+                                    break;
+                                }
+                                target = target.parentElement;
+                            }
+                        });
+                        editor.on('input change', () => {
+                            const selectedNode = this.stateManager.getSelectedNode();
+                            if (selectedNode) {
+                                selectedNode.content = this.tinymceEditor.getContent();
+                            }
                             this.uiManager.updateEditorWordCount(this.tinymceEditor.getContent());
                         });
                     }
@@ -72,10 +146,15 @@ window.MyProjectEditorManager = {
         const spanId = 'comment-' + Date.now();
         try {
             if (this.tinyMCEAvailable && this.tinymceEditor) {
-                const selHtml = this.tinymceEditor.selection.getContent({ format: 'html' }) || '';
                 const selText = this.tinymceEditor.selection.getContent({ format: 'text' }) || '';
+                const selHtml = this.tinymceEditor.selection.getContent({ format: 'html' }) || '';
+                if (!selText.trim()) {
+                    alert('Please select text in the editor to add a comment.');
+                    return;
+                }
                 const wrapped = `<span id="${spanId}" class="comment-highlight">${selHtml}</span>`;
                 this.tinymceEditor.selection.setContent(wrapped);
+                node.content = this.tinymceEditor.getContent();
                 // update editor word count and open modal
                 if (this.uiManager && typeof this.uiManager.openCommentModal === 'function') {
                     this.uiManager.openCommentModal(spanId, selText);
@@ -93,8 +172,13 @@ window.MyProjectEditorManager = {
             const start = ta.selectionStart || 0;
             const end = ta.selectionEnd || 0;
             const sel = ta.value.substring(start, end);
+            if (!sel.trim()) {
+                alert('Please select text in the editor to add a comment.');
+                return;
+            }
             const wrapped = `<span id="${spanId}" class="comment-highlight">${sel}</span>`;
             ta.value = ta.value.substring(0, start) + wrapped + ta.value.substring(end);
+            node.content = ta.value;
             if (this.uiManager && typeof this.uiManager.openCommentModal === 'function') {
                 this.uiManager.openCommentModal(spanId, sel);
             }
@@ -112,10 +196,15 @@ window.MyProjectEditorManager = {
         const spanId = 'cert-' + Date.now();
         try {
             if (this.tinyMCEAvailable && this.tinymceEditor) {
-                const selHtml = this.tinymceEditor.selection.getContent({ format: 'html' }) || '';
                 const selText = this.tinymceEditor.selection.getContent({ format: 'text' }) || '';
+                const selHtml = this.tinymceEditor.selection.getContent({ format: 'html' }) || '';
+                if (!selText.trim()) {
+                    alert('Please select a word or phrase in the editor to certify.');
+                    return;
+                }
                 const wrapped = `<span id="${spanId}" class="certified-word">${selHtml}</span>`;
                 this.tinymceEditor.selection.setContent(wrapped);
+                node.content = this.tinymceEditor.getContent();
                 if (this.uiManager && typeof this.uiManager.openCertifyModal === 'function') {
                     this.uiManager.openCertifyModal(spanId, selText);
                 }
@@ -131,13 +220,54 @@ window.MyProjectEditorManager = {
             const start = ta.selectionStart || 0;
             const end = ta.selectionEnd || 0;
             const sel = ta.value.substring(start, end);
+            if (!sel.trim()) {
+                alert('Please select a word or phrase in the editor to certify.');
+                return;
+            }
             const wrapped = `<span id="${spanId}" class="certified-word">${sel}</span>`;
             ta.value = ta.value.substring(0, start) + wrapped + ta.value.substring(end);
+            node.content = ta.value;
             if (this.uiManager && typeof this.uiManager.openCertifyModal === 'function') {
                 this.uiManager.openCertifyModal(spanId, sel);
             }
         } catch (err) {
             console.error('[editor] fallback certify insertion failed', err);
+        }
+    },
+
+    /**
+     * Look up the currently selected word or phrase in Wiktionary.
+     */
+    lookupEtymologyAtSelection: function() {
+        let selText = '';
+        try {
+            if (this.tinyMCEAvailable && this.tinymceEditor) {
+                selText = (this.tinymceEditor.selection.getContent({ format: 'text' }) || '').trim();
+            }
+        } catch (err) {
+            console.warn('[editor] TinyMCE get selection failed', err);
+        }
+
+        if (!selText) {
+            try {
+                const ta = document.getElementById('main-editor-fallback');
+                if (ta) {
+                    const start = ta.selectionStart || 0;
+                    const end = ta.selectionEnd || 0;
+                    selText = ta.value.substring(start, end).trim();
+                }
+            } catch (err) {
+                console.warn('[editor] fallback textarea get selection failed', err);
+            }
+        }
+
+        if (!selText) {
+            alert('Please select a word or phrase in the editor to look up its etymology.');
+            return;
+        }
+
+        if (this.uiManager && typeof this.uiManager.showEtymologyFor === 'function') {
+            this.uiManager.showEtymologyFor(selText);
         }
     },
 
@@ -233,15 +363,33 @@ window.MyProjectEditorManager = {
                         try {
                             const target = ev.target;
                             if (!target) return;
+                            const iframe = this.tinymceEditor.iframeElement || document.querySelector('.tox-edit-area iframe');
+                            const rect = iframe ? iframe.getBoundingClientRect() : { left: 0, top: 0 };
+                            const clientX = ev.clientX + rect.left;
+                            const clientY = ev.clientY + rect.top;
+
                             if (target.classList && target.classList.contains('comment-highlight')) {
-                                const text = target.textContent || '';
-                                if (this.uiManager && typeof this.uiManager._showHoverTooltip === 'function') this.uiManager._showHoverTooltip(text, ev.clientX, ev.clientY);
+                                const selectedNode = this.stateManager.getSelectedNode();
+                                const c = selectedNode && Array.isArray(selectedNode.comments)
+                                    ? selectedNode.comments.find(item => item.id === target.id || item.spanId === target.id)
+                                    : null;
+                                const text = c ? `💬 Comment: "${c.text}"` : (target.textContent || '');
+                                if (this.uiManager && typeof this.uiManager._showHoverTooltip === 'function') {
+                                    this.uiManager._showHoverTooltip(text, clientX, clientY);
+                                }
                                 return;
                             }
                             if (target.classList && target.classList.contains('certified-word')) {
-                                const def = target.getAttribute('data-definition') || '';
-                                const text = (target.textContent || '') + (def ? ' — ' + def : '');
-                                if (this.uiManager && typeof this.uiManager._showHoverTooltip === 'function') this.uiManager._showHoverTooltip(text, ev.clientX, ev.clientY);
+                                const selectedNode = this.stateManager.getSelectedNode();
+                                const cw = selectedNode && Array.isArray(selectedNode.certifiedWords)
+                                    ? selectedNode.certifiedWords.find(item => item.spanId === target.id)
+                                    : null;
+                                const def = cw ? cw.definition : (target.getAttribute('data-definition') || '');
+                                const word = cw ? cw.word : target.textContent;
+                                const text = `✓ Certified: "${word}" — ${def || '(no definition)'}`;
+                                if (this.uiManager && typeof this.uiManager._showHoverTooltip === 'function') {
+                                    this.uiManager._showHoverTooltip(text, clientX, clientY);
+                                }
                                 return;
                             }
                             if (this.uiManager && typeof this.uiManager._hideHoverTooltip === 'function') this.uiManager._hideHoverTooltip();

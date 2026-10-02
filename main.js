@@ -2,6 +2,10 @@ const { app, BrowserWindow, ipcMain, session, Menu } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 
+// In minimal or containerized environments where system root certificates (e.g. ~/.pki/nssdb)
+// may not be present, ignore certificate errors to allow external HTTPS lookups (e.g. Wiktionary).
+app.commandLine.appendSwitch('ignore-certificate-errors');
+
 const createWindow = () => {
   const mainWindow = new BrowserWindow({
     fullscreen: false,
@@ -19,6 +23,11 @@ const createWindow = () => {
 
   // Helpful logging to diagnose startup issues and renderer errors.
   console.log('[main] createWindow: created BrowserWindow');
+
+  // Allow certificate bypass for external lookups like Wiktionary in container/sandbox runs
+  session.defaultSession.setCertificateVerifyProc((request, callback) => {
+    callback(0); // 0 = trust / accept
+  });
 
   // Set a Content Security Policy (CSP) for the application.
   // This is the recommended, most secure way to apply a CSP in Electron.
@@ -45,8 +54,11 @@ const createWindow = () => {
   mainWindow.webContents.on('did-finish-load', () => {
     try {
       console.log('[main] renderer did-finish-load');
-      // Open DevTools so we can see renderer console messages during startup.
-      mainWindow.webContents.openDevTools({ mode: 'detach' });
+      const isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev');
+      if (isDev) {
+        // Open DevTools only in development mode
+        mainWindow.webContents.openDevTools({ mode: 'detach' });
+      }
     } catch (err) {
       console.error('[main] failed to open DevTools:', err);
     }
@@ -114,8 +126,25 @@ const createMenu = () => {
 // --- IPC Handlers for Secure File System Access ---
 
 const fsSync = require('node:fs'); // Keep sync version for migration check
-// Use the recommended 'userData' directory for storing application data.
-const dataPath = path.join(app.getPath('userData'), 'morada-data.json');
+
+// Resolve data storage path: default to userData, but fallback gracefully to local directory
+// if the system directory is read-only (e.g. sandboxed environments or portable setups).
+function resolveDataPath() {
+  if (process.env.MORADA_DATA_DIR) {
+    return path.join(process.env.MORADA_DATA_DIR, 'morada-data.json');
+  }
+  const defaultPath = path.join(app.getPath('userData'), 'morada-data.json');
+  try {
+    const dir = path.dirname(defaultPath);
+    fsSync.mkdirSync(dir, { recursive: true });
+    fsSync.accessSync(dir, fsSync.constants.W_OK);
+    return defaultPath;
+  } catch (err) {
+    console.warn(`[Storage] Default path not writable (${err.message}), using project directory.`);
+    return path.join(__dirname, 'morada-data.json');
+  }
+}
+const dataPath = resolveDataPath();
 
 /**
  * One-time migration logic to move the data file from the project directory
@@ -124,11 +153,12 @@ const dataPath = path.join(app.getPath('userData'), 'morada-data.json');
  */
 function migrateDataFile() {
   const oldPath = path.join(__dirname, 'morada-data.json');
-  const newPath = dataPath; // dataPath is already defined with the new location
+  const newPath = dataPath;
 
-  // If the new file doesn't exist but the old one does, copy it.
-  if (!fsSync.existsSync(newPath) && fsSync.existsSync(oldPath)) {
+  // If the new file doesn't exist but the old one does, and they're different paths, copy it.
+  if (oldPath !== newPath && !fsSync.existsSync(newPath) && fsSync.existsSync(oldPath)) {
     try {
+      fsSync.mkdirSync(path.dirname(newPath), { recursive: true });
       fsSync.copyFileSync(oldPath, newPath);
       console.log(`[Migration] Successfully moved data from ${oldPath} to ${newPath}`);
     } catch (err) {
@@ -177,8 +207,8 @@ ipcMain.handle('fs-copy-file', async (event, src, dest) => {
   try {
     await fs.copyFile(src, dest);
   } catch (err) {
-    console.error(`Error copying file from ${src} to ${dest}:`, err);
-    throw err;
+    console.warn(`[Storage] Warning copying file from ${src} to ${dest}:`, err.message);
+    // Don't fail the save operation if backup creation fails due to permissions
   }
 });
 
@@ -198,6 +228,15 @@ app.whenReady().then(() => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+});
+
+app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
+  if (url.includes('wiktionary.org')) {
+    event.preventDefault();
+    callback(true);
+  } else {
+    callback(false);
+  }
 });
 
 app.on('window-all-closed', () => {

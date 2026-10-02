@@ -1,6 +1,9 @@
 // uiManager.js
 // This module is responsible for managing UI interactions, DOM updates, 
 // search functionality, and the compendium view.
+if (typeof window === 'undefined') {
+    global.window = global;
+}
 console.log("uiManager.js loaded");
 
 window.MyProjectUIManager = {
@@ -49,6 +52,14 @@ window.MyProjectUIManager = {
         this.compendiumManuscript = document.getElementById('compendium-manuscript');
         this.generateBtn = document.getElementById('generate-btn');
         this.compendiumFilter = document.getElementById('compendium-filter');
+        this.includeCommentsCheckbox = document.getElementById('include-comments-checkbox');
+        this.includeCertifiedWordsCheckbox = document.getElementById('include-certified-words-checkbox');
+        this.outlinerSidebar = document.getElementById('outliner-sidebar');
+        this.outlinerList = document.getElementById('outliner-list');
+        this.toggleOutlinerBtn = document.getElementById('toggle-outliner-btn');
+        if (this.toggleOutlinerBtn) {
+            this.toggleOutlinerBtn.addEventListener('click', () => this.toggleOutliner());
+        }
 
         this.canvas = config.canvas; // Store canvas
         this.stateManager = config.stateManager;
@@ -168,6 +179,7 @@ window.MyProjectUIManager = {
         // Editor toolbar buttons (if present)
         this.editorCommentBtn = document.getElementById('editor-comment-btn');
         this.editorCertifyBtn = document.getElementById('editor-certify-btn');
+        this.editorEtymologyBtn = document.getElementById('editor-etymology-btn');
         this.editorSaveCloseBtn = document.getElementById('editor-saveclose-btn');
 
         if (this.editorCommentBtn) this.editorCommentBtn.addEventListener('click', () => {
@@ -179,6 +191,12 @@ window.MyProjectUIManager = {
         if (this.editorCertifyBtn) this.editorCertifyBtn.addEventListener('click', () => {
             if (window.MyProjectEditorManager && typeof window.MyProjectEditorManager.certifySelection === 'function') {
                 window.MyProjectEditorManager.certifySelection();
+            }
+        });
+
+        if (this.editorEtymologyBtn) this.editorEtymologyBtn.addEventListener('click', () => {
+            if (window.MyProjectEditorManager && typeof window.MyProjectEditorManager.lookupEtymologyAtSelection === 'function') {
+                window.MyProjectEditorManager.lookupEtymologyAtSelection();
             }
         });
 
@@ -206,6 +224,13 @@ window.MyProjectUIManager = {
                     window.MyProjectEditorManager.certifySelection();
                 }
             }
+            // Ctrl+Shift+E -> etymology lookup
+            if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'e') {
+                e.preventDefault();
+                if (window.MyProjectEditorManager && typeof window.MyProjectEditorManager.lookupEtymologyAtSelection === 'function') {
+                    window.MyProjectEditorManager.lookupEtymologyAtSelection();
+                }
+            }
         });
 
     // Comment / Certify modal elements (if present in DOM)
@@ -221,7 +246,14 @@ window.MyProjectUIManager = {
     this.certifySelectedWord = document.getElementById('certify-selected-word');
     this.certifyDefinitionInput = document.getElementById('certify-definition-input');
     this.saveCertificationBtn = document.getElementById('save-certification-btn');
+    this.deleteCertificationBtn = document.getElementById('delete-certification-btn');
     this.cancelCertificationBtn = document.getElementById('cancel-certification-btn');
+
+    // Etymology modal elements
+    this.etymologyModal = document.getElementById('etymology-modal');
+    this.closeEtymologyBtn = document.getElementById('close-etymology-btn');
+    this.etymologyWord = document.getElementById('etymology-word');
+    this.etymologyResultArea = document.getElementById('etymology-result-area');
 
     // internal pending objects while modal is open
     this._pendingComment = null; // { spanId, nodeId }
@@ -234,12 +266,22 @@ window.MyProjectUIManager = {
 
     if (this.closeCertifyWordBtn) this.closeCertifyWordBtn.addEventListener('click', () => this.closeCertifyModal());
     if (this.saveCertificationBtn) this.saveCertificationBtn.addEventListener('click', () => this._savePendingCertification());
+    if (this.deleteCertificationBtn) this.deleteCertificationBtn.addEventListener('click', () => this._deletePendingCertification());
     if (this.cancelCertificationBtn) this.cancelCertificationBtn.addEventListener('click', () => this.closeCertifyModal());
 
-        // --- Debug Toolbar (visible controls for selection operations) ---
-        // This small floating toolbar helps with testing selection/open/delete
-        // when keyboard events or double-clicks are unreliable on some setups.
-        this._createDebugToolbar();
+    if (this.closeEtymologyBtn) this.closeEtymologyBtn.addEventListener('click', () => this.closeEtymologyModal());
+    if (this.etymologyModal) {
+        this.etymologyModal.addEventListener('click', (e) => {
+            if (e.target === this.etymologyModal) this.closeEtymologyModal();
+        });
+    }
+
+        // Debug Toolbar: only show in development mode
+        const isDev = (typeof process !== 'undefined' && process.env && (process.env.NODE_ENV === 'development' || (process.argv && process.argv.includes('--dev')))) ||
+                      (typeof window !== 'undefined' && window.location && window.location.search.includes('dev=true'));
+        if (isDev) {
+            this._createDebugToolbar();
+        }
         // Utility: ensure modals close on Escape and trap focus when opened
         this._attachedModals = new WeakMap();
     },
@@ -895,6 +937,78 @@ window.MyProjectUIManager = {
             }
         } catch (err) { /* ignore */ }
         this.viewTitle.textContent = viewStack.length === 0 ? 'The Castle Grounds' : viewStack[viewStack.length - 1].title;
+        // Synchronize outliner if it is open
+        try {
+            if (this.outlinerSidebar && !this.outlinerSidebar.classList.contains('hidden')) {
+                this.renderOutliner();
+            }
+        } catch (err) { /* non-fatal */ }
+    },
+
+    toggleOutliner: function() {
+        if (!this.outlinerSidebar) return;
+        const isHidden = this.outlinerSidebar.classList.contains('hidden');
+        if (isHidden) {
+            this.outlinerSidebar.classList.remove('hidden');
+            this.renderOutliner();
+        } else {
+            this.outlinerSidebar.classList.add('hidden');
+        }
+        if (this.toggleOutlinerBtn) {
+            this.toggleOutlinerBtn.classList.toggle('active', isHidden);
+        }
+        if (typeof this.drawFunction === 'function') {
+            setTimeout(() => this.drawFunction(), 320);
+        }
+    },
+
+    renderOutliner: function(nodes) {
+        if (!this.outlinerList) return;
+        this.outlinerList.innerHTML = '';
+        const currentNodes = nodes || (this.stateManager && typeof this.stateManager.getCurrentNodes === 'function' ? this.stateManager.getCurrentNodes() : []);
+        if (!currentNodes || currentNodes.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'outliner-item-empty';
+            empty.textContent = 'No documents in this view';
+            this.outlinerList.appendChild(empty);
+            return;
+        }
+
+        currentNodes.forEach(node => {
+            const item = document.createElement('div');
+            item.className = 'outliner-item';
+            const icon = node.type === 'container' ? '📁 ' : '📄 ';
+            item.textContent = icon + (node.title || 'Untitled');
+            item.dataset.nodeId = node.id;
+
+            const selected = this.stateManager && typeof this.stateManager.getSelectedNode === 'function' ? this.stateManager.getSelectedNode() : null;
+            if (selected && selected.id === node.id) {
+                item.classList.add('selected');
+            }
+
+            item.addEventListener('click', () => {
+                const prev = this.outlinerList.querySelector('.outliner-item.selected');
+                if (prev) prev.classList.remove('selected');
+                item.classList.add('selected');
+
+                if (this.stateManager && typeof this.stateManager.setSelectedNode === 'function') {
+                    this.stateManager.setSelectedNode(node);
+                }
+
+                if (node.type === 'container') {
+                    if (typeof this.navigateToNodeFunction === 'function') {
+                        this.navigateToNodeFunction(node);
+                    }
+                } else if (node.type === 'text') {
+                    if (window.MyProjectEditorManager && typeof window.MyProjectEditorManager.openEditorMode === 'function') {
+                        window.MyProjectEditorManager.openEditorMode(node);
+                    }
+                }
+                if (typeof this.drawFunction === 'function') this.drawFunction();
+            });
+
+            this.outlinerList.appendChild(item);
+        });
     },
 
     getWordCount: function(content) {
@@ -964,24 +1078,68 @@ window.MyProjectUIManager = {
         this.searchInput.focus();
     },
 
+    _unwrapSpanInEditor: function(spanId) {
+        if (!spanId) return;
+        const node = this.stateManager.getSelectedNode();
+        try {
+            if (window.MyProjectEditorManager && window.MyProjectEditorManager.tinymceEditor) {
+                const doc = window.MyProjectEditorManager.tinymceEditor.getDoc();
+                const span = doc ? doc.getElementById(spanId) : null;
+                if (span) {
+                    while (span.firstChild) {
+                        span.parentNode.insertBefore(span.firstChild, span);
+                    }
+                    span.parentNode.removeChild(span);
+                    if (node) {
+                        node.content = window.MyProjectEditorManager.tinymceEditor.getContent();
+                    }
+                    return;
+                }
+            }
+        } catch (err) {
+            console.warn('[ui] failed to unwrap span in tinymce', err);
+        }
+
+        if (node && node.content) {
+            const re = new RegExp(`<span[^>]*id="${spanId}"[^>]*>([\\s\\S]*?)<\\/span>`, 'gi');
+            node.content = node.content.replace(re, '$1');
+            const ta = document.getElementById('main-editor-fallback');
+            if (ta) ta.value = node.content;
+        }
+    },
+
     /* Comment modal control API */
     openCommentModal: function(spanId, selectedText) {
         const node = this.stateManager.getSelectedNode();
         if (!node) return;
         this._pendingComment = { spanId: spanId, nodeId: node.id };
         if (this.commentSelectedText) this.commentSelectedText.textContent = selectedText || '';
+        const existing = (node.comments || []).find(c => c.id === spanId || c.spanId === spanId);
         if (this.commentTextarea) {
-            const existing = (node.comments || []).find(c => c.id === spanId || c.spanId === spanId);
             this.commentTextarea.value = existing ? existing.text : '';
+        }
+        if (this.deleteCommentBtn) {
+            if (existing) {
+                this.deleteCommentBtn.classList.remove('hidden');
+            } else {
+                this.deleteCommentBtn.classList.add('hidden');
+            }
         }
         if (this.commentModal) {
             this.commentModal.classList.remove('hidden');
-            // trap focus + Escape to close
             try { this._attachModalBehavior(this.commentModal, { close: () => this.closeCommentModal() }); } catch (err) { console.warn(err); }
         }
+        setTimeout(() => { if (this.commentTextarea) this.commentTextarea.focus(); }, 50);
     },
 
     closeCommentModal: function() {
+        if (this._pendingComment) {
+            const node = this.stateManager.getSelectedNode();
+            const exists = node && (node.comments || []).some(c => c.id === this._pendingComment.spanId || c.spanId === this._pendingComment.spanId);
+            if (!exists) {
+                this._unwrapSpanInEditor(this._pendingComment.spanId);
+            }
+        }
         if (this.commentModal) {
             this.commentModal.classList.add('hidden');
             try { if (this.commentModal._detachModalBehavior) this.commentModal._detachModalBehavior(); } catch (e) {}
@@ -997,18 +1155,22 @@ window.MyProjectUIManager = {
             const node = this.stateManager.getSelectedNode();
             if (!node) return;
             const txt = this.commentTextarea ? this.commentTextarea.value.trim() : '';
+            if (!txt) {
+                alert('Please enter comment text, or click Delete to remove this comment.');
+                return;
+            }
             const commentObj = { id: this._pendingComment.spanId, spanId: this._pendingComment.spanId, text: txt, createdAt: Date.now() };
             if (!Array.isArray(node.comments)) node.comments = [];
-            // replace existing or push
             const idx = node.comments.findIndex(c => c.id === commentObj.id || c.spanId === commentObj.spanId);
             if (idx > -1) node.comments[idx] = commentObj; else node.comments.push(commentObj);
+
+            if (window.MyProjectEditorManager && window.MyProjectEditorManager.tinymceEditor) {
+                node.content = window.MyProjectEditorManager.tinymceEditor.getContent();
+            }
             if (this.saveNodesFunction) this.saveNodesFunction(this.stateManager.getRootNodes());
-            // Refresh footnotes UI and editor content if open
+
             try {
                 this.renderFootnotes(node);
-                if (window.MyProjectEditorManager && window.MyProjectEditorManager.tinymceEditor) {
-                    window.MyProjectEditorManager.tinymceEditor.setContent(node.content || '');
-                }
             } catch (err) { console.warn('post-save comment refresh failed', err); }
         } catch (err) {
             console.error('Error saving comment', err);
@@ -1023,19 +1185,11 @@ window.MyProjectUIManager = {
             const node = this.stateManager.getSelectedNode();
             if (!node) return;
             node.comments = (node.comments || []).filter(c => c.id !== this._pendingComment.spanId && c.spanId !== this._pendingComment.spanId);
-            // also strip the span from node.content if present
-            if (node.content) {
-                const re = new RegExp(`<span[^>]*id="${this._pendingComment.spanId}"[^>]*>([\s\S]*?)<\\/span>`, 'g');
-                node.content = node.content.replace(re, '$1');
-            }
+            this._unwrapSpanInEditor(this._pendingComment.spanId);
             if (this.saveNodesFunction) this.saveNodesFunction(this.stateManager.getRootNodes());
-            // Refresh footnotes UI and editor content if open
             try {
                 this.renderFootnotes(node);
-                if (window.MyProjectEditorManager && window.MyProjectEditorManager.tinymceEditor) {
-                    window.MyProjectEditorManager.tinymceEditor.setContent(node.content || '');
-                }
-            } catch (err) { console.warn('post-save certify refresh failed', err); }
+            } catch (err) { console.warn('post-delete comment refresh failed', err); }
         } catch (err) {
             console.error('Error deleting comment', err);
         } finally {
@@ -1049,18 +1203,32 @@ window.MyProjectUIManager = {
         if (!node) return;
         this._pendingCertify = { spanId: spanId, nodeId: node.id, word: word };
         if (this.certifySelectedWord) this.certifySelectedWord.textContent = word || '';
-        // if existing certified word present, pre-fill
+        const existing = (node.certifiedWords || []).find(cw => cw.spanId === spanId || (word && (cw.text === word || cw.word === word)));
         if (this.certifyDefinitionInput) {
-            const existing = (node.certifiedWords || []).find(cw => cw.spanId === spanId);
             this.certifyDefinitionInput.value = existing ? existing.definition || '' : '';
+        }
+        if (this.deleteCertificationBtn) {
+            if (existing) {
+                this.deleteCertificationBtn.classList.remove('hidden');
+            } else {
+                this.deleteCertificationBtn.classList.add('hidden');
+            }
         }
         if (this.certifyWordModal) {
             this.certifyWordModal.classList.remove('hidden');
             try { this._attachModalBehavior(this.certifyWordModal, { close: () => this.closeCertifyModal() }); } catch (err) { console.warn(err); }
         }
+        setTimeout(() => { if (this.certifyDefinitionInput) this.certifyDefinitionInput.focus(); }, 50);
     },
 
     closeCertifyModal: function() {
+        if (this._pendingCertify) {
+            const node = this.stateManager.getSelectedNode();
+            const exists = node && (node.certifiedWords || []).some(cw => cw.spanId === this._pendingCertify.spanId || (this._pendingCertify.word && (cw.text === this._pendingCertify.word || cw.word === this._pendingCertify.word)));
+            if (!exists) {
+                this._unwrapSpanInEditor(this._pendingCertify.spanId);
+            }
+        }
         if (this.certifyWordModal) {
             this.certifyWordModal.classList.add('hidden');
             try { if (this.certifyWordModal._detachModalBehavior) this.certifyWordModal._detachModalBehavior(); } catch (e) {}
@@ -1076,20 +1244,52 @@ window.MyProjectUIManager = {
             const node = this.stateManager.getSelectedNode();
             if (!node) return;
             const def = this.certifyDefinitionInput ? this.certifyDefinitionInput.value.trim() : '';
-            const cwObj = { spanId: this._pendingCertify.spanId, word: this._pendingCertify.word, definition: def, createdAt: Date.now() };
+            if (!def) {
+                alert('Please enter a definition for this certified word.');
+                return;
+            }
+            const cwObj = { spanId: this._pendingCertify.spanId, word: this._pendingCertify.word, text: this._pendingCertify.word, definition: def, createdAt: Date.now() };
             if (!Array.isArray(node.certifiedWords)) node.certifiedWords = [];
-            const idx = node.certifiedWords.findIndex(cw => cw.spanId === cwObj.spanId);
+            const idx = node.certifiedWords.findIndex(cw => cw.spanId === cwObj.spanId || (cwObj.word && (cw.text === cwObj.word || cw.word === cwObj.word)));
             if (idx > -1) node.certifiedWords[idx] = cwObj; else node.certifiedWords.push(cwObj);
 
-            // update the inline span to include data-definition attribute
-            if (node.content) {
+            if (window.MyProjectEditorManager && window.MyProjectEditorManager.tinymceEditor) {
+                const doc = window.MyProjectEditorManager.tinymceEditor.getDoc();
+                const span = doc ? doc.getElementById(this._pendingCertify.spanId) : null;
+                if (span) {
+                    span.setAttribute('data-definition', def);
+                }
+                node.content = window.MyProjectEditorManager.tinymceEditor.getContent();
+            } else if (node.content) {
                 const re = new RegExp(`(<span[^>]*id=\\"${this._pendingCertify.spanId}\\"[^>]*class=\\"[^\\"]*certified-word[^\\"]*\\"[^>]*)(>)`);
                 node.content = node.content.replace(re, `$1 data-definition="${def.replace(/\"/g, '&quot;')}"$2`);
             }
 
             if (this.saveNodesFunction) this.saveNodesFunction(this.stateManager.getRootNodes());
+
+            try {
+                this.renderFootnotes(node);
+            } catch (err) { console.warn('post-save certify refresh failed', err); }
         } catch (err) {
             console.error('Error saving certification', err);
+        } finally {
+            this.closeCertifyModal();
+        }
+    },
+
+    _deletePendingCertification: function() {
+        try {
+            if (!this._pendingCertify) return;
+            const node = this.stateManager.getSelectedNode();
+            if (!node) return;
+            node.certifiedWords = (node.certifiedWords || []).filter(cw => cw.spanId !== this._pendingCertify.spanId && cw.text !== this._pendingCertify.word && cw.word !== this._pendingCertify.word);
+            this._unwrapSpanInEditor(this._pendingCertify.spanId);
+            if (this.saveNodesFunction) this.saveNodesFunction(this.stateManager.getRootNodes());
+            try {
+                this.renderFootnotes(node);
+            } catch (err) { console.warn('post-delete certify refresh failed', err); }
+        } catch (err) {
+            console.error('Error deleting certification', err);
         } finally {
             this.closeCertifyModal();
         }
@@ -1104,6 +1304,148 @@ window.MyProjectUIManager = {
         if (this.searchResults) {
             this.searchResults.innerHTML = '';
         }
+    },
+
+    /* --- Etymology & Wiktionary Integration --- */
+    showEtymologyFor: async function(word) {
+        if (!this.etymologyModal) return;
+        const cleanWord = (word || '').replace(/[^\w\s'-]/g, '').trim();
+        if (!cleanWord) return;
+
+        if (this.etymologyWord) {
+            this.etymologyWord.textContent = `Etymology: "${cleanWord}"`;
+        }
+        if (this.etymologyResultArea) {
+            this.etymologyResultArea.innerHTML = `<p style="color: #666; font-style: italic;">Fetching definitions and etymology for <strong>${this._escapeHtml(cleanWord)}</strong> from Wiktionary...</p>`;
+        }
+        this.etymologyModal.classList.remove('hidden');
+        try {
+            this._attachModalBehavior(this.etymologyModal, { close: () => this.closeEtymologyModal() });
+        } catch (e) {}
+
+        const rawExtract = await this._fetchEtymologyFromWiktionary(cleanWord);
+        const parsedHtml = this._parseWiktionaryExtract(rawExtract, cleanWord);
+        if (this.etymologyResultArea) {
+            this.etymologyResultArea.innerHTML = parsedHtml;
+            const certifyBtn = this.etymologyResultArea.querySelector('#certify-from-etymology-btn');
+            if (certifyBtn) {
+                certifyBtn.addEventListener('click', () => {
+                    this.closeEtymologyModal();
+                    if (typeof this.openCertifyModal === 'function') {
+                        this.openCertifyModal('cert-' + Date.now(), cleanWord);
+                    }
+                });
+            }
+        }
+    },
+
+    closeEtymologyModal: function() {
+        if (this.etymologyModal) {
+            this.etymologyModal.classList.add('hidden');
+            try { if (this.etymologyModal._detachModalBehavior) this.etymologyModal._detachModalBehavior(); } catch (e) {}
+        }
+    },
+
+    _fetchEtymologyFromWiktionary: async function(word) {
+        const url = `https://en.wiktionary.org/w/api.php?action=query&prop=extracts&exlimit=1&explaintext=true&titles=${encodeURIComponent(word)}&format=json&redirects=true&origin=*`;
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
+            const data = await response.json();
+            const pages = data.query ? data.query.pages : null;
+            if (!pages) return `<p style="color: #666;">No response received from Wiktionary.</p>`;
+            const pageId = Object.keys(pages)[0];
+            if (pageId === "-1") return `<p style="color: #666;">Word "<em>${this._escapeHtml(word)}</em>" was not found in Wiktionary.</p>`;
+            const extract = pages[pageId].extract;
+            return extract || `<p style="color: #666;">No etymology or definition extract found for "<em>${this._escapeHtml(word)}</em>".</p>`;
+        } catch (error) {
+            console.error("Error fetching etymology:", error);
+            return `<p style="color: #856404; background-color: #fff3cd; border: 1px solid #ffeeba; padding: 10px; border-radius: 4px; line-height: 1.5;">Unable to retrieve online definitions from Wiktionary (${this._escapeHtml(error.message)}).<br><span style="font-size: 13px; color: #555;">You can still define and certify this word for your manuscript below:</span></p>`;
+        }
+    },
+
+    _parseWiktionaryExtract: function(extract, word) {
+        let resultHtml = "";
+
+        if (!extract) {
+            resultHtml = `<p>No content found for "${this._escapeHtml(word)}".</p>`;
+        } else if (extract.startsWith('<p')) {
+            resultHtml = extract;
+        } else {
+            // Try finding English section first
+            const englishMatch = extract.match(/^==\s*English\s*==/im);
+            let targetText = extract;
+            if (englishMatch) {
+                const afterEnglish = extract.substring(englishMatch.index + englishMatch[0].length);
+                const nextLangMatch = afterEnglish.match(/\n==\s*[^=]+\s*==/);
+                targetText = nextLangMatch ? afterEnglish.substring(0, nextLangMatch.index) : afterEnglish;
+            }
+
+            const etymologyRegex = /===\s*Etymology(?:\s*\d+)?\s*===\s*([\s\S]*?)(?=(?:===[^=])|(?:==[^=])|$)/gi;
+            const allMatches = [...targetText.matchAll(etymologyRegex)];
+
+            if (allMatches.length > 0) {
+                allMatches.forEach((match, index) => {
+                    let content = match[1].trim().replace(/\[edit\]/gi, '');
+                    const paragraphs = content.split('\n')
+                        .map(p => p.trim())
+                        .filter(Boolean)
+                        .map(p => {
+                            if (p.startsWith('*')) {
+                                return `<li>${this._escapeHtml(p.replace(/^\*\s*/, ''))}</li>`;
+                            }
+                            return `<p>${this._escapeHtml(p)}</p>`;
+                        })
+                        .join('');
+
+                    const headerText = allMatches.length > 1 ? `Etymology ${index + 1}` : 'Etymology';
+                    resultHtml += `<h4>${headerText}</h4>${paragraphs}`;
+                });
+                resultHtml = resultHtml.replace(/<li>(.*?)<\/li>/g, '<ul><li>$1</li></ul>').replace(/<\/ul>\s*<ul>/g, '');
+            }
+
+            // Also extract part of speech definitions (Noun, Verb, Adjective, etc.)
+            const posRegex = /===\s*(Noun|Verb|Adjective|Adverb|Proper noun|Pronoun)\s*===\s*([\s\S]*?)(?=(?:===[^=])|(?:==[^=])|$)/gi;
+            const posMatches = [...targetText.matchAll(posRegex)];
+            if (posMatches.length > 0) {
+                resultHtml += `<h4 style="margin-top:16px;">Definitions</h4>`;
+                posMatches.slice(0, 3).forEach(match => {
+                    const pos = match[1];
+                    const defLines = match[2].trim().split('\n')
+                        .map(l => l.trim())
+                        .filter(l => l.length > 0 && !l.startsWith('==='));
+                    const cleanLines = defLines.slice(0, 4)
+                        .map(l => `<li>${this._escapeHtml(l.replace(/^\*+\s*/, ''))}</li>`)
+                        .join('');
+                    if (cleanLines) {
+                        resultHtml += `<p><strong>${pos}:</strong></p><ul>${cleanLines}</ul>`;
+                    }
+                });
+            }
+
+            if (!resultHtml) {
+                const sample = targetText.slice(0, 800).trim();
+                resultHtml = `<p>${this._escapeHtml(sample)}</p>`;
+            }
+        }
+
+        resultHtml += `
+            <div style="margin-top: 16px; border-top: 1px solid #ddd; padding-top: 10px; display: flex; justify-content: flex-end;">
+                <button type="button" class="etymology-certify-btn" id="certify-from-etymology-btn">Certify "${this._escapeHtml(word)}"</button>
+            </div>
+        `;
+
+        return resultHtml;
+    },
+
+    _escapeHtml: function(text) {
+        if (!text) return '';
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     },
 
     search: function(query, nodesToSearch, currentPath) {
@@ -1405,6 +1747,11 @@ window.MyProjectUIManager = {
                         }
                     }
                 });
+                div.addEventListener('dblclick', (e) => {
+                    e.stopPropagation();
+                    const spanId = div.dataset.commentId;
+                    this.openCommentModal(spanId, c.text);
+                });
                 container.appendChild(div);
             });
         }
@@ -1432,6 +1779,11 @@ window.MyProjectUIManager = {
                             }, 150);
                         }
                     }
+                });
+                div.addEventListener('dblclick', (e) => {
+                    e.stopPropagation();
+                    const spanId = div.dataset.spanId;
+                    this.openCertifyModal(spanId, cw.word);
                 });
                 container.appendChild(div);
             });
@@ -1615,28 +1967,162 @@ window.MyProjectUIManager = {
         tip.classList.add('hidden');
     },
 
+    _processNodeContentForExport: function(node, includeComments, includeCertifiedWords, masterGlossary) {
+        if (!node || !node.content) return '';
+
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = node.content;
+
+        const sectionComments = [];
+        const sectionGlossary = new Map();
+
+        // 1. Process inline comments if enabled
+        if (includeComments) {
+            const commentSpans = Array.from(tempDiv.querySelectorAll('.comment-highlight'));
+            commentSpans.forEach((span, idx) => {
+                const fnNum = idx + 1;
+                const quoteText = (span.textContent || '').trim();
+                const matchedComment = Array.isArray(node.comments)
+                    ? node.comments.find(c => c.id === span.id || c.spanId === span.id)
+                    : null;
+                const commentText = matchedComment
+                    ? matchedComment.text
+                    : (span.getAttribute('data-comment') || '');
+
+                const marker = document.createTextNode(` [^${fnNum}]`);
+                if (span.nextSibling) {
+                    span.parentNode.insertBefore(marker, span.nextSibling);
+                } else {
+                    span.parentNode.appendChild(marker);
+                }
+
+                sectionComments.push({
+                    num: fnNum,
+                    quote: quoteText,
+                    text: commentText,
+                    spanId: span.id
+                });
+            });
+
+            // Capture any comments on the node that are not highlighted in text
+            if (Array.isArray(node.comments)) {
+                node.comments.forEach(c => {
+                    const alreadyIncluded = sectionComments.some(sc => sc.spanId === c.id || sc.spanId === c.spanId);
+                    if (!alreadyIncluded && c.text && c.text.trim()) {
+                        const fnNum = sectionComments.length + 1;
+                        sectionComments.push({
+                            num: fnNum,
+                            quote: '',
+                            text: c.text.trim(),
+                            spanId: c.id || c.spanId
+                        });
+                    }
+                });
+            }
+        }
+
+        // 2. Process certified words if enabled
+        if (includeCertifiedWords) {
+            const certSpans = Array.from(tempDiv.querySelectorAll('.certified-word'));
+            certSpans.forEach(span => {
+                const word = (span.textContent || '').trim();
+                if (!word) return;
+                const matchedCert = Array.isArray(node.certifiedWords)
+                    ? node.certifiedWords.find(cw => cw.spanId === span.id || cw.id === span.id ||
+                        (cw.word && cw.word.toLowerCase() === word.toLowerCase()) ||
+                        (cw.text && cw.text.toLowerCase() === word.toLowerCase()))
+                    : null;
+                const definition = matchedCert
+                    ? matchedCert.definition
+                    : (span.getAttribute('data-definition') || '');
+
+                if (definition) {
+                    const key = word.toLowerCase();
+                    if (!sectionGlossary.has(key)) {
+                        sectionGlossary.set(key, { word: word, definition: definition });
+                    }
+                    if (masterGlossary && !masterGlossary.has(word)) {
+                        masterGlossary.set(word, definition);
+                    }
+                }
+            });
+
+            // Also check any certified words on node not in spans
+            if (Array.isArray(node.certifiedWords)) {
+                node.certifiedWords.forEach(cw => {
+                    const w = cw.word || cw.text;
+                    if (w && cw.definition) {
+                        const key = w.toLowerCase();
+                        if (!sectionGlossary.has(key)) {
+                            sectionGlossary.set(key, { word: w, definition: cw.definition });
+                        }
+                        if (masterGlossary && !masterGlossary.has(w)) {
+                            masterGlossary.set(w, cw.definition);
+                        }
+                    }
+                });
+            }
+        }
+
+        const bodyText = (tempDiv.textContent || tempDiv.innerText || '').trim();
+        let sectionOutput = bodyText ? `${bodyText}\n\n` : '';
+
+        if (includeComments && sectionComments.length > 0) {
+            sectionOutput += `--- Comments & Notes ---\n`;
+            sectionComments.forEach(sc => {
+                if (sc.quote) {
+                    sectionOutput += `[^${sc.num}] "${sc.quote}": ${sc.text}\n`;
+                } else {
+                    sectionOutput += `[^${sc.num}] ${sc.text}\n`;
+                }
+            });
+            sectionOutput += `\n`;
+        }
+
+        if (includeCertifiedWords && sectionGlossary.size > 0) {
+            sectionOutput += `--- Certified Lexicon ---\n`;
+            sectionGlossary.forEach(item => {
+                sectionOutput += `• ${item.word}: ${item.definition}\n`;
+            });
+            sectionOutput += `\n`;
+        }
+
+        return sectionOutput;
+    },
+
     compileAndDownload: function() {
         let output = '';
-        const tempDiv = document.createElement('div');
         const currentManuscriptList = window.MyProjectDataStorage.getManuscriptList();
+        const includeComments = this.includeCommentsCheckbox ? this.includeCommentsCheckbox.checked : (document.getElementById('include-comments-checkbox')?.checked || false);
+        const includeCertifiedWords = this.includeCertifiedWordsCheckbox ? this.includeCertifiedWordsCheckbox.checked : (document.getElementById('include-certified-words-checkbox')?.checked || false);
+        const masterGlossary = new Map();
 
         currentManuscriptList.forEach(node => {
             if (node.type === 'container') {
                 output += `\n\n## ${node.title.toUpperCase()} ##\n\n`;
                 if (node.includeNotes && node.content) {
-                    tempDiv.innerHTML = node.content;
-                    output += `${tempDiv.textContent || tempDiv.innerText || ''}\n\n`;
+                    output += this._processNodeContentForExport(node, includeComments, includeCertifiedWords, masterGlossary);
                 }
             } else if (node.type === 'text') {
-                output += `### ${node.title} ###\n\n`;
+                output += `\n\n### ${node.title} ###\n\n`;
                 if (node.content) {
-                    tempDiv.innerHTML = node.content;
-                    output += `${tempDiv.textContent || tempDiv.innerText || ''}\n\n`;
+                    output += this._processNodeContentForExport(node, includeComments, includeCertifiedWords, masterGlossary);
                 }
             }
         });
 
-        const blob = new Blob([output], { type: 'text/plain' });
+        if (includeCertifiedWords && masterGlossary.size > 0) {
+            output += `\n${'='.repeat(70)}\n`;
+            output += `MANUSCRIPT GLOSSARY & CERTIFIED LEXICON\n`;
+            output += `${'='.repeat(70)}\n\n`;
+            const sortedWords = Array.from(masterGlossary.keys()).sort((a, b) => a.localeCompare(b));
+            sortedWords.forEach(w => {
+                output += `• ${w}: ${masterGlossary.get(w)}\n`;
+            });
+            output += `\n`;
+        }
+
+        const blob = new Blob([output], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -1717,3 +2203,7 @@ MyProjectUIManager.ensureNodeVisible = function(node, margin = 80) {
         console.warn('ensureNodeVisible failed', err);
     }
 };
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = window.MyProjectUIManager;
+}
