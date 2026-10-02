@@ -45,7 +45,9 @@ window.MyProjectDataStorage = {
 
   /**
    * Saves the provided tree of nodes to the JSON file.
-   * It first creates a backup of the existing data file.
+   * It creates a backup of the existing data file, updates an emergency mirror,
+   * and performs an atomic write (write to .tmp then rename) so the main data file
+   * is never corrupted if power is lost during write.
    * @param {Array<Object>} rootNodesToSave - The array of root node objects to save.
    */
   async saveNodes(rootNodesToSave) {
@@ -54,7 +56,7 @@ window.MyProjectDataStorage = {
       return;
     }
     try {
-      // Backup the current data file before saving
+      // 1. Create a pre-save backup of the current data file before saving
       if (await window.electronAPI.fs.exists(this._activeDataPath)) {
         try {
           await window.electronAPI.fs.copyFile(this._activeDataPath, this._backupDataPath);
@@ -62,17 +64,35 @@ window.MyProjectDataStorage = {
           console.warn("[Storage] Backup creation skipped:", backupErr && backupErr.message);
         }
       }
+
+      // 2. Prepare JSON data
       const data = JSON.stringify(rootNodesToSave, null, 2);
-      await window.electronAPI.fs.writeFile(this._activeDataPath, data);
+
+      // 3. Emergency mirror in localStorage if available
+      try {
+        if (typeof localStorage !== 'undefined' && localStorage && typeof localStorage.setItem === 'function') {
+          localStorage.setItem('morada_emergency_backup', data);
+        }
+      } catch (lsErr) {}
+
+      // 4. Atomic write: write to a .tmp file then rename over the active file
+      if (window.electronAPI.fs && typeof window.electronAPI.fs.rename === 'function') {
+        const tempPath = this._activeDataPath + '.tmp';
+        await window.electronAPI.fs.writeFile(tempPath, data);
+        await window.electronAPI.fs.rename(tempPath, this._activeDataPath);
+      } else {
+        await window.electronAPI.fs.writeFile(this._activeDataPath, data);
+      }
     } catch (err) {
       console.error(`Error saving nodes to ${this._activeDataPath}: ${err.message}`, err);
     }
   },
 
   /**
-   * Loads nodes from the JSON file.
-   * If the file doesn't exist, it returns an empty array.
-   * If the file is corrupted, it attempts to load from a backup.
+   * Loads nodes from the JSON file with triple-tier resilience:
+   * Tier 1: Primary data file (morada-data.json)
+   * Tier 2: Automated backup file (morada-data.json.bak)
+   * Tier 3: Emergency localStorage mirror (morada_emergency_backup)
    * @returns {Array<Object>} The loaded (and normalized) array of root node objects, or an empty array on failure.
    */
   async loadNodes() {
@@ -88,9 +108,6 @@ window.MyProjectDataStorage = {
         if (await window.electronAPI.fs.exists(filePath)) {
           const data = await window.electronAPI.fs.readFile(filePath, 'utf8');
           const parsed = JSON.parse(data);
-          // The stored file may be either an array of nodes or an object
-          // containing a `nodes`/`manuscript`/`rootNodes` property. Normalize
-          // to an array for internal storage.
           let nodes = Array.isArray(parsed) ? parsed : (parsed.nodes || parsed.manuscript || parsed.rootNodes || []);
           this._rootNodes = nodes;
           this.normalizeNodes(this._rootNodes);
@@ -103,14 +120,36 @@ window.MyProjectDataStorage = {
       return null;
     };
 
+    // Tier 1: Try active data file
     let loadedData = await loadFromFile(this._activeDataPath);
 
+    // Tier 2: Try .bak file
     if (loadedData === null && await window.electronAPI.fs.exists(this._backupDataPath)) {
       console.log("Attempting to load from backup file.");
       loadedData = await loadFromFile(this._backupDataPath);
       if (loadedData !== null) {
         // If backup is successful, restore it to the main file
         await this.saveNodes(loadedData);
+      }
+    }
+
+    // Tier 3: Try emergency localStorage mirror
+    if (loadedData === null && typeof localStorage !== 'undefined' && localStorage && typeof localStorage.getItem === 'function') {
+      try {
+        const emergencyData = localStorage.getItem('morada_emergency_backup');
+        if (emergencyData) {
+          console.warn("[Storage] Recovering data from emergency localStorage mirror.");
+          const parsed = JSON.parse(emergencyData);
+          let nodes = Array.isArray(parsed) ? parsed : (parsed.nodes || parsed.manuscript || parsed.rootNodes || []);
+          if (nodes.length > 0) {
+            this._rootNodes = nodes;
+            this.normalizeNodes(this._rootNodes);
+            await this.saveNodes(this._rootNodes);
+            return this._rootNodes;
+          }
+        }
+      } catch (lsErr) {
+        console.warn("[Storage] Failed to read emergency backup from localStorage:", lsErr);
       }
     }
 

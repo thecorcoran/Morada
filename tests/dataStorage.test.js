@@ -85,32 +85,126 @@ describe('MyProjectDataStorage', () => {
         expect(targetNode.timer.running).toBe(true);
     });
 
-    test('should save and load nodes using electronAPI mock', async () => {
-        let storageFileContent = '';
+    test('should save nodes using atomic temporary file write and rename', async () => {
+        const fileSystem = {};
+        const operations = [];
+
         global.window.electronAPI = {
             getDataPaths: async () => ({
                 dataPath: '/mock/morada-data.json',
                 backupPath: '/mock/morada-data.json.bak'
             }),
             fs: {
-                exists: async () => true,
-                copyFile: async () => {},
-                writeFile: async (filePath, content) => {
-                    storageFileContent = content;
+                exists: async (p) => !!fileSystem[p],
+                copyFile: async (src, dest) => {
+                    operations.push(`copy:${src}->${dest}`);
+                    fileSystem[dest] = fileSystem[src];
                 },
-                readFile: async () => storageFileContent
+                writeFile: async (filePath, content) => {
+                    operations.push(`write:${filePath}`);
+                    fileSystem[filePath] = content;
+                },
+                rename: async (oldPath, newPath) => {
+                    operations.push(`rename:${oldPath}->${newPath}`);
+                    fileSystem[newPath] = fileSystem[oldPath];
+                    delete fileSystem[oldPath];
+                },
+                readFile: async (p) => fileSystem[p] || ''
             }
         };
+
+        // Seed initial data
+        fileSystem['/mock/morada-data.json'] = JSON.stringify([{ id: 'old-1', title: 'Old Chapter' }]);
 
         await DataStorage.init();
 
         const testNodes = [{ id: 'saved-1', title: 'Saved Chapter', children: [], tags: [] }];
         await DataStorage.saveNodes(testNodes);
 
-        expect(storageFileContent).toContain('Saved Chapter');
+        // Pre-save backup must occur before write
+        expect(operations).toContain('copy:/mock/morada-data.json->/mock/morada-data.json.bak');
+        // Atomic write must write to .tmp then rename
+        expect(operations).toContain('write:/mock/morada-data.json.tmp');
+        expect(operations).toContain('rename:/mock/morada-data.json.tmp->/mock/morada-data.json');
+        expect(fileSystem['/mock/morada-data.json']).toContain('Saved Chapter');
+    });
 
+    test('should populate emergency localStorage mirror on saveNodes', async () => {
+        let mockStorage = {};
+        global.localStorage = {
+            setItem: (k, v) => { mockStorage[k] = v; },
+            getItem: (k) => mockStorage[k] || null
+        };
+
+        await DataStorage.init();
+        await DataStorage.saveNodes([{ id: 'emerg-1', title: 'Emergency Draft' }]);
+
+        expect(mockStorage['morada_emergency_backup']).toBeDefined();
+        expect(mockStorage['morada_emergency_backup']).toContain('Emergency Draft');
+    });
+
+    test('should recover from backup (Tier 2) when primary file is corrupt', async () => {
+        const fileSystem = {
+            '/mock/morada-data.json': '{ corrupt json ...',
+            '/mock/morada-data.json.bak': JSON.stringify([{ id: 'bak-1', title: 'Restored From Backup' }])
+        };
+
+        global.window.electronAPI = {
+            getDataPaths: async () => ({
+                dataPath: '/mock/morada-data.json',
+                backupPath: '/mock/morada-data.json.bak'
+            }),
+            fs: {
+                exists: async (p) => !!fileSystem[p],
+                copyFile: async (src, dest) => { fileSystem[dest] = fileSystem[src]; },
+                writeFile: async (p, content) => { fileSystem[p] = content; },
+                rename: async (oldPath, newPath) => {
+                    fileSystem[newPath] = fileSystem[oldPath];
+                    delete fileSystem[oldPath];
+                },
+                readFile: async (p) => fileSystem[p]
+            }
+        };
+
+        await DataStorage.init();
         const loaded = await DataStorage.loadNodes();
+
         expect(loaded).toHaveLength(1);
-        expect(loaded[0].title).toBe('Saved Chapter');
+        expect(loaded[0].id).toBe('bak-1');
+        expect(loaded[0].title).toBe('Restored From Backup');
+    });
+
+    test('should recover from localStorage (Tier 3) when primary and backup are unavailable', async () => {
+        const fileSystem = {};
+        global.localStorage = {
+            getItem: (k) => {
+                if (k === 'morada_emergency_backup') {
+                    return JSON.stringify([{ id: 'ls-tier3', title: 'Rescued from LocalStorage' }]);
+                }
+                return null;
+            },
+            setItem: jest.fn()
+        };
+
+        global.window.electronAPI = {
+            getDataPaths: async () => ({
+                dataPath: '/mock/morada-data.json',
+                backupPath: '/mock/morada-data.json.bak'
+            }),
+            fs: {
+                exists: async () => false,
+                copyFile: async () => {},
+                writeFile: async (p, content) => { fileSystem[p] = content; },
+                rename: async (oldP, newP) => { fileSystem[newP] = fileSystem[oldP]; delete fileSystem[oldP]; },
+                readFile: async () => ''
+            }
+        };
+
+        await DataStorage.init();
+        const loaded = await DataStorage.loadNodes();
+
+        expect(loaded).toHaveLength(1);
+        expect(loaded[0].id).toBe('ls-tier3');
+        expect(loaded[0].title).toBe('Rescued from LocalStorage');
     });
 });

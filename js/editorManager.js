@@ -344,6 +344,7 @@ window.MyProjectEditorManager = {
                             }
                             this.updateStrunkMetrics(cleanContent);
                             this._scheduleStrunkHighlightRefresh();
+                            this._scheduleAutoSave();
                         });
                     }
                 });
@@ -353,6 +354,27 @@ window.MyProjectEditorManager = {
         } catch (err) {
             console.error('[editor] TinyMCE init failed:', err);
             this.tinyMCEAvailable = false;
+        }
+
+        if (typeof window !== 'undefined' && typeof window.addEventListener === 'function' && !this._beforeUnloadAttached) {
+            this._beforeUnloadAttached = true;
+            window.addEventListener('beforeunload', () => {
+                try {
+                    this.flushAndSaveCurrentSheet();
+                } catch (e) {}
+            });
+        }
+
+        const isTestEnv = typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'test';
+        if (!isTestEnv && !this._autoSaveInterval && typeof setInterval === 'function') {
+            this._autoSaveInterval = setInterval(() => {
+                if (this.isEditorOpen()) {
+                    this.flushAndSaveCurrentSheet();
+                }
+            }, 30000);
+            if (this._autoSaveInterval && typeof this._autoSaveInterval.unref === 'function') {
+                this._autoSaveInterval.unref();
+            }
         }
 
         if (typeof document !== 'undefined' && !this._fullscreenListenerAdded) {
@@ -936,11 +958,93 @@ window.MyProjectEditorManager = {
                     this.uiManager.updateEditorWordCount(clean);
                 }
                 this.updateStrunkMetrics(clean);
+                this._scheduleAutoSave();
             };
             ta.focus();
         } catch (err) {
             console.error('[editor] fallback textarea failed:', err);
         }
+    },
+
+    /**
+     * Schedules a debounced auto-save (1.5s) while writing.
+     */
+    _scheduleAutoSave: function() {
+        if (this._autoSaveDebounceTimer) {
+            clearTimeout(this._autoSaveDebounceTimer);
+        }
+        this._updateSaveStatusIndicator('Saving…');
+        this._autoSaveDebounceTimer = setTimeout(() => {
+            this.flushAndSaveCurrentSheet();
+        }, 1500);
+    },
+
+    /**
+     * Flushes current editor content directly into the node object and saves to disk.
+     */
+    flushAndSaveCurrentSheet: function() {
+        if (!this.stateManager || !this.dataStorage) return;
+        const selectedNode = this.stateManager.getSelectedNode();
+        if (!selectedNode) return;
+
+        try {
+            let content = '';
+            if (this.tinymceEditor && this.tinyMCEAvailable) {
+                content = this.tinymceEditor.getContent();
+            } else {
+                const ta = document.getElementById('main-editor-fallback');
+                content = ta ? ta.value : (selectedNode.content || '');
+            }
+
+            // Strip non-destructive Strunk highlight markers before saving
+            if (window.MyProjectStrunkEngine && typeof window.MyProjectStrunkEngine.cleanStrunkMarkers === 'function') {
+                content = window.MyProjectStrunkEngine.cleanStrunkMarkers(content);
+            }
+            selectedNode.content = content;
+
+            // Persist changes
+            if (typeof this.dataStorage.saveNodes === 'function') {
+                this.dataStorage.saveNodes(this.stateManager.getRootNodes());
+                this._updateSaveStatusIndicator('Saved');
+            }
+        } catch (err) {
+            console.error('[editor] error saving content on flushAndSaveCurrentSheet', err);
+            this._updateSaveStatusIndicator('Save error');
+        }
+    },
+
+    /**
+     * Updates visual save status indicator in the UI.
+     * @param {string} status
+     */
+    _updateSaveStatusIndicator: function(status) {
+        try {
+            let indicator = document.getElementById('editor-save-indicator');
+            if (!indicator) {
+                const toolbar = document.getElementById('editor-toolbar');
+                if (toolbar) {
+                    indicator = document.createElement('span');
+                    indicator.id = 'editor-save-indicator';
+                    indicator.className = 'editor-save-indicator';
+                    toolbar.appendChild(indicator);
+                }
+            }
+            if (indicator) {
+                indicator.textContent = status;
+                const cleanCls = (status || '').toLowerCase().replace(/[^a-z]/g, '');
+                indicator.className = `editor-save-indicator status-${cleanCls}`;
+                if (status === 'Saved') {
+                    if (this._saveIndicatorFadeTimer) clearTimeout(this._saveIndicatorFadeTimer);
+                    this._saveIndicatorFadeTimer = setTimeout(() => {
+                        try {
+                            if (indicator && indicator.textContent === 'Saved') {
+                                indicator.textContent = 'All changes saved';
+                            }
+                        } catch (e) {}
+                    }, 2500);
+                }
+            }
+        } catch (e) {}
     },
 
     /**
@@ -952,31 +1056,13 @@ window.MyProjectEditorManager = {
             return;
         }
 
-        const selectedNode = this.stateManager ? this.stateManager.getSelectedNode() : null;
-        if (selectedNode) {
-            try {
-                let content = '';
-                if (this.tinymceEditor && this.tinyMCEAvailable) {
-                    content = this.tinymceEditor.getContent();
-                } else {
-                    const ta = document.getElementById('main-editor-fallback');
-                    content = ta ? ta.value : (selectedNode.content || '');
-                }
-
-                // Strip non-destructive Strunk highlight markers before saving
-                if (window.MyProjectStrunkEngine && typeof window.MyProjectStrunkEngine.cleanStrunkMarkers === 'function') {
-                    content = window.MyProjectStrunkEngine.cleanStrunkMarkers(content);
-                }
-                selectedNode.content = content;
-
-                // Persist changes
-                if (typeof this.dataStorage.saveNodes === 'function') {
-                    this.dataStorage.saveNodes(this.stateManager.getRootNodes());
-                }
-            } catch (err) {
-                console.error('[editor] error saving content on closeEditorMode', err);
-            }
+        if (this._autoSaveDebounceTimer) {
+            clearTimeout(this._autoSaveDebounceTimer);
+            this._autoSaveDebounceTimer = null;
         }
+
+        const selectedNode = this.stateManager ? this.stateManager.getSelectedNode() : null;
+        this.flushAndSaveCurrentSheet();
 
         if (this.isFullView) {
             this.toggleFullView(false);

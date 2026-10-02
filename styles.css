@@ -1751,6 +1751,31 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
   box-shadow: 0 2px 5px rgba(60, 56, 54, 0.25);
 }
 
+.editor-save-indicator {
+  font-size: 12px;
+  color: var(--color-text-muted, #7c6f64);
+  font-style: italic;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: opacity 0.3s ease, color 0.3s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.editor-save-indicator.status-saving {
+  color: var(--color-accent-primary, #458588);
+  font-weight: 600;
+}
+
+.editor-save-indicator.status-saved {
+  color: var(--color-text-success, #79740e);
+}
+
+.editor-save-indicator.status-saveerror {
+  color: var(--color-accent-danger, #cc241d);
+  font-weight: 600;
+}
+
 /* Full View Focus Mode - Distraction-free genuine full-screen writing */
 #editor-mode.full-view-mode {
   position: fixed !important;

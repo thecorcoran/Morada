@@ -862,8 +862,11 @@ window.MyProjectUIManager = {
 
     _showUndoToast: function(message, undoFn, ttl = 10000) {
         try {
-            // remove existing toast
-            const existing = document.getElementById('undo-toast'); if (existing) existing.remove();
+            const existing = document.getElementById('undo-toast');
+            if (existing) {
+                if (typeof existing.remove === 'function') existing.remove();
+                else if (existing.parentNode) existing.parentNode.removeChild(existing);
+            }
             const toast = document.createElement('div'); toast.id = 'undo-toast'; toast.className = 'undo-toast';
             toast.style.position = 'fixed'; toast.style.right = '16px'; toast.style.bottom = '16px'; toast.style.background = 'rgba(0,0,0,0.85)'; toast.style.color = '#fff'; toast.style.padding = '10px 12px'; toast.style.borderRadius = '6px'; toast.style.zIndex = 100000;
             const text = document.createElement('span'); text.textContent = message; text.style.marginRight = '12px';
@@ -872,7 +875,11 @@ window.MyProjectUIManager = {
             toast.appendChild(text); toast.appendChild(undoBtn);
             document.body.appendChild(toast);
             // auto-dismiss after ttl
-            setTimeout(() => { try { if (toast.parentNode) toast.parentNode.removeChild(toast); this._lastDeleted = null; } catch (e) {} }, ttl);
+            if (this._undoToastTimer) clearTimeout(this._undoToastTimer);
+            this._undoToastTimer = setTimeout(() => { try { if (toast.parentNode) toast.parentNode.removeChild(toast); this._lastDeleted = null; } catch (e) {} }, ttl);
+            if (this._undoToastTimer && typeof this._undoToastTimer.unref === 'function') {
+                this._undoToastTimer.unref();
+            }
         } catch (e) { console.warn('showUndoToast failed', e); }
     },
 

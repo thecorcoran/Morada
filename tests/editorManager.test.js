@@ -127,6 +127,21 @@ describe('MyProjectEditorManager & Craft Drawer Integration Tests', () => {
         });
     });
 
+    afterEach(() => {
+        if (EditorManager._autoSaveDebounceTimer) {
+            clearTimeout(EditorManager._autoSaveDebounceTimer);
+            EditorManager._autoSaveDebounceTimer = null;
+        }
+        if (EditorManager._saveIndicatorFadeTimer) {
+            clearTimeout(EditorManager._saveIndicatorFadeTimer);
+            EditorManager._saveIndicatorFadeTimer = null;
+        }
+        if (EditorManager._autoSaveInterval) {
+            clearInterval(EditorManager._autoSaveInterval);
+            EditorManager._autoSaveInterval = null;
+        }
+    });
+
     test('should initialize dependencies and craft drawer', () => {
         expect(EditorManager.stateManager).toBe(mockStateManager);
         expect(EditorManager.uiManager).toBe(mockUIManager);
@@ -272,5 +287,42 @@ describe('MyProjectEditorManager & Craft Drawer Integration Tests', () => {
         EditorManager.toggleScenicMaximCheck(2);
         checked = EditorManager._getCheckedMaximsForNode('sheet-scenic-1');
         expect(checked.has(2)).toBe(false);
+    });
+
+    test('flushAndSaveCurrentSheet should sync editor text to node and invoke dataStorage.saveNodes immediately', () => {
+        const testNode = { id: 'sheet-flush-1', title: 'Live Prose', content: 'Initial' };
+        mockStateManager.setSelectedNode(testNode);
+
+        const ta = mockElements['main-editor-fallback'];
+        ta.value = '<p>Freshly written paragraph without leaving editor.</p>';
+
+        EditorManager.flushAndSaveCurrentSheet();
+
+        expect(testNode.content).toBe('<p>Freshly written paragraph without leaving editor.</p>');
+        expect(mockDataStorage.saveNodes).toHaveBeenCalled();
+    });
+
+    test('_scheduleAutoSave debounces and flushes changes to storage', () => {
+        jest.useFakeTimers();
+        const testNode = { id: 'sheet-debounce-1', title: 'Debounced Prose', content: 'Initial' };
+        mockStateManager.setSelectedNode(testNode);
+
+        const ta = mockElements['main-editor-fallback'];
+        ta.value = '<p>Drafting mid-sentence...</p>';
+
+        mockDataStorage.saveNodes.mockClear();
+        EditorManager._scheduleAutoSave();
+
+        // Before debounce timeout
+        expect(mockDataStorage.saveNodes).not.toHaveBeenCalled();
+
+        // Advance debounce timer (1500ms)
+        jest.advanceTimersByTime(1600);
+
+        expect(testNode.content).toBe('<p>Drafting mid-sentence...</p>');
+        expect(mockDataStorage.saveNodes).toHaveBeenCalled();
+
+        jest.runOnlyPendingTimers();
+        jest.useRealTimers();
     });
 });
