@@ -37,6 +37,7 @@
     <div id="editor-mode" class="hidden">
         <div id="editor-main-content">
       <div id="editor-toolbar" class="editor-toolbar">
+        <button id="toggle-craft-drawer-btn" type="button" title="Toggle Craft Drawer (Ctrl+Shift+D)">Craft Drawer ▾</button>
         <button id="editor-comment-btn" type="button" title="Add Comment (Ctrl+M)">Comment</button>
         <button id="editor-certify-btn" type="button" title="Certify Word (Ctrl+Shift+C)">Certify</button>
         <button id="editor-etymology-btn" type="button" title="Look up Etymology (Ctrl+Shift+E)">Etymology</button>
@@ -45,30 +46,100 @@
             <textarea id="main-editor"></textarea>
         </div>
         <div id="editor-inspector-sidebar" class="hidden">
-            <div id="editor-metadata">
+            <div class="craft-drawer-header">
+                <h3>Craft Drawer</h3>
+                <span id="close-craft-drawer-btn" class="craft-close-btn" title="Close Drawer (Ctrl+Shift+D)">&times;</span>
+            </div>
+
+            <!-- Strunk: The Vigorous Editor -->
+            <div class="craft-section" id="strunk-panel">
+                <div class="craft-section-header">
+                    <h4>The Vigorous Editor <span class="craft-subtitle">(Strunk)</span></h4>
+                </div>
+                <div class="craft-controls">
+                    <label class="craft-toggle">
+                        <input type="checkbox" id="toggle-passive-voice">
+                        <span>Passive Voice</span>
+                        <span class="craft-badge" id="passive-voice-count">0</span>
+                    </label>
+                    <label class="craft-toggle">
+                        <input type="checkbox" id="toggle-adverbs">
+                        <span>-ly Adverbs</span>
+                        <span class="craft-badge" id="adverb-count">0</span>
+                    </label>
+                </div>
+                <div class="readability-card" id="readability-card">
+                    <div class="readability-row">
+                        <div class="readability-metric">
+                            <span class="metric-label">Grade</span>
+                            <span class="metric-value" id="flesch-grade">--</span>
+                        </div>
+                        <div class="readability-metric">
+                            <span class="metric-label">Ease</span>
+                            <span class="metric-value" id="flesch-ease">--</span>
+                        </div>
+                    </div>
+                    <div class="readability-summary" id="readability-summary">Draft text to analyze</div>
+                </div>
+            </div>
+
+            <!-- Percy: Language Certification -->
+            <div class="craft-section" id="percy-panel">
+                <div class="craft-section-header">
+                    <h4>Certified Lexicon <span class="craft-subtitle">(Percy)</span></h4>
+                </div>
+                <div id="craft-certified-list" class="craft-sublist"></div>
+                <button type="button" class="craft-sub-btn" id="craft-certify-btn">+ Certify Highlighted Word</button>
+            </div>
+
+            <!-- Etymology Lookup -->
+            <div class="craft-section" id="etymology-panel">
+                <div class="craft-section-header">
+                    <h4>Etymology <span class="craft-subtitle">(Wiktionary)</span></h4>
+                </div>
+                <div class="craft-lookup-row">
+                    <input type="text" id="craft-etymology-input" placeholder="Search word root...">
+                    <button type="button" id="craft-etymology-btn">Lookup</button>
+                </div>
+            </div>
+
+            <!-- Session & Pace Targets -->
+            <div class="craft-section" id="session-panel">
+                <div class="craft-section-header">
+                    <h4>Session & Goals</h4>
+                </div>
                 <div id="editor-status-bar">
-                    <span id="editor-word-count">Words: 0</span>
-                    <div id="writing-timer-controls">
-                      <label for="timer-duration-input">Set Timer (min):</label>
-                      <input type="number" id="timer-duration-input" value="30" min="1">
-                      <button id="timer-start-btn">Start Timer</button>
-                      <span id="writing-timer-display">Time: 00:00</span>
+                    <div class="craft-metric-row">
+                        <span>Current Words:</span>
+                        <strong id="editor-word-count">0</strong>
                     </div>
                     <div id="word-goal-controls">
-                      <label for="word-goal-input">Word Goal:</label>
-                      <span id="word-goal-current">0</span> / <input type="number" id="word-goal-input" value="500" min="0">
+                        <label for="word-goal-input">Word Target:</label>
+                        <span id="word-goal-current">0</span> / <input type="number" id="word-goal-input" value="500" min="0">
+                    </div>
+                    <div id="writing-timer-controls">
+                        <label for="timer-duration-input">Timer (min):</label>
+                        <input type="number" id="timer-duration-input" value="30" min="1">
+                        <button id="timer-start-btn">Start</button>
+                        <span id="writing-timer-display">00:00</span>
                     </div>
                 </div>
+            </div>
+
+            <!-- Tags & Footnotes -->
+            <div class="craft-section" id="metadata-panel">
+                <div class="craft-section-header">
+                    <h4>Tags & Notes</h4>
+                </div>
                 <div id="tag-manager">
-                    <label>Tags:</label>
                     <div id="tag-list"></div>
                     <input type="text" id="tag-input" placeholder="Add a tag and press Enter...">
                 </div>
-            </div>
-            <div id="editor-footnotes-pane">
-                <h4 id="footnotes-header">Footnotes <span id="footnotes-toggle">▾</span></h4>
-                <div id="footnotes-list-container">
-                    <div id="footnotes-list"></div>
+                <div id="editor-footnotes-pane">
+                    <h4 id="footnotes-header">Footnotes <span id="footnotes-toggle">▾</span></h4>
+                    <div id="footnotes-list-container">
+                        <div id="footnotes-list"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -165,6 +236,7 @@
     <script src="js/stateManager.js"></script>
     <script src="js/canvasRenderer.js"></script>
     <script src="js/nodeManager.js"></script>
+    <script src="js/strunkEngine.js"></script>
     <script src="js/editorManager.js"></script>
     <script src="js/uiManager.js"></script>
 

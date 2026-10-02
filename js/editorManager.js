@@ -1,3 +1,6 @@
+if (typeof window === 'undefined') {
+    global.window = global;
+}
 // editorManager.js
 // This module is responsible for managing the TinyMCE editor instance,
 // its state (open/closed), and interactions related to editing node content.
@@ -12,6 +15,8 @@ window.MyProjectEditorManager = {
     uiManager: null,
     dataStorage: null,
     drawFunction: null,
+    _craftDrawerInitialized: false,
+    _strunkDebounceTimer: null,
 
     /**
      * Initializes the EditorManager and the TinyMCE editor instance.
@@ -26,6 +31,10 @@ window.MyProjectEditorManager = {
         this.uiManager = config.uiManager;
         this.dataStorage = config.dataStorage;
         this.drawFunction = config.drawFunction;
+
+        // Initialize Craft Drawer controls
+        this.initCraftDrawer();
+
         // Try to initialize TinyMCE, but don't let its absence break the app.
         this.tinyMCEAvailable = false;
         try {
@@ -43,9 +52,9 @@ window.MyProjectEditorManager = {
                     content_style: `
                         body {
                             font-family: 'Vollkorn', serif;
-                            font-size: ${AppConstants.EDITOR_DEFAULT_FONT_SIZE};
-                            line-height: ${AppConstants.EDITOR_DEFAULT_LINE_HEIGHT};
-                            background-color: ${AppConstants.EDITOR_BACKGROUND_COLOR};
+                            font-size: ${typeof AppConstants !== 'undefined' ? AppConstants.EDITOR_DEFAULT_FONT_SIZE : '18px'};
+                            line-height: ${typeof AppConstants !== 'undefined' ? AppConstants.EDITOR_DEFAULT_LINE_HEIGHT : '1.8'};
+                            background-color: ${typeof AppConstants !== 'undefined' ? AppConstants.EDITOR_BACKGROUND_COLOR : '#fbf7ee'};
                             padding: 2em;
                         }
                         .comment-highlight {
@@ -68,6 +77,26 @@ window.MyProjectEditorManager = {
                         .certified-word:hover {
                             background-color: #80ed99;
                         }
+                        .strunk-passive {
+                            border-bottom: 2px dotted #8b5cf6;
+                            background-color: rgba(139, 92, 246, 0.12);
+                            cursor: help;
+                            border-radius: 2px;
+                            padding: 0 1px;
+                        }
+                        .strunk-passive:hover {
+                            background-color: rgba(139, 92, 246, 0.25);
+                        }
+                        .strunk-adverb {
+                            border-bottom: 2px dashed #f59e0b;
+                            background-color: rgba(245, 158, 11, 0.12);
+                            cursor: help;
+                            border-radius: 2px;
+                            padding: 0 1px;
+                        }
+                        .strunk-adverb:hover {
+                            background-color: rgba(245, 158, 11, 0.25);
+                        }
                     `,
                     height: "100%",
                     width: "100%",
@@ -75,7 +104,7 @@ window.MyProjectEditorManager = {
                         this.tinymceEditor = editor;
                         this.tinyMCEAvailable = true;
                         editor.on('keydown', (e) => {
-                            if (e.key === AppConstants.KEY_ESCAPE) {
+                            if (typeof AppConstants !== 'undefined' && e.key === AppConstants.KEY_ESCAPE) {
                                 e.stopPropagation();
                                 this.closeEditorMode();
                             }
@@ -90,6 +119,10 @@ window.MyProjectEditorManager = {
                             if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'e') {
                                 e.preventDefault();
                                 this.lookupEtymologyAtSelection();
+                            }
+                            if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
+                                e.preventDefault();
+                                this.toggleCraftDrawer();
                             }
                         });
                         try {
@@ -120,11 +153,20 @@ window.MyProjectEditorManager = {
                             }
                         });
                         editor.on('input change', () => {
-                            const selectedNode = this.stateManager.getSelectedNode();
+                            const rawContent = this.tinymceEditor.getContent();
+                            const cleanContent = (window.MyProjectStrunkEngine && typeof window.MyProjectStrunkEngine.cleanStrunkMarkers === 'function')
+                                ? window.MyProjectStrunkEngine.cleanStrunkMarkers(rawContent)
+                                : rawContent;
+
+                            const selectedNode = this.stateManager ? this.stateManager.getSelectedNode() : null;
                             if (selectedNode) {
-                                selectedNode.content = this.tinymceEditor.getContent();
+                                selectedNode.content = cleanContent;
                             }
-                            this.uiManager.updateEditorWordCount(this.tinymceEditor.getContent());
+                            if (this.uiManager && typeof this.uiManager.updateEditorWordCount === 'function') {
+                                this.uiManager.updateEditorWordCount(cleanContent);
+                            }
+                            this.updateStrunkMetrics(cleanContent);
+                            this._scheduleStrunkHighlightRefresh();
                         });
                     }
                 });
@@ -323,6 +365,225 @@ window.MyProjectEditorManager = {
     },
 
     /**
+     * Initializes DOM events and controls for the Craft Drawer.
+     */
+    initCraftDrawer: function() {
+        if (this._craftDrawerInitialized) return;
+        this._craftDrawerInitialized = true;
+
+        const toggleBtn = document.getElementById('toggle-craft-drawer-btn');
+        const closeBtn = document.getElementById('close-craft-drawer-btn');
+        const passiveToggle = document.getElementById('toggle-passive-voice');
+        const adverbsToggle = document.getElementById('toggle-adverbs');
+        const craftCertifyBtn = document.getElementById('craft-certify-btn');
+        const craftEtymologyBtn = document.getElementById('craft-etymology-btn');
+        const craftEtymologyInput = document.getElementById('craft-etymology-input');
+
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => this.toggleCraftDrawer());
+        }
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => this.toggleCraftDrawer(false));
+        }
+        if (passiveToggle) {
+            passiveToggle.addEventListener('change', () => this.applyStrunkHighlights());
+        }
+        if (adverbsToggle) {
+            adverbsToggle.addEventListener('change', () => this.applyStrunkHighlights());
+        }
+        if (craftCertifyBtn) {
+            craftCertifyBtn.addEventListener('click', () => this.certifySelection());
+        }
+        if (craftEtymologyBtn) {
+            craftEtymologyBtn.addEventListener('click', () => {
+                const query = craftEtymologyInput ? craftEtymologyInput.value.trim() : '';
+                if (query) {
+                    if (this.uiManager && typeof this.uiManager.showEtymologyFor === 'function') {
+                        this.uiManager.showEtymologyFor(query);
+                    }
+                } else {
+                    this.lookupEtymologyAtSelection();
+                }
+            });
+        }
+        if (craftEtymologyInput) {
+            craftEtymologyInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (craftEtymologyBtn) craftEtymologyBtn.click();
+                }
+            });
+        }
+    },
+
+    /**
+     * Toggles the Craft Drawer sidebar open or closed.
+     * @param {boolean} [forceState] - Optional boolean to force open (true) or closed (false).
+     */
+    toggleCraftDrawer: function(forceState) {
+        const sidebar = (this.uiManager && this.uiManager.editorInspectorSidebar)
+            ? this.uiManager.editorInspectorSidebar
+            : document.getElementById('editor-inspector-sidebar');
+        if (!sidebar) return;
+
+        const isCurrentlyHidden = sidebar.classList.contains('hidden');
+        const shouldShow = typeof forceState === 'boolean' ? forceState : isCurrentlyHidden;
+
+        if (shouldShow) {
+            sidebar.classList.remove('hidden');
+            const selectedNode = this.stateManager ? this.stateManager.getSelectedNode() : null;
+            if (selectedNode) {
+                this.renderCraftCertifiedList(selectedNode);
+                const currentContent = (this.tinymceEditor && this.tinyMCEAvailable)
+                    ? this.tinymceEditor.getContent()
+                    : (selectedNode.content || '');
+                this.updateStrunkMetrics(currentContent);
+            }
+        } else {
+            sidebar.classList.add('hidden');
+        }
+
+        const toggleBtn = document.getElementById('toggle-craft-drawer-btn');
+        if (toggleBtn) {
+            toggleBtn.textContent = shouldShow ? 'Craft Drawer ▾' : 'Craft Drawer ▸';
+        }
+    },
+
+    /**
+     * Computes real-time Flesch-Kincaid readability scoring and passive/adverb counts.
+     * Updates the Craft Drawer badges and cards.
+     * @param {string} rawContent
+     */
+    updateStrunkMetrics: function(rawContent) {
+        if (!window.MyProjectStrunkEngine) return;
+        const text = rawContent || '';
+        const readability = window.MyProjectStrunkEngine.calculateReadability(text);
+        const passives = window.MyProjectStrunkEngine.findPassiveVoice(text);
+        const adverbs = window.MyProjectStrunkEngine.findAdverbs(text);
+
+        const gradeEl = document.getElementById('flesch-grade');
+        const easeEl = document.getElementById('flesch-ease');
+        const summaryEl = document.getElementById('readability-summary');
+        const passiveCountEl = document.getElementById('passive-voice-count');
+        const adverbCountEl = document.getElementById('adverb-count');
+
+        if (gradeEl) gradeEl.textContent = readability.words > 0 ? readability.grade : '--';
+        if (easeEl) easeEl.textContent = readability.words > 0 ? readability.ease : '--';
+        if (summaryEl) summaryEl.textContent = readability.words > 0 ? readability.label : 'Draft text to analyze';
+        if (passiveCountEl) passiveCountEl.textContent = passives.length;
+        if (adverbCountEl) adverbCountEl.textContent = adverbs.length;
+    },
+
+    /**
+     * Schedules a debounced refresh of in-editor Strunk highlights during typing.
+     */
+    _scheduleStrunkHighlightRefresh: function() {
+        const passiveToggle = document.getElementById('toggle-passive-voice');
+        const adverbsToggle = document.getElementById('toggle-adverbs');
+        const isPassiveActive = passiveToggle && passiveToggle.checked;
+        const isAdverbsActive = adverbsToggle && adverbsToggle.checked;
+
+        if (!isPassiveActive && !isAdverbsActive) return;
+
+        if (this._strunkDebounceTimer) {
+            clearTimeout(this._strunkDebounceTimer);
+        }
+        this._strunkDebounceTimer = setTimeout(() => {
+            this.applyStrunkHighlights();
+        }, 900);
+    },
+
+    /**
+     * Applies non-destructive Strunk highlight underlines to the editor document
+     * based on toggle switch states, or restores clean HTML if toggled off.
+     */
+    applyStrunkHighlights: function() {
+        if (!window.MyProjectStrunkEngine) return;
+        const passiveToggle = document.getElementById('toggle-passive-voice');
+        const adverbsToggle = document.getElementById('toggle-adverbs');
+        const passiveOn = passiveToggle ? passiveToggle.checked : false;
+        const adverbsOn = adverbsToggle ? adverbsToggle.checked : false;
+
+        if (this.tinyMCEAvailable && this.tinymceEditor) {
+            const rawContent = this.tinymceEditor.getContent();
+            const clean = window.MyProjectStrunkEngine.cleanStrunkMarkers(rawContent);
+
+            if (!passiveOn && !adverbsOn) {
+                if (rawContent !== clean) {
+                    let bm = null;
+                    try { bm = this.tinymceEditor.selection ? this.tinymceEditor.selection.getBookmark(2, true) : null; } catch (e) {}
+                    this.tinymceEditor.setContent(clean);
+                    if (bm && this.tinymceEditor.selection) {
+                        try { this.tinymceEditor.selection.moveToBookmark(bm); } catch (e) {}
+                    }
+                }
+                return;
+            }
+
+            const highlighted = window.MyProjectStrunkEngine.applyHighlights(clean, {
+                passive: passiveOn,
+                adverbs: adverbsOn
+            });
+
+            if (highlighted !== rawContent) {
+                let bm = null;
+                try { bm = this.tinymceEditor.selection ? this.tinymceEditor.selection.getBookmark(2, true) : null; } catch (e) {}
+                this.tinymceEditor.setContent(highlighted);
+                if (bm && this.tinymceEditor.selection) {
+                    try { this.tinymceEditor.selection.moveToBookmark(bm); } catch (e) {}
+                }
+            }
+        }
+    },
+
+    /**
+     * Renders the Percy Certified Lexicon list inside the Craft Drawer for the given node.
+     * @param {Object} node
+     */
+    renderCraftCertifiedList: function(node) {
+        const container = document.getElementById('craft-certified-list');
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (!node || !Array.isArray(node.certifiedWords) || node.certifiedWords.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'craft-empty-state';
+            if (empty.style) {
+                empty.style.color = 'var(--color-text-muted)';
+                empty.style.fontStyle = 'italic';
+                empty.style.padding = '4px 0';
+            }
+            empty.textContent = 'No words certified in this Sheet.';
+            container.appendChild(empty);
+            return;
+        }
+
+        node.certifiedWords.forEach(cw => {
+            const item = document.createElement('div');
+            item.className = 'craft-certified-item';
+            const word = cw.word || cw.text || '';
+            const def = cw.definition || '';
+            item.title = `Click to locate "${word}" in editor, double-click to edit`;
+            item.innerHTML = `
+                <span class="craft-certified-word">${word}</span>
+                <span class="craft-certified-def" title="${def}">${def}</span>
+            `;
+            item.addEventListener('click', () => {
+                if (cw.spanId) {
+                    this.focusSpan(cw.spanId);
+                }
+            });
+            item.addEventListener('dblclick', (e) => {
+                e.stopPropagation();
+                if (this.uiManager && typeof this.uiManager.openCertifyModal === 'function') {
+                    this.uiManager.openCertifyModal(cw.spanId, word);
+                }
+            });
+            container.appendChild(item);
+        });
+    },
+
+    /**
      * Opens the editor for the given node.
      * @param {Object} node - The node object to be edited.
      */
@@ -334,19 +595,27 @@ window.MyProjectEditorManager = {
         }
 
         this.stateManager.setSelectedNode(node);
-        // The UIManager will now get the selected node from the state manager
-        // this.uiManager.updateSelectedNodeReference(node); // This is no longer needed
 
         if (this.uiManager.editorMode) {
             this.uiManager.editorMode.classList.remove('hidden');
         }
 
-        // Ensure the inspector/sidebar is visible when the editor opens
+        // Initialize Craft Drawer controls
+        this.initCraftDrawer();
+
+        // Ensure the Craft Drawer sidebar is visible when opening
         try {
             if (this.uiManager && this.uiManager.editorInspectorSidebar) {
                 this.uiManager.editorInspectorSidebar.classList.remove('hidden');
             }
         } catch (err) { console.warn('[editor] failed to show inspector sidebar', err); }
+
+        const toggleBtn = document.getElementById('toggle-craft-drawer-btn');
+        if (toggleBtn) toggleBtn.textContent = 'Craft Drawer ▾';
+
+        // Populate Craft Drawer panels
+        this.renderCraftCertifiedList(node);
+        this.updateStrunkMetrics(node ? (node.content || '') : '');
 
         // If TinyMCE is available and initialized, use it. Otherwise fall back to
         // a simple textarea so the editor can still be used.
@@ -356,6 +625,10 @@ window.MyProjectEditorManager = {
                 this.uiManager.updateEditorWordCount(node.content || '');
                 if (this.uiManager.renderTags) this.uiManager.renderTags(node);
                 if (this.uiManager.renderFootnotes) this.uiManager.renderFootnotes(node);
+
+                // Apply Strunk highlights if toggles were left enabled
+                this.applyStrunkHighlights();
+
                 // Attach hover tooltip listeners inside TinyMCE document to show comment/certify previews
                 try {
                     const doc = this.tinymceEditor.getDoc();
@@ -422,6 +695,16 @@ window.MyProjectEditorManager = {
             this.uiManager.updateEditorWordCount(ta.value);
             if (this.uiManager.renderTags) this.uiManager.renderTags(node);
             if (this.uiManager.renderFootnotes) this.uiManager.renderFootnotes(node);
+            ta.oninput = () => {
+                const clean = (window.MyProjectStrunkEngine && typeof window.MyProjectStrunkEngine.cleanStrunkMarkers === 'function')
+                    ? window.MyProjectStrunkEngine.cleanStrunkMarkers(ta.value)
+                    : ta.value;
+                node.content = clean;
+                if (this.uiManager && typeof this.uiManager.updateEditorWordCount === 'function') {
+                    this.uiManager.updateEditorWordCount(clean);
+                }
+                this.updateStrunkMetrics(clean);
+            };
             ta.focus();
         } catch (err) {
             console.error('[editor] fallback textarea failed:', err);
@@ -429,7 +712,7 @@ window.MyProjectEditorManager = {
     },
 
     /**
-     * Closes the editor, saving any changes made to the current node.
+     * Closes the editor, saving any changes made to the current node without Strunk markers.
      */
     closeEditorMode: function() {
         if (!this.uiManager || !this.dataStorage || !this.drawFunction) {
@@ -437,15 +720,23 @@ window.MyProjectEditorManager = {
             return;
         }
 
-        const selectedNode = this.stateManager.getSelectedNode();
+        const selectedNode = this.stateManager ? this.stateManager.getSelectedNode() : null;
         if (selectedNode) {
             try {
+                let content = '';
                 if (this.tinymceEditor && this.tinyMCEAvailable) {
-                    selectedNode.content = this.tinymceEditor.getContent();
+                    content = this.tinymceEditor.getContent();
                 } else {
                     const ta = document.getElementById('main-editor-fallback');
-                    selectedNode.content = ta ? ta.value : (selectedNode.content || '');
+                    content = ta ? ta.value : (selectedNode.content || '');
                 }
+
+                // Strip non-destructive Strunk highlight markers before saving
+                if (window.MyProjectStrunkEngine && typeof window.MyProjectStrunkEngine.cleanStrunkMarkers === 'function') {
+                    content = window.MyProjectStrunkEngine.cleanStrunkMarkers(content);
+                }
+                selectedNode.content = content;
+
                 // Persist changes
                 if (typeof this.dataStorage.saveNodes === 'function') {
                     this.dataStorage.saveNodes(this.stateManager.getRootNodes());
@@ -475,3 +766,7 @@ window.MyProjectEditorManager = {
         return this.uiManager && this.uiManager.editorMode && !this.uiManager.editorMode.classList.contains('hidden');
     }
 };
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = window.MyProjectEditorManager;
+}

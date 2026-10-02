@@ -233,6 +233,13 @@ window.MyProjectUIManager = {
                     window.MyProjectEditorManager.lookupEtymologyAtSelection();
                 }
             }
+            // Ctrl+Shift+D -> toggle Craft Drawer
+            if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
+                e.preventDefault();
+                if (window.MyProjectEditorManager && typeof window.MyProjectEditorManager.toggleCraftDrawer === 'function') {
+                    window.MyProjectEditorManager.toggleCraftDrawer();
+                }
+            }
         });
 
     // Comment / Certify modal elements (if present in DOM)
@@ -1311,6 +1318,9 @@ window.MyProjectUIManager = {
 
             try {
                 this.renderFootnotes(node);
+                if (window.MyProjectEditorManager && typeof window.MyProjectEditorManager.renderCraftCertifiedList === 'function') {
+                    window.MyProjectEditorManager.renderCraftCertifiedList(node);
+                }
             } catch (err) { console.warn('post-save certify refresh failed', err); }
         } catch (err) {
             console.error('Error saving certification', err);
@@ -1329,6 +1339,9 @@ window.MyProjectUIManager = {
             if (this.saveNodesFunction) this.saveNodesFunction(this.stateManager.getRootNodes());
             try {
                 this.renderFootnotes(node);
+                if (window.MyProjectEditorManager && typeof window.MyProjectEditorManager.renderCraftCertifiedList === 'function') {
+                    window.MyProjectEditorManager.renderCraftCertifiedList(node);
+                }
             } catch (err) { console.warn('post-delete certify refresh failed', err); }
         } catch (err) {
             console.error('Error deleting certification', err);
