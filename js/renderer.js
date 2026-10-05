@@ -17,7 +17,6 @@ let lastClickedNodeId = null;
 
 // --- Initialization ---
 async function init() {
-    console.log('[renderer] init: starting');
     try {
         // Initialize DataStorage first
         await MyProjectDataStorage.init();
@@ -62,7 +61,6 @@ async function init() {
 
     // Event Listeners
     setupEventListeners();
-    console.log('[renderer] init: completed');
     // In development mode, add a small debug overlay to visually confirm renderer init.
     try {
         const isDev = (typeof process !== 'undefined' && process.env && (process.env.NODE_ENV === 'development' || (process.argv && process.argv.includes('--dev')))) ||
@@ -147,8 +145,6 @@ function onMouseDown(e) {
     const worldPos = MyProjectCanvasRenderer.getCanvasWorldPosition(e.clientX, e.clientY, canvas, scale, offsetX, offsetY);
 
     const clickedNode = MyProjectNodeManager.getNodeAtPosition(x, y);
-
-    console.log('[renderer] onMouseDown at', x, y, 'clickedNode=', clickedNode && clickedNode.id);
 
     if (e.button === 2 || e.ctrlKey) { // Right-click or Ctrl-click -> show custom context menu
         try {
@@ -270,7 +266,6 @@ function onMouseDown(e) {
             );
 
             if (isClickOnName) {
-                console.log('[renderer] double-click ON NAME -> inline title edit for node', clickedNode.id);
                 if (window.MyProjectUIManager && typeof window.MyProjectUIManager.createTitleEditor === 'function') {
                     window.MyProjectUIManager.createTitleEditor(clickedNode);
                     return;
@@ -279,11 +274,9 @@ function onMouseDown(e) {
 
             // 2. Double-clicking anywhere else on the portfolio or note enters or opens it:
             if (clickedNode.type === 'text') {
-                console.log('[renderer] double-click/open text note', clickedNode.id);
                 MyProjectEditorManager.openEditorMode(clickedNode);
                 return;
             } else if (clickedNode.type === 'container') {
-                console.log('[renderer] double-click/enter container portfolio', clickedNode.id);
                 MyProjectStateManager.pushToViewStack(clickedNode);
                 MyProjectStateManager.setCurrentNodes(clickedNode.children || []);
                 MyProjectUIManager.updateUIChrome();

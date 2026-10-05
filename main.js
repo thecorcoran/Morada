@@ -24,7 +24,6 @@ const createWindow = () => {
   });
 
   // Helpful logging to diagnose startup issues and renderer errors.
-  console.log('[main] createWindow: created BrowserWindow');
 
   // Allow certificate bypass for external lookups like Wiktionary in container/sandbox runs
   session.defaultSession.setCertificateVerifyProc((request, callback) => {
@@ -55,7 +54,6 @@ const createWindow = () => {
   // errors are visible in the main process logs for debugging here.
   mainWindow.webContents.on('did-finish-load', () => {
     try {
-      console.log('[main] renderer did-finish-load');
       const isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev');
       if (isDev) {
         // Open DevTools only in development mode

@@ -4,7 +4,6 @@ if (typeof window === 'undefined') {
 // editorManager.js
 // This module is responsible for managing the TinyMCE editor instance,
 // its state (open/closed), and interactions related to editing node content.
-console.log("editorManager.js loaded");
 
 window.MyProjectEditorManager = {
     /** @type {tinymce.Editor|null} Holds the TinyMCE editor instance. */
@@ -883,7 +882,6 @@ window.MyProjectEditorManager = {
      * @param {Object} node - The node object to be edited.
      */
     openEditorMode: function(node) {
-        console.log('[editor] openEditorMode', node && node.id);
         if (!this.uiManager) {
             console.error("EditorManager not fully initialized (missing uiManager) for openEditorMode");
             return;

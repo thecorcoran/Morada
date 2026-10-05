@@ -1,7 +1,6 @@
 if (typeof window === 'undefined') {
     global.window = global;
 }
-console.log("stateManager.js loaded");
 
 window.MyProjectStateManager = {
     _state: {

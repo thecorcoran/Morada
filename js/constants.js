@@ -177,7 +177,6 @@ window.AppConstants = {
     /** @const {string} EXCERPT_COLOR - Muted scholarly ink color for card excerpts. */
     EXCERPT_COLOR: '#504945',
 };
-console.log("constants.js JSDoc comments added.");
 
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = window.AppConstants;

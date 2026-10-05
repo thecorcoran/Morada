@@ -4,7 +4,6 @@ if (typeof window === 'undefined') {
 }
 // This module handles all drawing operations for the Scholar's Desk canvas.
 // Implements Tufte-style minimalist typography, desk grid guides, and tag trellis lines.
-console.log("canvasRenderer.js loaded (Scholar's Desk edition)");
 
 window.MyProjectCanvasRenderer = {
   /** @type {HTMLCanvasElement|null} The main canvas element. */

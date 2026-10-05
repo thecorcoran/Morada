@@ -1,7 +1,6 @@
 if (typeof window === 'undefined') {
   global.window = global;
 }
-console.log("nodeManager.js loaded");
 
 window.MyProjectNodeManager = {
   // --- Injected Dependencies (set via init) ---

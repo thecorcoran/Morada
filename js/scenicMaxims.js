@@ -1,7 +1,6 @@
 if (typeof window === 'undefined') {
   global.window = global;
 }
-console.log("scenicMaxims.js loaded");
 
 /**
  * The 55 Maxims of the Scenic Method

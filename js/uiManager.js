@@ -4,7 +4,6 @@
 if (typeof window === 'undefined') {
     global.window = global;
 }
-console.log("uiManager.js loaded");
 
 window.MyProjectUIManager = {
     // --- DOM ELEMENT GETTERS (to be initialized in init) ---

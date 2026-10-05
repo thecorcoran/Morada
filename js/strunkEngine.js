@@ -5,7 +5,6 @@
 if (typeof window === 'undefined') {
     global.window = global;
 }
-console.log("strunkEngine.js loaded");
 
 window.MyProjectStrunkEngine = {
     irregularParticiples: new Set([

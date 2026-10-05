@@ -21,4 +21,3 @@ contextBridge.exposeInMainWorld('electronAPI', {
   }
 });
 
-console.log("preload.js executed and API exposed.");

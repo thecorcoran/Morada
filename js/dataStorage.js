@@ -5,7 +5,6 @@
 if (typeof window === 'undefined') {
   global.window = global;
 }
-console.log("dataStorage.js loaded");
 
 window.MyProjectDataStorage = {
   /** @type {string} Stores the active data path after it's set by loadNodes. */
@@ -361,7 +360,6 @@ window.MyProjectDataStorage = {
     return true;
   }
 };
-console.log("dataStorage.js has been refactored to use secure IPC for file access and includes a backup system.");
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = window.MyProjectDataStorage;
