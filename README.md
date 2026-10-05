@@ -1,16 +1,16 @@
 # Morada 📜🖋️
 ### *The Scholar's Desk for Deep Creative Writing*
 
-[![Release](https://img.shields.io/badge/Release-v1.0.0--beta.1-d4a373.svg)](https://github.com/thecorcoran/Morada/releases)
+[![Release](https://img.shields.io/github/v/release/thecorcoran/Morada?include_prereleases&color=d4a373)](https://github.com/thecorcoran/Morada/releases)
 [![License: ISC](https://img.shields.io/badge/License-ISC-8b5a2b.svg)](https://opensource.org/licenses/ISC)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-4a2810.svg)](https://thecorcoran.github.io/Morada/)
-[![Tests](https://img.shields.io/badge/Tests-102%20Passed-27c93f.svg)](https://github.com/thecorcoran/Morada)
+[![CI](https://github.com/thecorcoran/Morada/actions/workflows/ci.yml/badge.svg)](https://github.com/thecorcoran/Morada/actions/workflows/ci.yml)
 
 **Morada** is a visual, fractal writing environment engineered specifically for long-form literary prose, scene architecture, and stylistic rigor. Inspired by the tactile atmosphere of a scholar's mahogany desk, Morada replaces endless flat document lists with a two-dimensional graph of leather-bound **Portfolios** (containers/chapters) and vellum **Sheets** (scenes/notes).
 
 ---
 
-## 🌟 Core Features (v1.0-Beta)
+## 🌟 Core Features
 
 ### 1. 🗂️ Fractal Portfolios & Sheets
 - **Two-Tier Visual Graph**: Seamlessly nest scenes inside chapters and acts.
@@ -55,10 +55,10 @@ Visit the official portal at **[https://thecorcoran.github.io/Morada/](https://t
 
 | Operating System | Package | Installation Notes |
 | :--- | :--- | :--- |
-| **Windows** | `Morada-Setup-1.0.0-beta.1.exe` | Standard setup wizard for Windows 10/11 |
-| **macOS** | `Morada-1.0.0-beta.1.dmg` | Drag `Morada` to `Applications` (Apple Silicon & Intel) |
-| **Linux (AppImage)** | `Morada-1.0.0-beta.1.AppImage` | `chmod +x Morada-*.AppImage && ./Morada-*.AppImage` |
-| **Linux (Debian/Ubuntu)**| `morada_1.0.0-beta.1_amd64.deb` | `sudo dpkg -i morada_*.deb` |
+| **Windows** | `Morada-Setup-<version>.exe` | Standard setup wizard for Windows 10/11 |
+| **macOS** | `Morada-<version>.dmg` | Drag `Morada` to `Applications` (Apple Silicon & Intel) |
+| **Linux (AppImage)** | `Morada-<version>.AppImage` | `chmod +x Morada-*.AppImage && ./Morada-*.AppImage` |
+| **Linux (Debian/Ubuntu)**| `morada_<version>_amd64.deb` | `sudo dpkg -i morada_*.deb` |
 
 ---
 
@@ -114,4 +114,4 @@ npm run dist:linux    # Linux AppImage & Debian package
 ## 📜 License & Privacy
 
 - **License**: Open source under the [ISC License](LICENSE).
-- **100% Local-First**: No mandatory user accounts, no cloud lock-in, and zero telemetry. All writing remains strictly on your local machine in plain, open JSON.
+- **100% Local-First**: No mandatory accounts, no cloud lock-in, and zero telemetry. All your writing, portfolios, and notes remain strictly on your local machine in open JSON format (word definitions and etymologies use optional lookups to Wiktionary).

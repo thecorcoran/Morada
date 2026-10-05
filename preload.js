@@ -5,6 +5,8 @@
 
 const { contextBridge, ipcRenderer } = require('electron');
 
+const docxExporter = require('./js/docxExporter.js');
+
 // Expose a controlled API to the renderer process (window object).
 // We are using IPC to invoke functions on the main process, which is the most
 // secure way to handle file system access.
@@ -12,6 +14,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // These functions now use ipcRenderer.invoke to call async handlers in the main process.
   // They return Promises, making the file operations non-blocking.
   getDataPaths: () => ipcRenderer.invoke('get-data-paths'),
+  exportDocx: (nodes, options) => docxExporter.generateBase64(nodes, options),
   fs: {
     exists: (path) => ipcRenderer.invoke('fs-exists', path),
     copyFile: (src, dest) => ipcRenderer.invoke('fs-copy-file', src, dest),

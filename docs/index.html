@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Morada — A Fractal Writing Environment (v1.0-Beta)</title>
+    <title>Morada — A Fractal Writing Environment</title>
     <meta name="description" content="A visual, node-based desktop workspace for deep creative writing, scenic construction, and manuscript compilation.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -563,7 +563,7 @@
         <a href="#" class="logo-group">
             <div class="logo-symbol">M</div>
             <div class="logo-text">MORADA</div>
-            <span class="logo-badge">v1.0-Beta</span>
+            <span class="logo-badge" data-release="tag">Beta</span>
         </a>
         <nav>
             <a href="#features">Features</a>
@@ -577,7 +577,7 @@
         <section class="hero">
             <span class="hero-badge">
                 <span class="pulse-dot"></span>
-                Public Beta Release • v1.0.0-beta.1
+                Public Beta • <span data-release="tag">Latest Release</span>
             </span>
             <h1>The Scholar's Desk for <em>Deep Creative Writing</em></h1>
             <p>
@@ -587,24 +587,24 @@
             <div class="cta-container">
                 <a id="primary-download-btn" href="https://github.com/thecorcoran/Morada/releases/latest" class="btn-download-primary">
                     <svg viewBox="0 0 24 24" id="primary-os-icon"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
-                    <span id="primary-download-text">Download Morada v1.0-Beta</span>
+                    <span id="primary-download-text">Download Morada</span>
                 </a>
                 <div class="download-subtext">
-                    Free &amp; Open Source • 100% Local-First Privacy • 
+                    Free &amp; Open Source • 100% Local-First Writing (Zero Telemetry) • 
                     <a href="https://github.com/thecorcoran/Morada/releases" target="_blank" rel="noopener">All Releases &amp; Checksums</a>
                 </div>
 
                 <div class="platform-strip">
-                    <a id="link-win" href="https://github.com/thecorcoran/Morada/releases/latest/download/Morada-Setup-1.0.0-beta.1.exe" class="platform-link">
+                    <a id="link-win" data-asset="win" href="https://github.com/thecorcoran/Morada/releases/latest" class="platform-link">
                         🪟 Windows (.exe)
                     </a>
-                    <a id="link-mac" href="https://github.com/thecorcoran/Morada/releases/latest/download/Morada-1.0.0-beta.1.dmg" class="platform-link">
+                    <a id="link-mac" data-asset="mac" href="https://github.com/thecorcoran/Morada/releases/latest" class="platform-link">
                         🍎 macOS (.dmg)
                     </a>
-                    <a id="link-linux-appimage" href="https://github.com/thecorcoran/Morada/releases/latest/download/Morada-1.0.0-beta.1.AppImage" class="platform-link">
+                    <a id="link-linux-appimage" data-asset="appimage" href="https://github.com/thecorcoran/Morada/releases/latest" class="platform-link">
                         🐧 Linux (.AppImage)
                     </a>
-                    <a id="link-linux-deb" href="https://github.com/thecorcoran/Morada/releases/latest/download/morada_1.0.0-beta.1_amd64.deb" class="platform-link">
+                    <a id="link-linux-deb" data-asset="deb" href="https://github.com/thecorcoran/Morada/releases/latest" class="platform-link">
                         📦 Debian / Ubuntu (.deb)
                     </a>
                 </div>
@@ -733,7 +733,7 @@
             <div id="tab-win" class="tab-panel active">
                 <h4>Windows Installation (10 / 11)</h4>
                 <ol>
-                    <li>Download the installer: <strong>Morada-Setup-1.0.0-beta.1.exe</strong>.</li>
+                    <li>Download the installer: <strong data-file="win">Morada-Setup-&lt;version&gt;.exe</strong>.</li>
                     <li>Double-click the installer. If Windows SmartScreen appears on unverified binaries, click <em>More info</em> and then <em>Run anyway</em>.</li>
                     <li>Follow the setup wizard to create desktop and start menu shortcuts.</li>
                 </ol>
@@ -742,7 +742,7 @@
             <div id="tab-mac" class="tab-panel">
                 <h4>macOS Installation (Apple Silicon &amp; Intel)</h4>
                 <ol>
-                    <li>Download the disk image: <strong>Morada-1.0.0-beta.1.dmg</strong>.</li>
+                    <li>Download the disk image: <strong data-file="mac">Morada-&lt;version&gt;.dmg</strong>.</li>
                     <li>Open the downloaded DMG file and drag <strong>Morada</strong> into your <strong>Applications</strong> folder.</li>
                     <li>If macOS Gatekeeper asks for verification on first open, right-click (or Control-click) Morada in Applications and choose <em>Open</em>.</li>
                 </ol>
@@ -752,12 +752,12 @@
                 <h4>Linux Installation</h4>
                 <ol>
                     <li><strong>AppImage (Any Distro):</strong>
-                        Download <code>Morada-1.0.0-beta.1.AppImage</code>, grant execute permission, and launch:
-                        <code class="code-snippet">chmod +x Morada-1.0.0-beta.1.AppImage && ./Morada-1.0.0-beta.1.AppImage</code>
+                        Download <code data-file="appimage">Morada-&lt;version&gt;.AppImage</code>, grant execute permission, and launch:
+                        <code class="code-snippet">chmod +x Morada-*.AppImage &amp;&amp; ./Morada-*.AppImage</code>
                     </li>
                     <li><strong>Debian / Ubuntu:</strong>
-                        Download <code>morada_1.0.0-beta.1_amd64.deb</code> and install via terminal:
-                        <code class="code-snippet">sudo dpkg -i morada_1.0.0-beta.1_amd64.deb</code>
+                        Download <code data-file="deb">morada_&lt;version&gt;_amd64.deb</code> and install via terminal:
+                        <code class="code-snippet">sudo dpkg -i morada_*_amd64.deb</code>
                     </li>
                 </ol>
             </div>
@@ -765,38 +765,65 @@
     </main>
 
     <footer>
-        <p>Morada Writing Environment • Version 1.0-Beta • Open Source under ISC License</p>
+        <p>Morada Writing Environment • <span data-release="tag">Beta</span> • Open Source under ISC License</p>
         <p style="margin-top: 6px;">Hosted on <a href="https://github.com/thecorcoran/Morada" target="_blank" rel="noopener">GitHub Pages</a> • Built with Electron &amp; Web Technologies</p>
     </footer>
 
     <script>
-        // Automatic OS Detection for Smart Download Button
+        // Smart download links. The version and file names come from the latest
+        // GitHub Release at page load, so nothing here needs editing per release.
+        // If the API is unreachable, links fall back to the Releases page.
         (function() {
+            var REPO = 'thecorcoran/Morada';
             var ua = navigator.userAgent || '';
             var platform = navigator.platform || '';
             var primaryBtn = document.getElementById('primary-download-btn');
             var primaryText = document.getElementById('primary-download-text');
-            var primaryIcon = document.getElementById('primary-os-icon');
 
-            var releaseBase = 'https://github.com/thecorcoran/Morada/releases/latest/download/';
-            var ver = '1.0.0-beta.1';
+            var ASSETS = {
+                win:      { re: /Setup.*\.exe$/i, label: 'Windows (.exe)', link: 'link-win', tab: 'win' },
+                mac:      { re: /\.dmg$/i,        label: 'Mac (.dmg)',     link: 'link-mac', tab: 'mac' },
+                appimage: { re: /\.AppImage$/i,   label: 'Linux (.AppImage)', link: 'link-linux-appimage', tab: 'linux' },
+                deb:      { re: /\.deb$/i,        label: 'Debian / Ubuntu (.deb)', link: 'link-linux-deb', tab: 'linux' }
+            };
 
-            if (/Win/i.test(platform) || /Windows/i.test(ua)) {
-                primaryBtn.href = releaseBase + 'Morada-Setup-' + ver + '.exe';
-                primaryText.textContent = 'Download Morada for Windows (.exe)';
-                highlightPlatform('link-win');
-                switchTab('win');
-            } else if (/Mac/i.test(platform) || /Macintosh/i.test(ua)) {
-                primaryBtn.href = releaseBase + 'Morada-' + ver + '.dmg';
-                primaryText.textContent = 'Download Morada for Mac (.dmg)';
-                highlightPlatform('link-mac');
-                switchTab('mac');
-            } else if (/Linux/i.test(platform) || /X11/i.test(ua)) {
-                primaryBtn.href = releaseBase + 'Morada-' + ver + '.AppImage';
-                primaryText.textContent = 'Download Morada for Linux (.AppImage)';
-                highlightPlatform('link-linux-appimage');
-                switchTab('linux');
+            var preferred = null;
+            if (/Win/i.test(platform) || /Windows/i.test(ua)) preferred = 'win';
+            else if (/Mac/i.test(platform) || /Macintosh/i.test(ua)) preferred = 'mac';
+            else if (/Linux/i.test(platform) || /X11/i.test(ua)) preferred = 'appimage';
+
+            if (preferred) {
+                primaryText.textContent = 'Download Morada for ' + ASSETS[preferred].label;
+                highlightPlatform(ASSETS[preferred].link);
+                switchTab(ASSETS[preferred].tab);
             }
+
+            function applyRelease(release) {
+                if (!release) return;
+                document.querySelectorAll('[data-release="tag"]').forEach(function(el) {
+                    el.textContent = release.tag_name;
+                });
+                Object.keys(ASSETS).forEach(function(key) {
+                    var asset = (release.assets || []).find(function(a) { return ASSETS[key].re.test(a.name); });
+                    if (!asset) return;
+                    var link = document.getElementById(ASSETS[key].link);
+                    if (link) link.href = asset.browser_download_url;
+                    document.querySelectorAll('[data-file="' + key + '"]').forEach(function(el) {
+                        el.textContent = asset.name;
+                    });
+                    if (key === preferred) primaryBtn.href = asset.browser_download_url;
+                });
+            }
+
+            fetch('https://api.github.com/repos/' + REPO + '/releases/latest')
+                .then(function(r) {
+                    if (r.ok) return r.json();
+                    return fetch('https://api.github.com/repos/' + REPO + '/releases')
+                        .then(function(res) { return res.json(); })
+                        .then(function(list) { return list && list[0]; });
+                })
+                .then(applyRelease)
+                .catch(function() { /* keep Releases-page fallbacks */ });
 
             function highlightPlatform(id) {
                 var el = document.getElementById(id);

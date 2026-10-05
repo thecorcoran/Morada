@@ -2,11 +2,19 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>Morada — v1.0-Beta</title>
+    <title>Morada</title>
     <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400&family=Cinzel:wght@500;700&family=Vollkorn:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="node_modules/@fontsource/cinzel/500.css">
+    <link rel="stylesheet" href="node_modules/@fontsource/cinzel/700.css">
+    <link rel="stylesheet" href="node_modules/@fontsource/cormorant-garamond/400.css">
+    <link rel="stylesheet" href="node_modules/@fontsource/cormorant-garamond/400-italic.css">
+    <link rel="stylesheet" href="node_modules/@fontsource/cormorant-garamond/500.css">
+    <link rel="stylesheet" href="node_modules/@fontsource/cormorant-garamond/600.css">
+    <link rel="stylesheet" href="node_modules/@fontsource/cormorant-garamond/700.css">
+    <link rel="stylesheet" href="node_modules/@fontsource/vollkorn/400.css">
+    <link rel="stylesheet" href="node_modules/@fontsource/vollkorn/400-italic.css">
+    <link rel="stylesheet" href="node_modules/@fontsource/vollkorn/600.css">
+    <link rel="stylesheet" href="node_modules/@fontsource/vollkorn/700.css">
     <link rel="stylesheet" href="styles.css">
     <script src="node_modules/tinymce/tinymce.min.js"></script>
     <script src="node_modules/sortablejs/Sortable.min.js"></script>
@@ -25,7 +33,7 @@
           <div class="masthead-left">
             <div class="masthead-brand-group" id="masthead-home-trigger" title="Morada — Return to The Desk">
               <div class="logo-symbol masthead-logo-symbol" title="Morada">M</div>
-              <span class="masthead-brand" title="Morada v1.0-Beta · The Scholar's Desk">MORADA</span>
+              <span class="masthead-brand" title="Morada · The Scholar's Desk">MORADA</span>
               <span class="masthead-version-badge" title="Public Beta Edition">BETA</span>
             </div>
             <span class="masthead-divider">/</span>
@@ -340,7 +348,8 @@
           <label for="include-comments-checkbox"><input type="checkbox" id="include-comments-checkbox" checked> Footnotes / Notes</label>
           <label for="include-certified-words-checkbox"><input type="checkbox" id="include-certified-words-checkbox" checked> Certified Lexicon</label>
           <select id="compendium-format-select" class="compendium-select" title="Export Format">
-            <option value="docx">Word Document (.doc)</option>
+            <option value="docx">Word Document (.docx)</option>
+            <option value="doc">Legacy Word (.doc)</option>
             <option value="markdown">Markdown (.md)</option>
             <option value="txt">Plain Text (.txt)</option>
             <option value="html">HTML Document (.html)</option>
@@ -408,6 +417,7 @@
     <script src="js/strunkEngine.js"></script>
     <script src="js/scenicMaxims.js"></script>
     <script src="js/warmUpPassages.js"></script>
+    <script src="js/docxExporter.js"></script>
     <script src="js/editorManager.js"></script>
     <script src="js/uiManager.js"></script>
 

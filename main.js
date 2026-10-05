@@ -38,11 +38,11 @@ const createWindow = () => {
         ...details.responseHeaders,
         'Content-Security-Policy': [
           "default-src 'self';",
-          "script-src 'self' https://cdn.tiny.cloud https://cdn.jsdelivr.net;",
-          "style-src 'self' 'unsafe-inline' https://cdn.tiny.cloud https://fonts.googleapis.com;",
-          "font-src 'self' data: https://cdn.tiny.cloud https://fonts.gstatic.com;",
-          "img-src 'self' data: blob: https://sp.tinymce.com;",
-          "connect-src 'self' https://cdn.tiny.cloud https://en.wiktionary.org;"
+          "script-src 'self' 'unsafe-inline';",
+          "style-src 'self' 'unsafe-inline';",
+          "font-src 'self' data:;",
+          "img-src 'self' data: blob:;",
+          "connect-src 'self' https://en.wiktionary.org;"
         ].join(' ')
       }
     });

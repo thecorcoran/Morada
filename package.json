@@ -32,6 +32,10 @@
     "jest": "^29.7.0"
   },
   "dependencies": {
+    "@fontsource/cinzel": "^5.3.0",
+    "@fontsource/cormorant-garamond": "^5.3.0",
+    "@fontsource/vollkorn": "^5.3.0",
+    "docx": "^9.8.1",
     "sortablejs": "^1.15.6",
     "tinymce": "^7.1.2"
   },

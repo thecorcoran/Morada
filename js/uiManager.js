@@ -3397,9 +3397,59 @@ ${bodyContent}
         return output;
     },
 
-    compileAndDownload: function() {
+    compileAndDownload: async function() {
         const formatSelect = this.compendiumFormatSelect || (typeof document !== 'undefined' ? document.getElementById('compendium-format-select') : null);
         const format = formatSelect ? formatSelect.value : 'markdown';
+
+        if (format === 'docx') {
+            const currentManuscriptList = (window.MyProjectDataStorage && typeof window.MyProjectDataStorage.getManuscriptList === 'function') ? window.MyProjectDataStorage.getManuscriptList() : [];
+            const includeComments = this.includeCommentsCheckbox ? this.includeCommentsCheckbox.checked : (typeof document !== 'undefined' && document.getElementById('include-comments-checkbox')?.checked || false);
+            const includeCertifiedWords = this.includeCertifiedWordsCheckbox ? this.includeCertifiedWordsCheckbox.checked : (typeof document !== 'undefined' && document.getElementById('include-certified-words-checkbox')?.checked || false);
+            const includeCover = this.includeCoverCheckbox ? this.includeCoverCheckbox.checked : (typeof document !== 'undefined' && document.getElementById('include-cover-checkbox')?.checked || false);
+            const includeToc = this.includeTocCheckbox ? this.includeTocCheckbox.checked : (typeof document !== 'undefined' && document.getElementById('include-toc-checkbox')?.checked || false);
+            let totalWordCount = 0;
+            currentManuscriptList.forEach(n => {
+                if (n.content) totalWordCount += this.getWordCount(n.content);
+            });
+            const compileOptions = {
+                title: 'Manuscript',
+                includeComments,
+                includeCertifiedWords,
+                includeCover,
+                includeToc,
+                totalWordCount,
+                masterGlossary: new Map()
+            };
+
+            try {
+                let base64 = null;
+                if (typeof window !== 'undefined' && window.electronAPI && typeof window.electronAPI.exportDocx === 'function') {
+                    base64 = await window.electronAPI.exportDocx(currentManuscriptList, compileOptions);
+                } else if (typeof window !== 'undefined' && window.DocxExporter && window.DocxExporter.isAvailable()) {
+                    base64 = await window.DocxExporter.generateBase64(currentManuscriptList, compileOptions);
+                }
+
+                if (base64) {
+                    const byteChars = atob(base64);
+                    const byteNumbers = new Array(byteChars.length);
+                    for (let i = 0; i < byteChars.length; i++) {
+                        byteNumbers[i] = byteChars.charCodeAt(i);
+                    }
+                    const byteArray = new Uint8Array(byteNumbers);
+                    const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'Morada_Export.docx';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    return;
+                }
+            } catch (err) {
+                console.warn('Real docx export failed, falling back to Word XML:', err);
+            }
+        }
+
         const output = this.compileManuscript(format);
 
         const mimeMap = {
