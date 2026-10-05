@@ -1,6 +1,6 @@
 {
   "name": "morada-project",
-  "version": "1.0.0",
+  "version": "1.0.0-beta.1",
   "description": "A fractal writing environment.",
   "main": "main.js",
   "scripts": {

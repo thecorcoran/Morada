@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Morada — A Fractal Writing Environment</title>
+    <title>Morada — A Fractal Writing Environment (v1.0-Beta)</title>
     <meta name="description" content="A visual, node-based desktop workspace for deep creative writing, scenic construction, and manuscript compilation.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&family=Cinzel:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&family=Cinzel:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-deep: #12100e;
@@ -18,12 +18,14 @@
             --accent-gold: #e5b27a;
             --accent-leather: #8b5a2b;
             --accent-crimson: #c94c36;
+            --accent-teal: #076678;
             --text-primary: #fdfaf4;
             --text-secondary: #c2b7ad;
             --text-muted: #8c8278;
             --font-title: 'Cinzel', serif;
             --font-serif: 'Cormorant Garamond', Georgia, serif;
             --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
         }
 
         * {
@@ -86,6 +88,18 @@
             color: var(--text-primary);
         }
 
+        .logo-badge {
+            font-family: var(--font-sans);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: var(--accent-gold);
+            border: 1px solid rgba(212, 163, 115, 0.4);
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
         nav a {
             color: var(--text-secondary);
             text-decoration: none;
@@ -99,18 +113,20 @@
         }
 
         .hero {
-            max-width: 960px;
-            margin: 80px auto 60px;
+            max-width: 980px;
+            margin: 70px auto 50px;
             text-align: center;
             padding: 0 24px;
         }
 
         .hero-badge {
-            display: inline-block;
-            padding: 6px 16px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 18px;
             border-radius: 20px;
-            background: rgba(212, 163, 115, 0.1);
-            border: 1px solid rgba(212, 163, 115, 0.3);
+            background: rgba(212, 163, 115, 0.12);
+            border: 1px solid rgba(212, 163, 115, 0.35);
             color: var(--accent-gold);
             font-size: 12px;
             font-weight: 600;
@@ -119,9 +135,24 @@
             margin-bottom: 24px;
         }
 
+        .hero-badge .pulse-dot {
+            width: 7px;
+            height: 7px;
+            background-color: var(--accent-gold);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--accent-gold);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.4; }
+            50% { opacity: 1; }
+            100% { opacity: 0.4; }
+        }
+
         .hero h1 {
             font-family: var(--font-serif);
-            font-size: clamp(40px, 6vw, 68px);
+            font-size: clamp(38px, 6vw, 66px);
             font-weight: 600;
             line-height: 1.15;
             color: #ffffff;
@@ -137,9 +168,10 @@
         .hero p {
             font-size: clamp(17px, 2vw, 20px);
             color: var(--text-secondary);
-            max-width: 720px;
+            max-width: 780px;
             margin: 0 auto 40px;
             font-weight: 300;
+            line-height: 1.65;
         }
 
         .cta-container {
@@ -196,7 +228,7 @@
         .platform-strip {
             display: flex;
             justify-content: center;
-            gap: 18px;
+            gap: 14px;
             flex-wrap: wrap;
             margin-top: 8px;
         }
@@ -208,7 +240,7 @@
             color: var(--text-secondary);
             font-size: 13px;
             text-decoration: none;
-            padding: 6px 12px;
+            padding: 6px 14px;
             border-radius: 6px;
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.08);
@@ -218,11 +250,11 @@
         .platform-link:hover {
             border-color: var(--accent-gold);
             color: var(--accent-gold);
-            background: rgba(212, 163, 115, 0.05);
+            background: rgba(212, 163, 115, 0.06);
         }
 
         .preview-wrapper {
-            max-width: 1080px;
+            max-width: 1140px;
             margin: 0 auto 80px;
             padding: 0 24px;
         }
@@ -231,7 +263,7 @@
             background: var(--bg-card);
             border: 1px solid var(--border-card);
             border-radius: 12px;
-            padding: 20px;
+            padding: 22px;
             box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(212, 163, 115, 0.15);
             position: relative;
         }
@@ -265,12 +297,12 @@
 
         .mockup-canvas-grid {
             display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 20px;
-            min-height: 380px;
+            grid-template-columns: 1.1fr 1.1fr 1fr;
+            gap: 18px;
+            min-height: 340px;
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
             .mockup-canvas-grid {
                 grid-template-columns: 1fr;
             }
@@ -294,7 +326,7 @@
 
         .mockup-portfolio .node-title {
             font-family: var(--font-title);
-            font-size: 16px;
+            font-size: 15px;
             color: var(--accent-gold);
             display: flex;
             align-items: center;
@@ -313,6 +345,21 @@
             color: #ffffff;
         }
 
+        .mockup-warmup {
+            border-color: #b57614;
+            background: linear-gradient(180deg, #221c14, #17130f);
+            border-left: 6px solid #b57614;
+        }
+
+        .mockup-warmup .node-title {
+            font-family: var(--font-title);
+            font-size: 15px;
+            color: #fabd2f;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
         .node-prose {
             font-family: var(--font-serif);
             font-size: 14.5px;
@@ -327,6 +374,8 @@
             justify-content: space-between;
             font-size: 11px;
             color: var(--text-muted);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 8px;
         }
 
         .features-section {
@@ -350,7 +399,7 @@
         .section-header p {
             color: var(--text-secondary);
             font-size: 16px;
-            max-width: 600px;
+            max-width: 640px;
             margin: 0 auto;
         }
 
@@ -364,7 +413,7 @@
             background: var(--bg-card);
             border: 1px solid var(--border-card);
             border-radius: 10px;
-            padding: 32px 28px;
+            padding: 30px 26px;
             transition: transform 0.2s, border-color 0.2s;
         }
 
@@ -376,7 +425,7 @@
 
         .feature-icon {
             font-size: 28px;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
             display: inline-block;
         }
 
@@ -384,7 +433,7 @@
             font-family: var(--font-serif);
             font-size: 22px;
             color: #ffffff;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
 
         .feature-card p {
@@ -394,9 +443,9 @@
         }
 
         .quote-callout {
-            max-width: 840px;
+            max-width: 860px;
             margin: 0 auto 100px;
-            padding: 40px;
+            padding: 44px 36px;
             background: radial-gradient(circle at center, rgba(139, 90, 43, 0.15) 0%, rgba(20, 16, 14, 0.6) 100%);
             border: 1px solid rgba(212, 163, 115, 0.3);
             border-radius: 12px;
@@ -422,7 +471,7 @@
         }
 
         .install-guide {
-            max-width: 860px;
+            max-width: 880px;
             margin: 0 auto 100px;
             padding: 0 24px;
         }
@@ -468,7 +517,7 @@
         .tab-panel h4 {
             font-size: 16px;
             color: #ffffff;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
 
         .tab-panel ol {
@@ -483,7 +532,7 @@
             border: 1px solid #2d2621;
             padding: 8px 14px;
             border-radius: 6px;
-            font-family: monospace;
+            font-family: var(--font-mono);
             font-size: 13px;
             color: #e5b27a;
             margin: 8px 0;
@@ -514,26 +563,31 @@
         <a href="#" class="logo-group">
             <div class="logo-symbol">M</div>
             <div class="logo-text">MORADA</div>
+            <span class="logo-badge">v1.0-Beta</span>
         </a>
         <nav>
             <a href="#features">Features</a>
             <a href="#install">Installation</a>
+            <a href="https://github.com/thecorcoran/Morada/releases" target="_blank" rel="noopener">Releases</a>
             <a href="https://github.com/thecorcoran/Morada" target="_blank" rel="noopener">GitHub</a>
         </nav>
     </header>
 
     <main>
         <section class="hero">
-            <span class="hero-badge">Desktop Application • Version 1.0</span>
+            <span class="hero-badge">
+                <span class="pulse-dot"></span>
+                Public Beta Release • v1.0.0-beta.1
+            </span>
             <h1>The Scholar's Desk for <em>Deep Creative Writing</em></h1>
             <p>
-                A visual, node-based workspace where prose breathes. Organize chapters into leather-bound Portfolios, draft scenes on vellum Sheets, and refine your craft with 55 Scenic Method maxims and real-time stylistic analysis.
+                A visual, fractal workspace for serious prose stylists. Organize chapters into leather-bound Portfolios, draft scenes on vellum Sheets, tune your ear with 5-minute master copywork, and hone your craft with the 55 Scenic Method maxims.
             </p>
 
             <div class="cta-container">
                 <a id="primary-download-btn" href="https://github.com/thecorcoran/Morada/releases/latest" class="btn-download-primary">
                     <svg viewBox="0 0 24 24" id="primary-os-icon"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
-                    <span id="primary-download-text">Download Morada for Desktop</span>
+                    <span id="primary-download-text">Download Morada v1.0-Beta</span>
                 </a>
                 <div class="download-subtext">
                     Free &amp; Open Source • 100% Local-First Privacy • 
@@ -541,16 +595,16 @@
                 </div>
 
                 <div class="platform-strip">
-                    <a id="link-win" href="https://github.com/thecorcoran/Morada/releases/latest/download/Morada-Setup-1.0.0.exe" class="platform-link">
+                    <a id="link-win" href="https://github.com/thecorcoran/Morada/releases/latest/download/Morada-Setup-1.0.0-beta.1.exe" class="platform-link">
                         🪟 Windows (.exe)
                     </a>
-                    <a id="link-mac" href="https://github.com/thecorcoran/Morada/releases/latest/download/Morada-1.0.0.dmg" class="platform-link">
+                    <a id="link-mac" href="https://github.com/thecorcoran/Morada/releases/latest/download/Morada-1.0.0-beta.1.dmg" class="platform-link">
                         🍎 macOS (.dmg)
                     </a>
-                    <a id="link-linux-appimage" href="https://github.com/thecorcoran/Morada/releases/latest/download/Morada-1.0.0.AppImage" class="platform-link">
+                    <a id="link-linux-appimage" href="https://github.com/thecorcoran/Morada/releases/latest/download/Morada-1.0.0-beta.1.AppImage" class="platform-link">
                         🐧 Linux (.AppImage)
                     </a>
-                    <a id="link-linux-deb" href="https://github.com/thecorcoran/Morada/releases/latest/download/morada_1.0.0_amd64.deb" class="platform-link">
+                    <a id="link-linux-deb" href="https://github.com/thecorcoran/Morada/releases/latest/download/morada_1.0.0-beta.1_amd64.deb" class="platform-link">
                         📦 Debian / Ubuntu (.deb)
                     </a>
                 </div>
@@ -563,17 +617,17 @@
                     <span class="mockup-dot red"></span>
                     <span class="mockup-dot yellow"></span>
                     <span class="mockup-dot green"></span>
-                    <span class="mockup-title">Morada — The Scholar's Desk</span>
+                    <span class="mockup-title">Morada — The Scholar's Desk (Beta)</span>
                 </div>
                 <div class="mockup-canvas-grid">
                     <div class="mockup-node mockup-portfolio">
                         <div class="node-title">📁 Act I: The Sycamore Crossing</div>
                         <div class="node-prose">
-                            A portfolio containing 4 vellum sheets. Double-click to dive inside the chapter chamber.
+                            Chapter chamber containing 4 vellum sheets. Double-click title to rename in place; double-click body to enter child graph.
                         </div>
                         <div class="node-meta">
                             <span>4 Sheets • 3,420 Words</span>
-                            <span>Applied: Maxims #1, #2, #5</span>
+                            <span>Maxims: #1, #2, #5</span>
                         </div>
                     </div>
                     <div class="mockup-node mockup-sheet">
@@ -586,6 +640,16 @@
                             <span>0 Passive • 0 Adverbs</span>
                         </div>
                     </div>
+                    <div class="mockup-node mockup-warmup">
+                        <div class="node-title">⚡ Warm Up: G.K. Chesterton</div>
+                        <div class="node-prose">
+                            “The suburb of Saffron Park lay on the sunset side of London, as red and ragged as a cloud of sunset...”
+                        </div>
+                        <div class="node-meta">
+                            <span>5-Minute Copywork</span>
+                            <span>The Man Who Was Thursday</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -593,44 +657,56 @@
         <section id="features" class="features-section">
             <div class="section-header">
                 <h2>Forged for the Literary Mind</h2>
-                <p>Designed around the rhythm of long-form writing and the tactile philosophy of the writer's desk.</p>
+                <p>Designed around the tactile rhythm of long-form writing, scenic architecture, and fail-safe local privacy.</p>
             </div>
 
             <div class="features-grid">
                 <div class="feature-card">
                     <span class="feature-icon">📜</span>
                     <h3>The 55 Maxims of Scenic Method</h3>
-                    <p>Access the timeless principles of Henry James, Caroline Gordon, and Flannery O'Connor directly in your writing drawer. Shuffle the maxim of the moment, track applied techniques, and insert guidance seamlessly.</p>
+                    <p>Access the timeless principles of Henry James, Caroline Gordon, and Flannery O'Connor right inside your writing drawer. Shuffle the Maxim of the Moment, check applied techniques, and ground every scene in physical geography.</p>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-icon">⚡</span>
+                    <h3>5-Minute Literary Warm-Up</h3>
+                    <p>Tune your ear and cadence before writing. A dedicated rotation of master copywork passages from G.K. Chesterton, Leo Tolstoy, Fyodor Dostoevsky, Cormac McCarthy, Willa Cather, Herman Melville, and Edith Wharton.</p>
                 </div>
 
                 <div class="feature-card">
                     <span class="feature-icon">✒️</span>
                     <h3>Strunk &amp; White Craft Engine</h3>
-                    <p>Live, non-destructive stylistic analysis. Spot passive voice and superfluous adverbs in real-time, inspect Flesch-Kincaid readability, and certify words with Walker Percy definitions.</p>
+                    <p>Live, non-destructive stylistic analysis. Spot passive voice and superfluous adverbs in real-time, inspect Flesch-Kincaid readability, and certify words with Walker Percy definitions and Wiktionary etymologies.</p>
                 </div>
 
                 <div class="feature-card">
                     <span class="feature-icon">🗂️</span>
                     <h3>Fractal Portfolios &amp; Sheets</h3>
-                    <p>A dual-tier visual graph. Portfolios group chapters and scenes into leather-bound containers, while vellum Sheets provide distraction-free writing with full-screen and Word export capabilities.</p>
+                    <p>A dual-tier visual graph. Portfolios group chapters and acts into leather-bound containers, while vellum Sheets provide distraction-free prose. Rename titles directly in-place with a single double-click.</p>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-icon">⛶</span>
+                    <h3>Full View Writing &amp; Focus Dimming</h3>
+                    <p>Toggle true full-screen Zen writing mode with <kbd>F11</kbd> or <kbd>Ctrl+Shift+F</kbd>. Ambient desk blur and focus dimming ensure that entering any portfolio keeps your eyes locked on the current scene.</p>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-icon">📄</span>
+                    <h3>Manuscript Press &amp; Word Export</h3>
+                    <p>Compile entire acts and chapters into unified manuscript drafts or export individual sheets directly to Microsoft Word (.docx / .doc) with proper literary margins, typography, and page formatting.</p>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-icon">📦</span>
+                    <h3>Velvet Archives Vault</h3>
+                    <p>Declutter your desk without permanently deleting your words. Archive completed drafts, fragments, and old acts into a secluded velvet vault, review them anytime, and restore them with a single click.</p>
                 </div>
 
                 <div class="feature-card">
                     <span class="feature-icon">🛡️</span>
                     <h3>7-Layer Fail-Safe Persistence</h3>
-                    <p>Continuous debounced auto-saves, atomic file writes (.tmp + rename), pre-save backup rotation, and emergency browser mirrors guarantee that you never lose a single sentence.</p>
-                </div>
-
-                <div class="feature-card">
-                    <span class="feature-icon">📦</span>
-                    <h3>Archives Vault</h3>
-                    <p>Declutter your desk without permanent deletion. Archive completed acts and notes into a secluded velvet vault, review them anytime, and restore them with a single click.</p>
-                </div>
-
-                <div class="feature-card">
-                    <span class="feature-icon">🔒</span>
-                    <h3>100% Local &amp; Private</h3>
-                    <p>No mandatory accounts, no cloud sync lock-in, and no telemetry. All your drafts remain exclusively on your computer in plain, human-readable JSON and standard documents.</p>
+                    <p>Continuous debounced auto-saves, atomic file writes (.tmp + rename), pre-save backup rotation (.bak), and emergency browser mirrors guarantee that you never lose a single sentence.</p>
                 </div>
             </div>
         </section>
@@ -655,10 +731,10 @@
             </div>
 
             <div id="tab-win" class="tab-panel active">
-                <h4>Windows Installation (10/11)</h4>
+                <h4>Windows Installation (10 / 11)</h4>
                 <ol>
-                    <li>Download the installer: <strong>Morada-Setup-1.0.0.exe</strong>.</li>
-                    <li>Double-click the installer. If Windows SmartScreen appears, click <em>More info</em> and then <em>Run anyway</em>.</li>
+                    <li>Download the installer: <strong>Morada-Setup-1.0.0-beta.1.exe</strong>.</li>
+                    <li>Double-click the installer. If Windows SmartScreen appears on unverified binaries, click <em>More info</em> and then <em>Run anyway</em>.</li>
                     <li>Follow the setup wizard to create desktop and start menu shortcuts.</li>
                 </ol>
             </div>
@@ -666,7 +742,7 @@
             <div id="tab-mac" class="tab-panel">
                 <h4>macOS Installation (Apple Silicon &amp; Intel)</h4>
                 <ol>
-                    <li>Download the disk image: <strong>Morada-1.0.0.dmg</strong>.</li>
+                    <li>Download the disk image: <strong>Morada-1.0.0-beta.1.dmg</strong>.</li>
                     <li>Open the downloaded DMG file and drag <strong>Morada</strong> into your <strong>Applications</strong> folder.</li>
                     <li>If macOS Gatekeeper asks for verification on first open, right-click (or Control-click) Morada in Applications and choose <em>Open</em>.</li>
                 </ol>
@@ -676,12 +752,12 @@
                 <h4>Linux Installation</h4>
                 <ol>
                     <li><strong>AppImage (Any Distro):</strong>
-                        Download <code>Morada-1.0.0.AppImage</code>, grant execute permission, and launch:
-                        <code class="code-snippet">chmod +x Morada-1.0.0.AppImage && ./Morada-1.0.0.AppImage</code>
+                        Download <code>Morada-1.0.0-beta.1.AppImage</code>, grant execute permission, and launch:
+                        <code class="code-snippet">chmod +x Morada-1.0.0-beta.1.AppImage && ./Morada-1.0.0-beta.1.AppImage</code>
                     </li>
                     <li><strong>Debian / Ubuntu:</strong>
-                        Download <code>morada_1.0.0_amd64.deb</code> and install via terminal:
-                        <code class="code-snippet">sudo dpkg -i morada_1.0.0_amd64.deb</code>
+                        Download <code>morada_1.0.0-beta.1_amd64.deb</code> and install via terminal:
+                        <code class="code-snippet">sudo dpkg -i morada_1.0.0-beta.1_amd64.deb</code>
                     </li>
                 </ol>
             </div>
@@ -689,8 +765,8 @@
     </main>
 
     <footer>
-        <p>Morada Writing Environment • Open Source under ISC License</p>
-        <p style="margin-top: 6px;">Hosted on <a href="https://github.com/thecorcoran/Morada" target="_blank" rel="noopener">GitHub</a> • Built with Electron &amp; Web Technologies</p>
+        <p>Morada Writing Environment • Version 1.0-Beta • Open Source under ISC License</p>
+        <p style="margin-top: 6px;">Hosted on <a href="https://github.com/thecorcoran/Morada" target="_blank" rel="noopener">GitHub Pages</a> • Built with Electron &amp; Web Technologies</p>
     </footer>
 
     <script>
@@ -703,19 +779,20 @@
             var primaryIcon = document.getElementById('primary-os-icon');
 
             var releaseBase = 'https://github.com/thecorcoran/Morada/releases/latest/download/';
+            var ver = '1.0.0-beta.1';
 
             if (/Win/i.test(platform) || /Windows/i.test(ua)) {
-                primaryBtn.href = releaseBase + 'Morada-Setup-1.0.0.exe';
+                primaryBtn.href = releaseBase + 'Morada-Setup-' + ver + '.exe';
                 primaryText.textContent = 'Download Morada for Windows (.exe)';
                 highlightPlatform('link-win');
                 switchTab('win');
             } else if (/Mac/i.test(platform) || /Macintosh/i.test(ua)) {
-                primaryBtn.href = releaseBase + 'Morada-1.0.0.dmg';
+                primaryBtn.href = releaseBase + 'Morada-' + ver + '.dmg';
                 primaryText.textContent = 'Download Morada for Mac (.dmg)';
                 highlightPlatform('link-mac');
                 switchTab('mac');
             } else if (/Linux/i.test(platform) || /X11/i.test(ua)) {
-                primaryBtn.href = releaseBase + 'Morada-1.0.0.AppImage';
+                primaryBtn.href = releaseBase + 'Morada-' + ver + '.AppImage';
                 primaryText.textContent = 'Download Morada for Linux (.AppImage)';
                 highlightPlatform('link-linux-appimage');
                 switchTab('linux');
