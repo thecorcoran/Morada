@@ -19,6 +19,15 @@ describe('MyProjectStateManager', () => {
         expect(state.scale).toBe(1);
         expect(state.offsetX).toBe(0);
         expect(state.offsetY).toBe(0);
+        expect(StateManager.getTheme()).toBe('parchment');
+    });
+
+    test('should manage theme switching and persistence', () => {
+        expect(StateManager.getTheme()).toBe('parchment');
+        StateManager.setTheme('midnight');
+        expect(StateManager.getTheme()).toBe('midnight');
+        StateManager.setTheme('parchment');
+        expect(StateManager.getTheme()).toBe('parchment');
     });
 
     test('should set and retrieve root nodes, resetting viewStack and currentNodes', () => {

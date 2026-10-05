@@ -12,6 +12,7 @@ window.MyProjectStateManager = {
         scale: 1,
         offsetX: 0,
         offsetY: 0,
+        theme: (typeof localStorage !== 'undefined' && localStorage.getItem('morada_theme')) ? localStorage.getItem('morada_theme') : 'parchment',
     },
 
     getState() {
@@ -39,6 +40,9 @@ window.MyProjectStateManager = {
     },
     getOffsetY() {
         return this._state.offsetY;
+    },
+    getTheme() {
+        return this._state.theme || 'parchment';
     },
 
     // --- Setters ---
@@ -71,6 +75,14 @@ window.MyProjectStateManager = {
     },
     setOffsetY(offset) {
         this._state.offsetY = offset;
+    },
+    setTheme(theme) {
+        this._state.theme = (theme === 'midnight') ? 'midnight' : 'parchment';
+        try {
+            if (typeof localStorage !== 'undefined') {
+                localStorage.setItem('morada_theme', this._state.theme);
+            }
+        } catch (e) {}
     },
 
     // --- Convenience functions ---

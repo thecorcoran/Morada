@@ -90,6 +90,10 @@ window.MyProjectUIManager = {
         this.archiveSearchInput = document.getElementById('archive-search-input');
         this.archiveList = document.getElementById('archive-list');
         this.archiveRestoreAllBtn = document.getElementById('archive-restore-all-btn');
+        this.themeToggleBtn = document.getElementById('theme-toggle-btn');
+        if (this.themeToggleBtn) {
+            this.themeToggleBtn.addEventListener('click', () => this.toggleTheme());
+        }
 
         this.canvas = config.canvas; // Store canvas
         this.stateManager = config.stateManager;
@@ -111,6 +115,7 @@ window.MyProjectUIManager = {
         // initial index build
         try { this._buildSearchIndex(); } catch (e) {}
 
+        this.applyTheme(this.stateManager ? this.stateManager.getTheme() : 'parchment');
         this.updateUIChrome();
 
         this.tagInput.addEventListener('keydown', (e) => {
@@ -437,6 +442,42 @@ window.MyProjectUIManager = {
         }
         // Utility: ensure modals close on Escape and trap focus when opened
         this._attachedModals = new WeakMap();
+    },
+
+    /**
+     * Applies the specified theme ('parchment' or 'midnight') to the UI, body class, and canvas.
+     * @param {string} themeName
+     */
+    applyTheme: function(themeName) {
+        const theme = (themeName === 'midnight') ? 'midnight' : 'parchment';
+        if (this.stateManager && typeof this.stateManager.setTheme === 'function') {
+            this.stateManager.setTheme(theme);
+        }
+        if (typeof document !== 'undefined' && document.body) {
+            document.body.classList.remove('theme-midnight', 'theme-parchment');
+            document.body.classList.add(`theme-${theme}`);
+        }
+        if (this.themeToggleBtn) {
+            if (theme === 'midnight') {
+                this.themeToggleBtn.textContent = '☀️ Day';
+                this.themeToggleBtn.title = 'Switch to Warm Parchment (Day Mode)';
+            } else {
+                this.themeToggleBtn.textContent = '🌙 Night';
+                this.themeToggleBtn.title = 'Switch to Midnight Scriptorium (Night Mode)';
+            }
+        }
+        if (this.drawFunction) {
+            this.drawFunction();
+        }
+    },
+
+    /**
+     * Toggles between Warm Parchment (Day) and Midnight Scriptorium (Night) themes.
+     */
+    toggleTheme: function() {
+        const current = (this.stateManager && typeof this.stateManager.getTheme === 'function') ? this.stateManager.getTheme() : 'parchment';
+        const next = (current === 'midnight') ? 'parchment' : 'midnight';
+        this.applyTheme(next);
     },
 
     /**
@@ -1399,11 +1440,12 @@ window.MyProjectUIManager = {
         editor.style.fontFamily = "'Vollkorn', Georgia, serif";
         editor.style.fontWeight = "bold";
         editor.style.textAlign = "left";
-        editor.style.color = "#1d2021";
-        editor.style.backgroundColor = "#ffffff";
-        editor.style.border = "2px solid #076678";
+        const isMidnight = (this.stateManager && typeof this.stateManager.getTheme === 'function' && this.stateManager.getTheme() === 'midnight');
+        editor.style.color = isMidnight ? "#fdfaf4" : "#1d2021";
+        editor.style.backgroundColor = isMidnight ? "#1c1815" : "#ffffff";
+        editor.style.border = isMidnight ? "2px solid #d4a373" : "2px solid #8b5a2b";
         editor.style.borderRadius = "4px";
-        editor.style.boxShadow = "0 2px 8px rgba(7, 102, 120, 0.25)";
+        editor.style.boxShadow = isMidnight ? "0 2px 8px rgba(212, 163, 115, 0.35)" : "0 2px 8px rgba(139, 90, 43, 0.25)";
         editor.style.padding = "2px 8px";
         editor.style.outline = "none";
         editor.style.boxSizing = "border-box";

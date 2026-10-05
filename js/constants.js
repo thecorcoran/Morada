@@ -25,12 +25,90 @@ window.AppConstants = {
     NODE_PORTFOLIO_COLOR: '#f4ece1',
     /** @const {string} NODE_SHEET_COLOR - Crisp manuscript sheet paper color. */
     NODE_SHEET_COLOR: '#ffffff',
-    /** @const {string} NODE_SELECTED_STROKE_COLOR - Scholarly focus stroke color. */
-    NODE_SELECTED_STROKE_COLOR: '#076678',
-    /** @const {string} NODE_HOVER_STROKE_COLOR - Subtle hover stroke color. */
-    NODE_HOVER_STROKE_COLOR: '#a89984',
+    /** @const {string} NODE_SELECTED_STROKE_COLOR - Scholarly focus stroke color (burnished gold). */
+    NODE_SELECTED_STROKE_COLOR: '#b57614',
+    /** @const {string} NODE_HOVER_STROKE_COLOR - Subtle hover stroke color (saddle leather). */
+    NODE_HOVER_STROKE_COLOR: '#8b5a2b',
     /** @const {string} DESK_GRID_DOT_COLOR - Desk surface alignment dot grid. */
     DESK_GRID_DOT_COLOR: 'rgba(189, 174, 147, 0.45)',
+
+    // --- Classical Dual-Theme Color Palettes ---
+    THEMES: {
+        parchment: {
+            name: 'parchment',
+            label: 'Warm Parchment (Day)',
+            canvasBg: '#fbf1c7',
+            gridDot: 'rgba(180, 150, 120, 0.4)',
+            portfolioBg: '#f5ece1',
+            sheetBg: '#ffffff',
+            portfolioSpine: '#8b5a2b',
+            portfolioTab: '#d4a373',
+            sheetSpine: '#8b5a2b',
+            selectedStroke: '#b57614',
+            hoverStroke: '#8b5a2b',
+            baseStroke: 'rgba(189, 174, 147, 0.45)',
+            selectedShadow: 'rgba(181, 118, 20, 0.35)',
+            hoverShadow: 'rgba(60, 56, 54, 0.18)',
+            defaultShadow: 'rgba(60, 56, 54, 0.08)',
+            titleColor: '#282421',
+            headerColor: '#7c6f64',
+            headerSelectedColor: '#8b5a2b',
+            excerptColor: '#504945',
+            childColor: '#3c3836',
+            dividerColor: 'rgba(189, 174, 147, 0.35)',
+            trellisStroke: 'rgba(139, 90, 43, 0.4)',
+            trellisLabel: 'rgba(139, 90, 43, 0.9)',
+            progressBg: 'rgba(189, 174, 147, 0.25)',
+            progressFill: '#8b5a2b',
+            progressSelected: '#b57614',
+            tagBg: 'rgba(213, 196, 161, 0.35)',
+            tagText: '#665c54',
+            editorBg: '#fdfaf4',
+            editorText: '#2c2520'
+        },
+        midnight: {
+            name: 'midnight',
+            label: 'Midnight Scriptorium (Night)',
+            canvasBg: '#12100e',
+            gridDot: 'rgba(212, 163, 115, 0.18)',
+            portfolioBg: '#181310',
+            sheetBg: '#201a16',
+            portfolioSpine: '#8b5a2b',
+            portfolioTab: '#d4a373',
+            sheetSpine: '#d4a373',
+            selectedStroke: '#e5b27a',
+            hoverStroke: '#d4a373',
+            baseStroke: 'rgba(74, 62, 54, 0.65)',
+            selectedShadow: 'rgba(212, 163, 115, 0.45)',
+            hoverShadow: 'rgba(0, 0, 0, 0.6)',
+            defaultShadow: 'rgba(0, 0, 0, 0.4)',
+            titleColor: '#fdfaf4',
+            headerColor: '#a89984',
+            headerSelectedColor: '#e5b27a',
+            excerptColor: '#d8cec4',
+            childColor: '#eae0d5',
+            dividerColor: 'rgba(212, 163, 115, 0.2)',
+            trellisStroke: 'rgba(212, 163, 115, 0.35)',
+            trellisLabel: 'rgba(229, 178, 122, 0.9)',
+            progressBg: 'rgba(74, 62, 54, 0.5)',
+            progressFill: '#d4a373',
+            progressSelected: '#e5b27a',
+            tagBg: 'rgba(212, 163, 115, 0.15)',
+            tagText: '#e5b27a',
+            editorBg: '#181412',
+            editorText: '#fdfaf4'
+        }
+    },
+
+    /**
+     * Retrieves the color tokens for the specified theme (or current active theme).
+     * @param {string} [themeName]
+     * @returns {Object}
+     */
+    getThemeTokens: function(themeName) {
+        const theme = themeName || (window.MyProjectStateManager && typeof window.MyProjectStateManager.getTheme === 'function' ? window.MyProjectStateManager.getTheme() : 'parchment');
+        return (this.THEMES && this.THEMES[theme]) ? this.THEMES[theme] : this.THEMES.parchment;
+    },
 
     // --- Canvas Settings ---
     /** @const {number} CANVAS_ZOOM_INTENSITY - Multiplier for zoom operations. */

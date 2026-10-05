@@ -26,6 +26,43 @@ window.MyProjectCanvasRenderer = {
     this.hoveredNode = node;
   },
 
+  /**
+   * Retrieves active theme color palette tokens.
+   * @returns {Object}
+   */
+  _getThemeTokens: function() {
+    if (typeof AppConstants !== 'undefined' && typeof AppConstants.getThemeTokens === 'function') {
+      return AppConstants.getThemeTokens();
+    }
+    return {
+      gridDot: 'rgba(180, 150, 120, 0.4)',
+      trellisStroke: 'rgba(139, 90, 43, 0.4)',
+      trellisLabel: 'rgba(139, 90, 43, 0.9)',
+      sheetBg: '#ffffff',
+      portfolioBg: '#f5ece1',
+      portfolioSpine: '#8b5a2b',
+      portfolioTab: '#d4a373',
+      sheetSpine: '#8b5a2b',
+      selectedStroke: '#b57614',
+      hoverStroke: '#8b5a2b',
+      baseStroke: 'rgba(189, 174, 147, 0.45)',
+      selectedShadow: 'rgba(181, 118, 20, 0.35)',
+      hoverShadow: 'rgba(60, 56, 54, 0.18)',
+      defaultShadow: 'rgba(60, 56, 54, 0.08)',
+      titleColor: '#282421',
+      headerColor: '#7c6f64',
+      headerSelectedColor: '#8b5a2b',
+      excerptColor: '#504945',
+      childColor: '#3c3836',
+      dividerColor: 'rgba(189, 174, 147, 0.35)',
+      progressBg: 'rgba(189, 174, 147, 0.25)',
+      progressFill: '#8b5a2b',
+      progressSelected: '#b57614',
+      tagBg: 'rgba(213, 196, 161, 0.35)',
+      tagText: '#665c54'
+    };
+  },
+
   /** @type {string|null} Active tag or search filter string for spatial canvas highlighting. */
   activeTagFilter: null,
 
@@ -166,8 +203,9 @@ window.MyProjectCanvasRenderer = {
     const firstGridX = Math.floor(startX / spacing) * spacing;
     const firstGridY = Math.floor(startY / spacing) * spacing;
 
+    const theme = this._getThemeTokens();
     this.ctx.save();
-    this.ctx.fillStyle = AppConstants.DESK_GRID_DOT_COLOR || 'rgba(189, 174, 147, 0.4)';
+    this.ctx.fillStyle = theme.gridDot || 'rgba(189, 174, 147, 0.4)';
     const dotRadius = Math.max(1, 1.2 / scale);
 
     for (let gx = firstGridX; gx <= endX; gx += spacing) {
@@ -192,6 +230,7 @@ window.MyProjectCanvasRenderer = {
 
     const sourceX = selectedNode.x + selectedNode.width / 2;
     const sourceY = selectedNode.y + selectedNode.height / 2;
+    const theme = this._getThemeTokens();
 
     this.ctx.save();
     currentNodes.forEach(target => {
@@ -204,7 +243,7 @@ window.MyProjectCanvasRenderer = {
 
       // Draw subtle curved connector line
       this.ctx.beginPath();
-      this.ctx.strokeStyle = 'rgba(7, 102, 120, 0.35)'; // scholarly teal/slate
+      this.ctx.strokeStyle = theme.trellisStroke || 'rgba(139, 90, 43, 0.4)';
       this.ctx.lineWidth = 1.5 / scale;
       this.ctx.setLineDash([4 / scale, 4 / scale]);
 
@@ -218,7 +257,7 @@ window.MyProjectCanvasRenderer = {
       // Draw tag label badge at midpoint
       const labelText = '#' + sharedTags[0];
       this.ctx.font = `${Math.max(10, 11 / scale)}px 'Vollkorn', serif`;
-      this.ctx.fillStyle = 'rgba(7, 102, 120, 0.75)';
+      this.ctx.fillStyle = theme.trellisLabel || 'rgba(139, 90, 43, 0.9)';
       this.ctx.textAlign = 'center';
       this.ctx.textBaseline = 'middle';
       this.ctx.fillText(labelText, midX, midY - 6);
@@ -289,18 +328,20 @@ window.MyProjectCanvasRenderer = {
     this.ctx.save();
     this.ctx.globalAlpha = fillAlpha;
 
+    const theme = this._getThemeTokens();
+
     // Card background
-    const bgColor = isSheet ? (AppConstants.NODE_SHEET_COLOR || '#ffffff') : (AppConstants.NODE_PORTFOLIO_COLOR || '#f4ece1');
+    const bgColor = isSheet ? (theme.sheetBg || '#ffffff') : (theme.portfolioBg || '#f4ece1');
     this.ctx.fillStyle = bgColor;
 
-    // Very subtle natural paper dropshadow when current level
+    // Natural paper dropshadow when current level
     if (isCurrentLevel) {
       if (isFilterActive && isFilterMatch) {
         this.ctx.shadowColor = 'rgba(181, 118, 20, 0.4)';
         this.ctx.shadowBlur = 10 / scale;
         this.ctx.shadowOffsetY = 2 / scale;
       } else {
-        this.ctx.shadowColor = isSelected ? 'rgba(7, 102, 120, 0.25)' : (isHovered ? 'rgba(60, 56, 54, 0.18)' : 'rgba(60, 56, 54, 0.08)');
+        this.ctx.shadowColor = isSelected ? theme.selectedShadow : (isHovered ? theme.hoverShadow : theme.defaultShadow);
         this.ctx.shadowBlur = isSelected ? 12 / scale : (isHovered ? 8 / scale : 4 / scale);
         this.ctx.shadowOffsetY = (isSelected || isHovered) ? 3 / scale : 1 / scale;
       }
@@ -316,14 +357,20 @@ window.MyProjectCanvasRenderer = {
 
     // Left binding spine indicator for Manuscript Sheets
     if (isSheet) {
-      const spineColor = (isFilterActive && isFilterMatch) ? '#b57614' : (isSelected ? '#076678' : (isHovered ? '#a89984' : '#d5c4a1'));
+      const spineColor = (isFilterActive && isFilterMatch) ? '#b57614' : (isSelected ? theme.selectedStroke : (isHovered ? theme.hoverStroke : theme.sheetSpine));
       this.ctx.fillStyle = spineColor;
       this.ctx.beginPath();
       this.ctx.roundRect(node.x, node.y, 6, node.height, [borderRadius, 0, 0, borderRadius]);
       this.ctx.fill();
     } else {
-      // Top tab indicator for Portfolios (Folders)
-      const tabColor = (isFilterActive && isFilterMatch) ? '#b57614' : (isSelected ? '#076678' : (isHovered ? '#bdae93' : '#d5c4a1'));
+      // Leather binding spine (left) and archival tab (top) for Portfolios
+      const spineColor = (isFilterActive && isFilterMatch) ? '#b57614' : (isSelected ? theme.selectedStroke : (isHovered ? theme.hoverStroke : theme.portfolioSpine));
+      this.ctx.fillStyle = spineColor;
+      this.ctx.beginPath();
+      this.ctx.roundRect(node.x, node.y, 8, node.height, [borderRadius, 0, 0, borderRadius]);
+      this.ctx.fill();
+
+      const tabColor = (isFilterActive && isFilterMatch) ? '#b57614' : (isSelected ? theme.selectedStroke : (isHovered ? theme.hoverStroke : theme.portfolioTab));
       this.ctx.fillStyle = tabColor;
       this.ctx.beginPath();
       this.ctx.roundRect(node.x + 16, node.y, Math.min(100, node.width - 32), 5, [3, 3, 0, 0]);
@@ -338,14 +385,14 @@ window.MyProjectCanvasRenderer = {
       strokeColor = '#b57614';
       strokeWidth = 2.5 / scale;
     } else if (isSelected) {
-      strokeColor = AppConstants.NODE_SELECTED_STROKE_COLOR || '#076678';
+      strokeColor = theme.selectedStroke || '#b57614';
       strokeWidth = 2.5 / scale;
     } else if (isHovered) {
-      strokeColor = AppConstants.NODE_HOVER_STROKE_COLOR || '#a89984';
+      strokeColor = theme.hoverStroke || '#8b5a2b';
       strokeWidth = 1.5 / scale;
     } else {
       // Subtle baseline outline for clear legibility on the desk
-      strokeColor = 'rgba(189, 174, 147, 0.45)';
+      strokeColor = theme.baseStroke || 'rgba(189, 174, 147, 0.45)';
       strokeWidth = 1 / scale;
     }
 
@@ -374,7 +421,7 @@ window.MyProjectCanvasRenderer = {
       // 1. Header row
       const badgeY = node.y + 18;
       this.ctx.font = "12px 'Vollkorn', serif";
-      this.ctx.fillStyle = isSelected ? '#076678' : '#7c6f64';
+      this.ctx.fillStyle = isSelected ? theme.headerSelectedColor : theme.headerColor;
       this.ctx.textAlign = 'left';
       this.ctx.textBaseline = 'middle';
 
@@ -409,7 +456,7 @@ window.MyProjectCanvasRenderer = {
         // Header right: word count & read time
         const readTime = Math.max(1, Math.round(wordCount / 200));
         this.ctx.font = "11px 'Vollkorn', serif";
-        this.ctx.fillStyle = '#7c6f64';
+        this.ctx.fillStyle = theme.headerColor;
         const sheetLabelW = 60;
         const maxMetaW = innerW - sheetLabelW;
         let metaText = `${wordCount}w · ~${readTime}m read`;
@@ -423,7 +470,7 @@ window.MyProjectCanvasRenderer = {
       }
 
       // 2. Title
-      this.ctx.fillStyle = isSelected ? '#1d2021' : (AppConstants.DEFAULT_TEXT_COLOR || '#282828');
+      this.ctx.fillStyle = theme.titleColor || '#282421';
       this.ctx.font = isSelected ? "bold 17px 'Vollkorn', serif" : (AppConstants.DEFAULT_FONT_BOLD || "bold 17px 'Vollkorn', serif");
       this.ctx.textAlign = 'left';
       this.ctx.textBaseline = 'top';
@@ -441,7 +488,7 @@ window.MyProjectCanvasRenderer = {
 
       // 3. Subtle separator rule below title
       if (this.ctx.moveTo && this.ctx.lineTo) {
-        this.ctx.strokeStyle = 'rgba(189, 174, 147, 0.35)';
+        this.ctx.strokeStyle = theme.dividerColor || 'rgba(189, 174, 147, 0.35)';
         this.ctx.lineWidth = 1 / scale;
         this.ctx.beginPath();
         this.ctx.moveTo(innerX, node.y + 64);
@@ -458,7 +505,7 @@ window.MyProjectCanvasRenderer = {
         const plainText = this._extractPlainText(node.content || '');
         if (plainText) {
           this.ctx.font = AppConstants.EXCERPT_FONT || "13px 'Vollkorn', serif";
-          this.ctx.fillStyle = AppConstants.EXCERPT_COLOR || '#504945';
+          this.ctx.fillStyle = theme.excerptColor || '#504945';
           this.ctx.textAlign = 'left';
           this.ctx.textBaseline = 'top';
 
@@ -469,7 +516,7 @@ window.MyProjectCanvasRenderer = {
           });
         } else {
           this.ctx.font = "italic 13px 'Vollkorn', serif";
-          this.ctx.fillStyle = '#a89984';
+          this.ctx.fillStyle = theme.headerColor || '#a89984';
           this.ctx.textAlign = 'left';
           this.ctx.textBaseline = 'top';
           let emptyPrompt = 'Empty sheet — double-click or press Enter to write...';
@@ -490,7 +537,7 @@ window.MyProjectCanvasRenderer = {
           for (let i = 0; i < maxShow; i++) {
             if (i === maxPossibleRows - 1 && children.length > maxPossibleRows) {
               this.ctx.font = "italic 12px 'Vollkorn', serif";
-              this.ctx.fillStyle = '#7c6f64';
+              this.ctx.fillStyle = theme.headerColor || '#7c6f64';
               this.ctx.textAlign = 'left';
               let moreLabel = `+ ${children.length - i} more items in this portfolio...`;
               while (moreLabel.length > 5 && this.ctx.measureText(moreLabel).width > innerW) {
@@ -512,7 +559,7 @@ window.MyProjectCanvasRenderer = {
             }
 
             this.ctx.font = "14px 'Vollkorn', serif";
-            this.ctx.fillStyle = '#3c3836';
+            this.ctx.fillStyle = theme.childColor || '#3c3836';
             this.ctx.textAlign = 'left';
             this.ctx.textBaseline = 'top';
 
@@ -529,14 +576,14 @@ window.MyProjectCanvasRenderer = {
 
             if (wordBadge) {
               this.ctx.font = "11px 'Vollkorn', serif";
-              this.ctx.fillStyle = '#7c6f64';
+              this.ctx.fillStyle = theme.headerColor || '#7c6f64';
               this.ctx.textAlign = 'right';
               this.ctx.fillText(wordBadge, rightX, itemRowY + 2);
             }
           }
         } else {
           this.ctx.font = "italic 14px 'Vollkorn', serif";
-          this.ctx.fillStyle = '#a89984';
+          this.ctx.fillStyle = theme.headerColor || '#a89984';
           this.ctx.textAlign = 'left';
           this.ctx.textBaseline = 'top';
           let emptyDrawerPrompt = 'Empty archival portfolio — double-click or press Enter to open drawer...';
@@ -560,10 +607,10 @@ window.MyProjectCanvasRenderer = {
         const barWidth = innerW * progress;
 
         // Density bar
-        this.ctx.fillStyle = 'rgba(189, 174, 147, 0.25)';
+        this.ctx.fillStyle = theme.progressBg || 'rgba(189, 174, 147, 0.25)';
         this.ctx.fillRect(innerX, node.y + node.height - 30, innerW, 2.5);
 
-        this.ctx.fillStyle = isSelected ? '#076678' : '#79740e';
+        this.ctx.fillStyle = isSelected ? theme.progressSelected : theme.progressFill;
         this.ctx.fillRect(innerX, node.y + node.height - 30, barWidth, 2.5);
       }
 
@@ -578,7 +625,7 @@ window.MyProjectCanvasRenderer = {
         const badgeStr = badges.join('  ');
         this.ctx.font = "11px 'Vollkorn', serif";
         badgeReservationW = this.ctx.measureText(badgeStr).width + 12;
-        this.ctx.fillStyle = '#7c6f64';
+        this.ctx.fillStyle = theme.headerColor || '#7c6f64';
         this.ctx.textAlign = 'right';
         this.ctx.textBaseline = 'middle';
         this.ctx.fillText(badgeStr, rightX, footerY - 6);
@@ -595,13 +642,13 @@ window.MyProjectCanvasRenderer = {
           const tagW = this.ctx.measureText(tagStr).width;
           if (tagOffset + tagW + 12 <= maxTagAreaRight) {
             // Draw tag pill background
-            this.ctx.fillStyle = 'rgba(213, 196, 161, 0.35)';
+            this.ctx.fillStyle = theme.tagBg || 'rgba(213, 196, 161, 0.35)';
             this.ctx.beginPath();
             this.ctx.roundRect(tagOffset, footerY - 14, tagW + 10, 16, 3);
             this.ctx.fill();
 
             // Draw tag pill text
-            this.ctx.fillStyle = '#665c54';
+            this.ctx.fillStyle = theme.tagText || '#665c54';
             this.ctx.textAlign = 'left';
             this.ctx.textBaseline = 'middle';
             this.ctx.fillText(tagStr, tagOffset + 5, footerY - 6);

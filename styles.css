@@ -8,28 +8,31 @@
 
   /* Colors */
   --color-text-light: #fbf1c7; /* Light text for dark accents */
-  --color-text-dark: #3c3836;  /* Dark text for light backgrounds */
+  --color-text-dark: #2c2520;  /* Dark walnut ink for light backgrounds */
   --color-text-muted: #7c6f64;
-  --color-text-link: #076678;
+  --color-text-link: #8b5a2b;  /* Warm saddle leather */
   --color-text-success: #79740e;
-  --color-text-danger: #9d0006;
+  --color-text-danger: #c94c36; /* Bookbinder crimson */
 
-  --color-bg-canvas: #fbf1c7; /* Main off-white background */
+  --color-bg-canvas: #fbf1c7; /* Main off-white vellum background */
   --color-bg-dark-primary: #f9f5d7; /* Modals */
   --color-bg-dark-secondary: #ebdbb2; /* Sidebars */
   --color-bg-dark-tertiary: #d5c4a1; /* Headers */
   --color-bg-light-primary: #fbf1c7; /* Was for light modals, now same as canvas */
   --color-bg-light-secondary: #f2e5bc; /* Hover effects */
 
-  --color-accent-primary: #458588; /* Blue */
-  --color-accent-primary-hover: #076678;
-  --color-accent-secondary: #d79921; /* Yellow */
-  --color-accent-danger: #cc241d;
+  --color-accent-primary: #8b5a2b; /* Warm saddle leather (Scholar's palette) */
+  --color-accent-primary-hover: #6e411b; /* Dark cordovan */
+  --color-accent-gold: #d4a373; /* Burnished gold */
+  --color-accent-gold-hover: #b57614;
+  --color-accent-secondary: #b57614; /* Antique amber */
+  --color-accent-danger: #c94c36;
   --color-accent-danger-hover: #9d0006;
 
   --color-border-dark: #bdae93;
   --color-border-light: #d5c4a1;
-  --color-shadow: rgba(0, 0, 0, 0.15);
+  --color-border-gold: #d4a373;
+  --color-shadow: rgba(60, 56, 54, 0.15);
 
   /* Spacing & Sizing */
   --spacing-small: 8px;
@@ -321,7 +324,7 @@ body {
 
 .masthead-filter-input:focus {
   border-color: var(--color-accent-primary);
-  box-shadow: 0 0 0 3px rgba(7, 102, 120, 0.12);
+  box-shadow: 0 0 0 3px rgba(139, 90, 43, 0.15);
 }
 
 .clear-canvas-filter-btn {
@@ -389,8 +392,8 @@ body {
 }
 
 .masthead-btn.primary-btn:hover {
-  background-color: #054f5c;
-  border-color: #054f5c;
+  background-color: var(--color-accent-primary-hover, #6e411b);
+  border-color: var(--color-accent-primary-hover, #6e411b);
   color: #ffffff;
 }
 
@@ -436,7 +439,7 @@ body {
 .node-editor {
   position: absolute;
   outline: none;
-  border: 2px solid #076678;
+  border: 2px solid #8b5a2b;
   border-radius: 4px;
   padding: 2px 6px;
   background-color: #ffffff;
@@ -444,7 +447,7 @@ body {
   font-family: var(--font-primary, 'Vollkorn', Georgia, serif);
   font-weight: bold;
   text-align: left;
-  box-shadow: 0 2px 8px rgba(7, 102, 120, 0.25);
+  box-shadow: 0 2px 8px rgba(139, 90, 43, 0.25);
   box-sizing: border-box;
   z-index: 1000;
 }
@@ -1773,7 +1776,7 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
 }
 
 .editor-save-indicator.status-saving {
-  color: var(--color-accent-primary, #458588);
+  color: var(--color-accent-primary, #8b5a2b);
   font-weight: 600;
 }
 
@@ -2075,15 +2078,15 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
 /* Scholar Annotation Tool Stylings */
 .tox .tox-tbtn[data-mce-name="comment"],
 .tox .tox-tbtn[aria-label*="Comment"] {
-  color: #076678 !important;
-  background-color: rgba(7, 102, 120, 0.05) !important;
-  border-color: rgba(7, 102, 120, 0.15) !important;
+  color: #8b5a2b !important;
+  background-color: rgba(139, 90, 43, 0.06) !important;
+  border-color: rgba(139, 90, 43, 0.2) !important;
 }
 .tox .tox-tbtn[data-mce-name="comment"]:hover,
 .tox .tox-tbtn[aria-label*="Comment"]:hover {
-  background-color: #e3eff2 !important;
-  border-color: #076678 !important;
-  color: #054f5c !important;
+  background-color: #efe6d5 !important;
+  border-color: #8b5a2b !important;
+  color: #6e411b !important;
 }
 
 .tox .tox-tbtn[data-mce-name="certify"],
@@ -2257,7 +2260,7 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
 .scenic-filter-bar input:focus,
 .scenic-filter-bar select:focus {
   outline: none;
-  border-color: #076678;
+  border-color: #8b5a2b;
 }
 
 .scenic-maxims-list {
@@ -2418,12 +2421,12 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
    ========================================================================== */
 
 #open-archive-btn.has-archives {
-  color: var(--color-accent-primary, #458588);
+  color: var(--color-accent-primary, #8b5a2b);
   font-weight: 600;
 }
 
 #open-archive-btn.has-archives #archive-count-badge {
-  background-color: var(--color-accent-primary, #458588);
+  background-color: var(--color-accent-primary, #8b5a2b);
   color: #ffffff;
   padding: 1px 6px;
   border-radius: 10px;
@@ -2509,8 +2512,8 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
 }
 
 #archive-search-input:focus {
-  border-color: var(--color-accent-primary, #458588);
-  box-shadow: 0 0 0 3px rgba(69, 133, 136, 0.15);
+  border-color: var(--color-accent-primary, #8b5a2b);
+  box-shadow: 0 0 0 3px rgba(139, 90, 43, 0.15);
 }
 
 .archive-tabs {
@@ -2654,7 +2657,7 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
 
 .archive-restore-btn {
   padding: 7px 13px;
-  background-color: var(--color-accent-primary, #458588);
+  background-color: var(--color-accent-primary, #8b5a2b);
   color: #ffffff;
   border: none;
   border-radius: 4px;
@@ -2666,7 +2669,7 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
 }
 
 .archive-restore-btn:hover {
-  background-color: var(--color-accent-primary-hover, #076678);
+  background-color: var(--color-accent-primary-hover, #6e411b);
 }
 
 .archive-delete-btn {
@@ -2812,14 +2815,14 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
 }
 
 .warmup-actions .accent-action {
-  background-color: #076678 !important;
+  background-color: #8b5a2b !important;
   color: #fdfaf4 !important;
-  border-color: #054f5c !important;
+  border-color: #6e411b !important;
   font-weight: 600 !important;
 }
 
 .warmup-actions .accent-action:hover {
-  background-color: #054f5c !important;
+  background-color: #6e411b !important;
 }
 
 /* Full View button in TinyMCE */
@@ -2838,5 +2841,327 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
 .tox .tox-tbtn[title*="Full Screen"]:hover {
   background-color: #ebdccb !important;
   color: #55500a !important;
+}
+
+/* ==========================================================================
+   10. MIDNIGHT SCRIPTORIUM THEME (NIGHT / SCHOLAR'S DESK)
+   ========================================================================== */
+
+body.theme-midnight {
+  --color-text-light: #12100e;
+  --color-text-dark: #fdfaf4;       /* Warm ivory text */
+  --color-text-muted: #a89984;      /* Soft parchment grey */
+  --color-text-link: #e5b27a;       /* Amber gold */
+  --color-text-success: #b8bb26;
+  --color-text-danger: #fb4934;
+
+  --color-bg-canvas: #12100e;       /* Deep espresso walnut desk */
+  --color-bg-dark-primary: #1c1815; /* Dark cardstock modal */
+  --color-bg-dark-secondary: #241f1b;/* Dark walnut sidebar */
+  --color-bg-dark-tertiary: #2d2621;
+  --color-bg-light-primary: #181412;
+  --color-bg-light-secondary: #2b241f;
+
+  --color-accent-primary: #d4a373;  /* Burnished amber gold */
+  --color-accent-primary-hover: #e5b27a;
+  --color-accent-gold: #e5b27a;
+  --color-accent-gold-hover: #f3c892;
+  --color-accent-secondary: #8b5a2b;/* Saddle leather */
+  --color-accent-danger: #c94c36;
+  --color-accent-danger-hover: #fb4934;
+
+  --color-border-dark: #4a3e36;
+  --color-border-light: #3a322c;
+  --color-border-gold: rgba(212, 163, 115, 0.4);
+  --color-shadow: rgba(0, 0, 0, 0.5);
+  background-color: #12100e;
+  color: #fdfaf4;
+}
+
+/* Midnight Scholar Masthead */
+body.theme-midnight .scholar-masthead,
+body.theme-midnight .breadcrumb-bar {
+  background-color: #1a1613;
+  color: #fdfaf4;
+  border-bottom: 1px solid #3a322c;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+}
+
+body.theme-midnight .masthead-brand {
+  color: #d4a373;
+}
+
+body.theme-midnight .masthead-breadcrumbs {
+  color: #fdfaf4;
+}
+
+body.theme-midnight .masthead-filter-input {
+  background-color: #14100e;
+  border-color: #4a3e36;
+  color: #fdfaf4;
+}
+
+body.theme-midnight .masthead-filter-input:focus {
+  border-color: #d4a373;
+  box-shadow: 0 0 0 3px rgba(212, 163, 115, 0.2);
+}
+
+body.theme-midnight .masthead-btn {
+  background-color: #241f1b;
+  border-color: #3a322c;
+  color: #c2b7ad;
+}
+
+body.theme-midnight .masthead-btn:hover {
+  background-color: #2d2621;
+  border-color: #d4a373;
+  color: #ffffff;
+}
+
+body.theme-midnight .masthead-btn.primary-btn {
+  background-color: #8b5a2b;
+  border-color: #d4a373;
+  color: #ffffff;
+}
+
+body.theme-midnight .masthead-btn.primary-btn:hover {
+  background-color: #a06634;
+  border-color: #e5b27a;
+}
+
+body.theme-midnight .masthead-btn.accent-btn {
+  background-color: #b57614;
+  border-color: #e5b27a;
+  color: #ffffff;
+}
+
+body.theme-midnight .masthead-btn.subtle-btn {
+  background: transparent;
+  border-color: transparent;
+  color: #a89984;
+}
+
+body.theme-midnight .masthead-btn.subtle-btn:hover {
+  background-color: #241f1b;
+  border-color: #3a322c;
+  color: #fdfaf4;
+}
+
+/* Midnight Canvas & Node Editor */
+body.theme-midnight #nest-canvas {
+  background-color: #12100e;
+}
+
+body.theme-midnight .node-editor {
+  background-color: #1c1815;
+  color: #fdfaf4;
+  border: 2px solid #d4a373;
+  box-shadow: 0 2px 8px rgba(212, 163, 115, 0.35);
+}
+
+/* Midnight Outliner Sidebar */
+body.theme-midnight #outliner-sidebar {
+  background-color: #1a1613;
+  border-right: 1px solid #3a322c;
+  color: #fdfaf4;
+}
+
+body.theme-midnight .outliner-header {
+  background-color: #241f1b;
+  border-bottom: 1px solid #3a322c;
+}
+
+body.theme-midnight .outliner-header h3 {
+  color: #d4a373;
+}
+
+body.theme-midnight .outliner-item {
+  background-color: #201a16;
+  border-color: #3a322c;
+  color: #fdfaf4;
+}
+
+body.theme-midnight .outliner-item:hover {
+  border-color: #d4a373;
+  background-color: #28211c;
+}
+
+/* Midnight Modals (Archives, Compendium, Inspector, Navigator) */
+body.theme-midnight .modal {
+  background-color: rgba(10, 8, 7, 0.75);
+}
+
+body.theme-midnight .modal-content,
+body.theme-midnight .archive-modal-content,
+body.theme-midnight #navigator-modal .modal-content,
+body.theme-midnight .compendium-container {
+  background-color: #1c1815;
+  border: 1px solid #3a322c;
+  color: #fdfaf4;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.7);
+}
+
+body.theme-midnight .modal-header,
+body.theme-midnight .archive-modal-header {
+  background-color: #241f1b;
+  border-bottom: 1px solid #3a322c;
+}
+
+body.theme-midnight .modal-header h3,
+body.theme-midnight .archive-modal-header h3 {
+  color: #e5b27a;
+}
+
+body.theme-midnight .archive-card {
+  background-color: #201a16;
+  border: 1px solid #3a322c;
+}
+
+body.theme-midnight .archive-card:hover {
+  border-color: #d4a373;
+  background-color: #28211c;
+}
+
+body.theme-midnight .archive-card-title {
+  color: #fdfaf4;
+}
+
+body.theme-midnight .archive-card-snippet {
+  color: #c2b7ad;
+}
+
+body.theme-midnight #archive-search-input {
+  background-color: #14100e;
+  border-color: #3a322c;
+  color: #fdfaf4;
+}
+
+body.theme-midnight #archive-search-input:focus {
+  border-color: #d4a373;
+  box-shadow: 0 0 0 3px rgba(212, 163, 115, 0.2);
+}
+
+body.theme-midnight .archive-tab {
+  background-color: #201a16;
+  border-color: #3a322c;
+  color: #c2b7ad;
+}
+
+body.theme-midnight .archive-tab.active {
+  background-color: #8b5a2b;
+  border-color: #d4a373;
+  color: #ffffff;
+}
+
+/* Midnight Craft Drawer */
+body.theme-midnight #editor-inspector-sidebar {
+  background-color: #1c1815;
+  border: 1px solid #3a322c;
+  color: #fdfaf4;
+}
+
+body.theme-midnight .craft-drawer-header {
+  background-color: #241f1b;
+  border-bottom: 1px solid #3a322c;
+}
+
+body.theme-midnight .craft-drawer-header h3 {
+  color: #e5b27a;
+}
+
+body.theme-midnight .craft-section {
+  border-bottom: 1px solid #3a322c;
+}
+
+body.theme-midnight .craft-section-header h4 {
+  color: #fdfaf4;
+}
+
+body.theme-midnight .scenic-maxim-item {
+  background-color: #221c17;
+  border: 1px solid #3a322c;
+  color: #fdfaf4;
+}
+
+body.theme-midnight .scenic-maxim-item:hover {
+  border-color: #d4a373;
+}
+
+body.theme-midnight .scenic-filter-bar input,
+body.theme-midnight .scenic-filter-bar select {
+  background-color: #14100e;
+  border-color: #3a322c;
+  color: #fdfaf4;
+}
+
+/* Midnight Editor Area */
+body.theme-midnight #editor-mode {
+  background-color: #12100e;
+}
+
+body.theme-midnight #editor-toolbar {
+  background-color: #1c1815;
+  border-color: #3a322c;
+}
+
+body.theme-midnight #editor-toolbar button {
+  background-color: #241f1b;
+  border-color: #3a322c;
+  color: #c2b7ad;
+}
+
+body.theme-midnight #editor-toolbar button:hover {
+  background-color: #2c2520;
+  border-color: #d4a373;
+  color: #ffffff;
+}
+
+body.theme-midnight #main-editor {
+  background-color: #181412;
+  color: #fdfaf4;
+  border-color: #3a322c;
+}
+
+body.theme-midnight .tox.tox-tinymce {
+  background-color: #181412 !important;
+  border-color: #3a322c !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.theme-midnight .tox .tox-menubar {
+  background-color: #1e1915 !important;
+  border-bottom: 1px solid #3a322c !important;
+}
+
+body.theme-midnight .tox .tox-toolbar,
+body.theme-midnight .tox .tox-toolbar__primary {
+  background-color: #221c17 !important;
+  border-bottom: 1px solid #3a322c !important;
+}
+
+body.theme-midnight .tox .tox-statusbar {
+  background-color: #1e1915 !important;
+  border-top: 1px solid #3a322c !important;
+  color: #a89984 !important;
+}
+
+body.theme-midnight .tox .tox-tbtn {
+  color: #c2b7ad !important;
+}
+
+body.theme-midnight .tox .tox-tbtn:hover {
+  background-color: #2c2520 !important;
+  color: #ffffff !important;
+}
+
+body.theme-midnight #open-archive-btn.has-archives #archive-count-badge {
+  background-color: #d4a373;
+  color: #12100e;
+}
+
+body.theme-midnight .warmup-actions .accent-action {
+  background-color: #8b5a2b !important;
+  border-color: #d4a373 !important;
+  color: #ffffff !important;
 }
 
