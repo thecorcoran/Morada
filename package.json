@@ -16,17 +16,25 @@
   },
   "author": "Morada Authors",
   "license": "ISC",
+  "homepage": "https://thecorcoran.github.io/Morada/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thecorcoran/Morada.git"
+  },
+  "bugs": {
+    "url": "https://github.com/thecorcoran/Morada/issues"
+  },
   "devDependencies": {
     "electron": "^31.0.1",
     "electron-builder": "^24.13.3",
     "eslint": "^8.57.0",
     "eslint-plugin-jest": "^28.6.0",
     "jest": "^29.7.0",
-    "ncp": "^2.0.0",
-    "tinymce": "^7.1.2"
+    "ncp": "^2.0.0"
   },
   "dependencies": {
-    "sortablejs": "^1.15.6"
+    "sortablejs": "^1.15.6",
+    "tinymce": "^7.1.2"
   },
   "build": {
     "appId": "com.morada.app",
@@ -36,7 +44,8 @@
     "publish": {
       "provider": "github",
       "owner": "thecorcoran",
-      "repo": "Morada"
+      "repo": "Morada",
+      "releaseType": "release"
     },
     "directories": {
       "output": "dist"
@@ -47,14 +56,33 @@
       "!tests/**",
       "!docs/**",
       "!.*",
-      "!dist/**"
+      "!dist/**",
+      "!scratch/**",
+      "!scripts/**",
+      "!morada-data.json*",
+      "!eslintrc.json",
+      "!*.md",
+      "!js/README.md"
     ],
     "mac": {
       "category": "public.app-category.productivity",
       "target": [
-        "dmg",
-        "zip"
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "universal"
+          ]
+        }
       ]
+    },
+    "dmg": {
+      "artifactName": "Morada-${version}.${ext}"
     },
     "win": {
       "target": [
@@ -62,18 +90,29 @@
         "portable"
       ]
     },
+    "nsis": {
+      "artifactName": "Morada-Setup-${version}.${ext}",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "portable": {
+      "artifactName": "Morada-Portable-${version}.${ext}"
+    },
     "linux": {
       "target": [
         "AppImage",
         "deb"
       ],
-      "category": "Office"
+      "category": "Office",
+      "maintainer": "Morada Authors <thecorcoran@users.noreply.github.com>"
     },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+    "appImage": {
+      "artifactName": "Morada-${version}.${ext}"
+    },
+    "deb": {
+      "artifactName": "morada_${version}_${arch}.${ext}"
     }
   }
 }

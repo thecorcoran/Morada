@@ -4,7 +4,7 @@
 [![Release](https://img.shields.io/badge/Release-v1.0.0--beta.1-d4a373.svg)](https://github.com/thecorcoran/Morada/releases)
 [![License: ISC](https://img.shields.io/badge/License-ISC-8b5a2b.svg)](https://opensource.org/licenses/ISC)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-4a2810.svg)](https://thecorcoran.github.io/Morada/)
-[![Tests](https://img.shields.io/badge/Tests-101%20Passed-27c93f.svg)](https://github.com/thecorcoran/Morada)
+[![Tests](https://img.shields.io/badge/Tests-102%20Passed-27c93f.svg)](https://github.com/thecorcoran/Morada)
 
 **Morada** is a visual, fractal writing environment engineered specifically for long-form literary prose, scene architecture, and stylistic rigor. Inspired by the tactile atmosphere of a scholar's mahogany desk, Morada replaces endless flat document lists with a two-dimensional graph of leather-bound **Portfolios** (containers/chapters) and vellum **Sheets** (scenes/notes).
 

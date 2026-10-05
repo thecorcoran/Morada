@@ -1,5 +1,4 @@
 const WarmUp = require('../js/warmUpPassages.js');
-const NodeManager = require('../js/nodeManager.js');
 const UIManager = require('../js/uiManager.js');
 
 describe('5-Minute Warm-Up System & Escape Key Audit', () => {
