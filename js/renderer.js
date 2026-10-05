@@ -209,10 +209,24 @@ function onMouseDown(e) {
         }
         MyProjectStateManager.setSelectedNode(clickedNode);
 
-        // Support double-click to open text nodes or enter containers
+        // Support double-click to rename placeholders or title zone, open text nodes, or enter containers
         if (e.detail === 2 || e.type === 'dblclick') {
             isPotentialDrag = false;
             isDragging = false;
+
+            // 1. Double-clicking on placeholder names ("New Portfolio", "New Sheet", etc.) or the title zone triggers inline rename
+            const isPlaceholderTitle = !clickedNode.title ||
+                /^(new portfolio|new sheet|new chamber|new scriptorium|untitled)$/i.test(clickedNode.title.trim());
+            const isTitleZone = (worldPos.y >= clickedNode.y + 16 && worldPos.y <= clickedNode.y + 68);
+
+            if (isPlaceholderTitle || isTitleZone) {
+                console.log('[renderer] double-click title edit for node', clickedNode.id);
+                if (window.MyProjectUIManager && typeof window.MyProjectUIManager.createTitleEditor === 'function') {
+                    window.MyProjectUIManager.createTitleEditor(clickedNode);
+                    return;
+                }
+            }
+
             if (clickedNode.type === 'text') {
                 console.log('[renderer] double-click/open attempt for text node', clickedNode.id);
                 MyProjectEditorManager.openEditorMode(clickedNode);
@@ -257,6 +271,9 @@ function onMouseDown(e) {
                 window.MyProjectUIManager.renderOutliner();
             }
             draw();
+            if (window.MyProjectUIManager && typeof window.MyProjectUIManager.createTitleEditor === 'function') {
+                window.MyProjectUIManager.createTitleEditor(newNode);
+            }
             return;
         }
 
@@ -389,6 +406,63 @@ function onKeyDown(e) {
                     if (window.MyProjectUIManager && typeof window.MyProjectUIManager.fitNodesToView === 'function') {
                         window.MyProjectUIManager.fitNodesToView(80);
                     }
+                    draw();
+                }
+            }
+            break;
+        case 'Escape':
+            {
+                // 1. Close any visible modal, vault, search, or dialog
+                const activeModal = document.querySelector(
+                    '.modal:not(.hidden), #compendium-modal:not(.hidden), #archive-modal:not(.hidden), #search-palette:not(.hidden)'
+                );
+                if (activeModal) {
+                    try {
+                        const closeBtn = activeModal.querySelector(
+                            '.close-button, .modal-close-btn, .close-btn, .craft-close-btn, #close-compendium-btn, #close-archive-btn, #close-comment-modal, #close-certify-word-btn, #close-etymology-btn'
+                        );
+                        if (closeBtn) {
+                            closeBtn.click();
+                            break;
+                        } else {
+                            activeModal.classList.add('hidden');
+                            break;
+                        }
+                    } catch (e) {}
+                }
+
+                // 2. Hide context menu
+                const ctxMenu = document.getElementById('canvas-context-menu');
+                if (ctxMenu && !ctxMenu.classList.contains('hidden')) {
+                    ctxMenu.classList.add('hidden');
+                    break;
+                }
+
+                // 3. Clear canvas tag filter if active
+                if (window.MyProjectCanvasRenderer && typeof window.MyProjectCanvasRenderer.getActiveTagFilter === 'function' && window.MyProjectCanvasRenderer.getActiveTagFilter()) {
+                    if (window.MyProjectUIManager && typeof window.MyProjectUIManager.clearCanvasFilter === 'function') {
+                        window.MyProjectUIManager.clearCanvasFilter();
+                    }
+                    draw();
+                    break;
+                }
+
+                // 4. If inside a portfolio (viewStack > 0), navigate up to parent portfolio or desk root
+                if (viewStack.length > 0) {
+                    const popped = MyProjectStateManager.popFromViewStack();
+                    const newCurrentNodes = viewStack.length > 0 ? viewStack[viewStack.length - 1].children : MyProjectStateManager.getRootNodes();
+                    MyProjectStateManager.setCurrentNodes(newCurrentNodes);
+                    if (popped) {
+                        MyProjectStateManager.setSelectedNode(popped);
+                    }
+                    MyProjectUIManager.updateUIChrome();
+                    if (window.MyProjectUIManager && typeof window.MyProjectUIManager.fitNodesToView === 'function') {
+                        window.MyProjectUIManager.fitNodesToView(80);
+                    }
+                    draw();
+                } else if (selectedNode) {
+                    // 5. Clear selection if on root desk
+                    MyProjectStateManager.setSelectedNode(null);
                     draw();
                 }
             }

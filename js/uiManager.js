@@ -252,6 +252,27 @@ window.MyProjectUIManager = {
             }
             if (typeof this.fitNodesToView === 'function' && this._autoFit) this.fitNodesToView();
         });
+        // 5-Min Warm-Up Desk Button (navigates to or creates dedicated Warm Up portfolio)
+        this.deskWarmupBtn = document.getElementById('desk-warmup-btn');
+        if (this.deskWarmupBtn) this.deskWarmupBtn.addEventListener('click', () => {
+            if (!window.MyProjectWarmUp || !window.MyProjectNodeManager) return;
+            const rootNodes = this.stateManager.getRootNodes();
+            const warmupPortfolio = window.MyProjectWarmUp.ensureWarmUpPortfolio(rootNodes, window.MyProjectNodeManager);
+            if (warmupPortfolio) {
+                if (this.saveNodesFunction) this.saveNodesFunction();
+                this.stateManager.pushToViewStack(warmupPortfolio);
+                this.stateManager.setCurrentNodes(warmupPortfolio.children || []);
+                this.stateManager.setSelectedNode(warmupPortfolio.children[0] || warmupPortfolio);
+                this.updateUIChrome();
+                if (typeof this.fitNodesToView === 'function') {
+                    this.fitNodesToView(80);
+                }
+                if (this.drawFunction) this.drawFunction();
+                if (this.outlinerSidebar && !this.outlinerSidebar.classList.contains('hidden')) {
+                    this.renderOutliner();
+                }
+            }
+        });
         // Timer and word-goal elements
         this.timerDurationInput = document.getElementById('timer-duration-input');
         this.timerStartBtn = document.getElementById('timer-start-btn');
@@ -1337,13 +1358,20 @@ window.MyProjectUIManager = {
             console.error("UIManager not fully initialized for createTitleEditor");
             return;
         }
+
+        // Close any existing title editor before opening a new one
+        const existing = document.querySelector('.node-editor');
+        if (existing) {
+            try { existing.blur(); } catch (e) {}
+        }
+
         node.isEditing = true;
         this.drawFunction();
 
         const editor = document.createElement('input');
         editor.type = 'text';
         editor.className = 'node-editor';
-        editor.value = node.title;
+        editor.value = node.title || '';
 
         const rect = this.canvas.getBoundingClientRect();
         const canvasX = rect.left + window.scrollX;
@@ -1353,14 +1381,31 @@ window.MyProjectUIManager = {
         const offsetX = this.stateManager.getOffsetX();
         const offsetY = this.stateManager.getOffsetY();
 
-        const screenX = (node.x - offsetX) * scale + this.canvas.width / 2 + canvasX;
-        const screenY = (node.y - offsetY) * scale + this.canvas.height / 2 + canvasY;
+        // Title begins at (node.x + 18, node.y + 34) in world space
+        const titleWorldX = node.x + 18;
+        const titleWorldY = node.y + 34;
+        const titleWorldW = Math.max(80, node.width - 36);
+
+        const screenX = (titleWorldX - this.canvas.width / 2 - offsetX) * scale + this.canvas.width / 2 + canvasX;
+        const screenY = (titleWorldY - this.canvas.height / 2 - offsetY) * scale + this.canvas.height / 2 + canvasY;
+        const screenW = titleWorldW * scale;
 
         editor.style.position = 'absolute';
         editor.style.left = `${screenX}px`;
         editor.style.top = `${screenY}px`;
-        editor.style.width = `${node.width * scale}px`;
-        editor.style.fontSize = `${16 * scale}px`;
+        editor.style.width = `${screenW}px`;
+        editor.style.height = `${Math.max(24, 28 * scale)}px`;
+        editor.style.fontSize = `${Math.max(13, 16 * scale)}px`;
+        editor.style.fontFamily = "'Vollkorn', Georgia, serif";
+        editor.style.fontWeight = "bold";
+        editor.style.color = "#1d2021";
+        editor.style.backgroundColor = "#ffffff";
+        editor.style.border = "2px solid #076678";
+        editor.style.borderRadius = "4px";
+        editor.style.boxShadow = "0 2px 8px rgba(7, 102, 120, 0.25)";
+        editor.style.padding = "2px 6px";
+        editor.style.outline = "none";
+        editor.style.boxSizing = "border-box";
         editor.style.zIndex = '1000';
 
         document.body.appendChild(editor);
@@ -1368,12 +1413,18 @@ window.MyProjectUIManager = {
         editor.select();
 
         const saveAndRemove = () => {
-            node.title = editor.value;
+            const trimmed = editor.value.trim();
+            if (trimmed) {
+                node.title = trimmed;
+            }
             node.isEditing = false;
             if (document.body.contains(editor)) {
                 document.body.removeChild(editor);
             }
             this.saveNodesFunction();
+            if (typeof this.renderOutliner === 'function') {
+                this.renderOutliner();
+            }
             this.drawFunction();
         };
 
@@ -2658,6 +2709,22 @@ window.MyProjectUIManager = {
         } catch (err) {
             console.warn('showNodeInspector modal error', err);
         }
+    },
+
+    /**
+     * Starts writing timer for a given number of minutes (e.g. 5 minutes for warm-up).
+     * @param {number} [minutes=5]
+     */
+    startTimer: function(minutes) {
+        const mins = typeof minutes === 'number' && minutes > 0 ? minutes : 5;
+        if (this._timerInterval) {
+            clearInterval(this._timerInterval);
+            this._timerInterval = null;
+        }
+        if (this.timerDurationInput) {
+            this.timerDurationInput.value = mins;
+        }
+        this._toggleTimer();
     },
 
     _toggleTimer: function() {

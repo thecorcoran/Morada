@@ -39,10 +39,11 @@
               <button id="new-project-btn" class="masthead-btn" title="Create a new Portfolio on The Desk">+ Portfolio</button>
             </div>
             <div class="masthead-btn-group tool-group">
+              <button id="desk-warmup-btn" class="masthead-btn accent-btn" title="Open or create the Warm Up portfolio (5-Minute copywork)">⚡ Warm Up</button>
               <button id="auto-tidy-btn" class="masthead-btn" title="Auto-Tidy Desk (Ctrl+T)">Tidy Desk</button>
               <button id="toggle-outliner-btn" class="masthead-btn" title="Toggle Outline Sidebar">Outline</button>
               <button id="open-archive-btn" class="masthead-btn subtle-btn" title="Open Archives Vault (Ctrl+Shift+A)">Archives (<span id="archive-count-badge">0</span>)</button>
-              <button id="open-compendium-btn" class="masthead-btn accent-btn" title="Open Manuscript Press">Manuscript Press</button>
+              <button id="open-compendium-btn" class="masthead-btn" title="Open Manuscript Press">Manuscript Press</button>
               <button id="open-navigator-btn" class="masthead-btn subtle-btn" title="Open Navigator">Navigator</button>
               <button id="auto-fit-toggle" class="masthead-btn subtle-btn" title="Toggle auto-fit of nodes">Auto-Fit: On</button>
               <button id="open-sheet-btn" class="masthead-btn hidden" title="Open Sheet for selected node">Open Sheet</button>
@@ -58,12 +59,30 @@
     <div id="editor-mode" class="hidden">
         <div id="editor-main-content">
       <div id="editor-toolbar" class="editor-toolbar">
-        <button id="editor-comment-btn" type="button" title="Add Comment (Ctrl+M)">Comment</button>
-        <button id="editor-certify-btn" type="button" title="Certify Word (Ctrl+Shift+C)">Certify</button>
-        <button id="editor-etymology-btn" type="button" title="Look up Etymology (Ctrl+Shift+E)">Etymology</button>
-        <button id="toggle-craft-drawer-btn" type="button" title="Toggle Craft Drawer (Ctrl+Shift+D)">Craft Drawer ▾</button>
-        <button id="editor-fullview-btn" type="button" title="Toggle Full View Focus Mode (F11 or Ctrl+Shift+F)">⛶ Full View</button>
-        <button id="editor-saveclose-btn" type="button" title="Save and Close (Esc)">Save & Close</button>
+        <button id="editor-comment-btn" type="button" title="Add Comment (Ctrl+M)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+          Comment
+        </button>
+        <button id="editor-certify-btn" type="button" title="Certify Word (Ctrl+Shift+C)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M3 21v-3l11-11 3 3L6 21H3Zm14.7-12.3-3-3L16.4 4a1.4 1.4 0 0 1 2 0l1.6 1.6a1.4 1.4 0 0 1 0 2l-2.3 2.1Z"/></svg>
+          Certify
+        </button>
+        <button id="editor-etymology-btn" type="button" title="Look up Etymology (Ctrl+Shift+E)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M19 2H6a3 3 0 0 0-3 3v14a3 3 0 0 0 3 3h13a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1ZM6 4h12v12H6a1 1 0 0 1-1-.1V5a1 1 0 0 1 1-1Zm12 16H6a1 1 0 0 1 0-2h12v2Z"/></svg>
+          Etymology
+        </button>
+        <button id="toggle-craft-drawer-btn" type="button" title="Toggle Craft Drawer (Ctrl+Shift+D)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Zm0 6H5V5h14v4Zm-5 2v2h-4v-2h4Zm5 8H5v-4h4v1a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1h4v4Z"/></svg>
+          Craft Drawer ▾
+        </button>
+        <button id="editor-fullview-btn" type="button" title="Toggle Full View Focus Mode (F11 or Ctrl+Shift+F)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+          ⛶ Full View
+        </button>
+        <button id="editor-saveclose-btn" type="button" title="Save and Close (Esc)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2ZM5 5v14h14V7.8L16.2 5H5Zm2 2h8v3H7V7Zm0 7h10v5H7v-5Z"/></svg>
+          Save & Close
+        </button>
         <button id="exit-fullview-btn" class="hidden" type="button" title="Exit Full View (Esc / F11)">✕ Exit Full View</button>
         <span id="editor-save-indicator" class="editor-save-indicator" title="Auto-save status">All changes saved</span>
       </div>
@@ -87,6 +106,25 @@
                     <div class="scenic-feature-actions">
                         <button type="button" id="scenic-shuffle-btn" class="scenic-action-btn" title="Draw another maxim">🎲 Draw Maxim</button>
                         <button type="button" id="scenic-insert-btn" class="scenic-action-btn" title="Insert into text as quote or note">Insert into Sheet</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5-Minute Warm-Up (Copywork & Priming) -->
+            <div class="craft-section" id="warmup-panel">
+                <div class="craft-section-header">
+                    <h4>5-Min Warm-Up <span class="craft-subtitle">(Copywork &amp; Priming)</span></h4>
+                </div>
+                <div class="warmup-card" id="warmup-feature-card">
+                    <div class="warmup-card-badge" id="warmup-author-work">G.K. Chesterton — The Man Who Was Thursday</div>
+                    <blockquote class="warmup-quote" id="warmup-quote-text">
+                        "The suburb of Saffron Park lay on the sunset side of London, as red and ragged as a cloud of sunset..."
+                    </blockquote>
+                    <div class="warmup-actions">
+                        <button type="button" id="warmup-next-btn" class="scenic-action-btn" title="Cycle to next random passage">🎲 Next Passage</button>
+                        <button type="button" id="warmup-copy-btn" class="scenic-action-btn" title="Copy passage text to clipboard">📋 Copy</button>
+                        <button type="button" id="warmup-timer-btn" class="scenic-action-btn accent-action" title="Start 5-minute countdown timer">⏱ 5-Min Timer</button>
+                        <button type="button" id="warmup-insert-btn" class="scenic-action-btn" title="Insert copywork block into current sheet">📝 Insert into Sheet</button>
                     </div>
                 </div>
             </div>
@@ -354,6 +392,7 @@
     <script src="js/nodeManager.js"></script>
     <script src="js/strunkEngine.js"></script>
     <script src="js/scenicMaxims.js"></script>
+    <script src="js/warmUpPassages.js"></script>
     <script src="js/editorManager.js"></script>
     <script src="js/uiManager.js"></script>
 

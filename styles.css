@@ -1712,6 +1712,13 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
   gap: 6px;
 }
 
+#editor-toolbar button svg {
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
 #editor-toolbar button:hover {
   background-color: #efe6d5;
   border-color: #bdae93;
@@ -1830,10 +1837,21 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
   border-radius: 0 !important;
   box-shadow: none !important;
   flex-grow: 1 !important;
-  height: calc(100vh - 46px) !important;
+  height: 100vh !important;
   width: 100vw !important;
   max-width: 100vw !important;
   background-color: #fdfaf4 !important;
+}
+
+#editor-mode.full-view-mode .tox .tox-menubar {
+  display: none !important;
+}
+
+#editor-mode.full-view-mode .tox .tox-toolbar,
+#editor-mode.full-view-mode .tox .tox-toolbar__primary {
+  padding: 6px 16px !important;
+  background-color: #fcf8f1 !important;
+  border-bottom: 1px solid #e2d7c4 !important;
 }
 
 #editor-mode.full-view-mode textarea#main-editor-fallback {
@@ -1903,11 +1921,40 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
   background-color: #faf5ec !important;
   border-bottom: 1px solid #e0d5c1 !important;
   display: flex !important;
-  flex-wrap: nowrap !important;
+  flex-wrap: wrap !important;
   align-items: center !important;
   width: 100% !important;
   box-sizing: border-box !important;
   padding: 3px 6px !important;
+  gap: 2px !important;
+}
+
+.tox .tox-editor-container {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+.tox .tox-sidebar-wrap {
+  display: flex !important;
+  flex-direction: row !important;
+  flex: 1 1 auto !important;
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+.tox .tox-edit-area {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+.tox .tox-edit-area iframe {
+  height: 100% !important;
+  flex: 1 1 auto !important;
 }
 
 .tox .tox-toolbar__group {
@@ -1937,11 +1984,11 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
   padding-left: 6px !important;
 }
 
-/* Toolbar buttons: fix 34px truncation, allow natural dynamic width, elegant padding */
+/* Toolbar buttons: fix truncation, allow natural dynamic width, elegant padding */
 .tox .tox-tbtn {
   width: auto !important;
   min-width: 32px !important;
-  height: 28px !important;
+  height: 32px !important;
   margin: 1px 2px !important;
   padding: 0 8px !important;
   display: inline-flex !important;
@@ -1952,7 +1999,7 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
   overflow: visible !important;
   color: #3c3836 !important;
   font-family: var(--font-primary) !important;
-  font-size: 12.5px !important;
+  font-size: 13px !important;
   font-weight: 500 !important;
   border-radius: 4px !important;
   border: 1px solid transparent !important;
@@ -1961,37 +2008,49 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
   box-sizing: border-box !important;
 }
 
+/* Compact pure icon-only buttons */
+.tox .tox-tbtn:not(:has(span:not(.tox-icon):not(.tox-tbtn__icon-wrap))) {
+  min-width: 30px !important;
+  width: 30px !important;
+  padding: 0 !important;
+}
+
 /* Ensure text label inside toolbar button is completely visible without truncation */
-.tox .tox-tbtn .tox-tbtn__select-label {
+.tox .tox-tbtn .tox-tbtn__select-label,
+.tox .tox-tbtn span:not(.tox-icon):not(.tox-tbtn__icon-wrap) {
+  display: inline-block !important;
   max-width: none !important;
   width: auto !important;
   overflow: visible !important;
   text-overflow: clip !important;
   white-space: nowrap !important;
   font-family: var(--font-primary) !important;
-  font-size: 12.5px !important;
+  font-size: 13px !important;
   font-weight: 500 !important;
   line-height: 1 !important;
+  color: inherit !important;
   cursor: pointer !important;
 }
 
-/* Ensure icon wrapper doesn't push text outside button */
+/* Ensure icon wrapper doesn't push text outside button and graphics render crisp without clipping */
 .tox .tox-tbtn .tox-tbtn__icon-wrap,
 .tox .tox-tbtn .tox-icon {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  width: 16px !important;
-  height: 16px !important;
+  width: 18px !important;
+  height: 18px !important;
   flex-shrink: 0 !important;
+  overflow: visible !important;
 }
 
 .tox .tox-tbtn svg {
-  width: 15px !important;
-  height: 15px !important;
+  width: 18px !important;
+  height: 18px !important;
   fill: currentColor !important;
   flex-shrink: 0 !important;
   display: block !important;
+  overflow: visible !important;
 }
 
 /* Hover states */
@@ -2707,3 +2766,74 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
 .archive-close-footer-btn:hover {
   opacity: 0.85;
 }
+
+/* ==========================================================================
+   5-MINUTE WARM-UP PANEL (CRAFT DRAWER)
+   ========================================================================== */
+.warmup-card {
+  background-color: #fdfaf4;
+  border: 1px solid #d5c4a1;
+  border-left: 3px solid #b57614;
+  border-radius: 4px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.warmup-card-badge {
+  font-family: var(--font-primary, 'Vollkorn', Georgia, serif);
+  font-size: 12px;
+  font-weight: 600;
+  color: #79740e;
+  letter-spacing: 0.02em;
+}
+
+.warmup-quote {
+  font-family: var(--font-primary, 'Vollkorn', Georgia, serif);
+  font-style: italic;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #3c3836;
+  margin: 0;
+  max-height: 140px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.warmup-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.warmup-actions .accent-action {
+  background-color: #076678 !important;
+  color: #fdfaf4 !important;
+  border-color: #054f5c !important;
+  font-weight: 600 !important;
+}
+
+.warmup-actions .accent-action:hover {
+  background-color: #054f5c !important;
+}
+
+/* Full View button in TinyMCE */
+.tox .tox-tbtn[data-mce-name="fullview"],
+.tox .tox-tbtn[aria-label*="Full Screen"],
+.tox .tox-tbtn[title*="Full Screen"] {
+  background-color: #f4ece1 !important;
+  border-color: #b57614 !important;
+  color: #79740e !important;
+  font-weight: 600 !important;
+  padding: 0 10px !important;
+}
+
+.tox .tox-tbtn[data-mce-name="fullview"]:hover,
+.tox .tox-tbtn[aria-label*="Full Screen"]:hover,
+.tox .tox-tbtn[title*="Full Screen"]:hover {
+  background-color: #ebdccb !important;
+  color: #55500a !important;
+}
+

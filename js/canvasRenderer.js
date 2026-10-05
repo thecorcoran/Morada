@@ -97,31 +97,58 @@ window.MyProjectCanvasRenderer = {
    * @returns {Array<string>}
    */
   _wrapTextLines: function(text, maxWidth, maxLines) {
-    if (!text || !this.ctx) return [];
-    const words = text.split(' ');
+    if (!text || !this.ctx || maxWidth <= 0 || maxLines <= 0) return [];
+    const words = text.split(/\s+/);
     const lines = [];
     let currentLine = '';
+    let truncated = false;
 
     for (let i = 0; i < words.length; i++) {
-      const testLine = currentLine ? currentLine + ' ' + words[i] : words[i];
+      let word = words[i];
+      if (!word) continue;
+      // If a single word is wider than maxWidth, truncate it
+      if (this.ctx.measureText(word).width > maxWidth) {
+        while (word.length > 3 && this.ctx.measureText(word + '...').width > maxWidth) {
+          word = word.slice(0, -1);
+        }
+        word = word + '...';
+      }
+
+      const testLine = currentLine ? currentLine + ' ' + word : word;
       const metrics = this.ctx.measureText(testLine);
       if (metrics.width > maxWidth) {
         if (currentLine) lines.push(currentLine);
-        if (lines.length >= maxLines) break;
-        currentLine = words[i];
+        if (lines.length >= maxLines) {
+          truncated = true;
+          break;
+        }
+        currentLine = word;
       } else {
         currentLine = testLine;
       }
     }
+
     if (lines.length < maxLines && currentLine) {
       lines.push(currentLine);
+    } else if (currentLine && lines.length >= maxLines) {
+      truncated = true;
     }
-    if (lines.length === maxLines && words.length > 0) {
-      let last = lines[lines.length - 1];
-      while (last.length > 3 && this.ctx.measureText(last + '...').width > maxWidth) {
-        last = last.slice(0, -1);
+
+    if (lines.length > 0) {
+      for (let j = 0; j < lines.length; j++) {
+        while (lines[j].length > 3 && this.ctx.measureText(lines[j]).width > maxWidth) {
+          lines[j] = lines[j].slice(0, -1);
+        }
       }
-      lines[lines.length - 1] = last.trim() + '...';
+      if ((truncated || lines.length === maxLines) && words.length > 0) {
+        let last = lines[lines.length - 1];
+        if (!last.endsWith('...')) {
+          while (last.length > 3 && this.ctx.measureText(last + '...').width > maxWidth) {
+            last = last.slice(0, -1);
+          }
+          lines[lines.length - 1] = last.trim() + '...';
+        }
+      }
     }
     return lines;
   },
@@ -332,10 +359,16 @@ window.MyProjectCanvasRenderer = {
 
     // Content & Typography
     if (!node.isEditing) {
+      this.ctx.save();
       this.ctx.globalAlpha = textAlpha;
 
+      // STRICT CLIPPING: Ensure all internal content stays strictly bounded within the card margins
+      this.ctx.beginPath();
+      this.ctx.roundRect(node.x, node.y, node.width, node.height, borderRadius);
+      if (typeof this.ctx.clip === 'function') this.ctx.clip();
+
       const innerX = node.x + 18;
-      const innerW = node.width - 36;
+      const innerW = Math.max(10, node.width - 36);
       const rightX = node.x + node.width - 18;
 
       // 1. Header row
@@ -361,17 +394,32 @@ window.MyProjectCanvasRenderer = {
         }
         const countText = childCount === 1 ? '1 sheet' : `${childCount} sheets`;
         const wordSummary = totalWords > 0 ? ` · ${totalWords.toLocaleString()} words` : '';
-        this.ctx.fillText(`📁 Portfolio · ${countText}${wordSummary}`, innerX, badgeY);
+        let headerLabel = `📁 Portfolio · ${countText}${wordSummary}`;
+        while (headerLabel.length > 5 && this.ctx.measureText(headerLabel).width > innerW) {
+          headerLabel = headerLabel.slice(0, -1);
+        }
+        if (headerLabel.length < `📁 Portfolio · ${countText}${wordSummary}`.length) {
+          headerLabel = headerLabel.trim() + '...';
+        }
+        this.ctx.fillText(headerLabel, innerX, badgeY);
       } else {
         const wordCount = this.getWordCountFunction ? this.getWordCountFunction(node.content || '') : 0;
         this.ctx.fillText(`📄 Sheet`, innerX, badgeY);
 
         // Header right: word count & read time
-        this.ctx.textAlign = 'right';
         const readTime = Math.max(1, Math.round(wordCount / 200));
         this.ctx.font = "11px 'Vollkorn', serif";
         this.ctx.fillStyle = '#7c6f64';
-        this.ctx.fillText(`${wordCount}w · ~${readTime}m read`, rightX, badgeY);
+        const sheetLabelW = 60;
+        const maxMetaW = innerW - sheetLabelW;
+        let metaText = `${wordCount}w · ~${readTime}m read`;
+        if (this.ctx.measureText(metaText).width > maxMetaW) {
+          metaText = `${wordCount}w`;
+        }
+        if (this.ctx.measureText(metaText).width <= maxMetaW) {
+          this.ctx.textAlign = 'right';
+          this.ctx.fillText(metaText, rightX, badgeY);
+        }
       }
 
       // 2. Title
@@ -401,6 +449,9 @@ window.MyProjectCanvasRenderer = {
 
       // 4. Body Content Preview / Children List
       const bodyY = node.y + 74;
+      const footerTop = node.y + node.height - 36;
+      const availableBodyH = Math.max(0, footerTop - bodyY);
+
       if (isSheet) {
         const plainText = this._extractPlainText(node.content || '');
         if (plainText) {
@@ -409,7 +460,8 @@ window.MyProjectCanvasRenderer = {
           this.ctx.textAlign = 'left';
           this.ctx.textBaseline = 'top';
 
-          const lines = this._wrapTextLines(plainText, innerW, 3);
+          const maxExcerptLines = Math.max(1, Math.min(6, Math.floor(availableBodyH / 19)));
+          const lines = this._wrapTextLines(plainText, innerW, maxExcerptLines);
           lines.forEach((line, idx) => {
             this.ctx.fillText(line, innerX, bodyY + (idx * 19));
           });
@@ -418,19 +470,31 @@ window.MyProjectCanvasRenderer = {
           this.ctx.fillStyle = '#a89984';
           this.ctx.textAlign = 'left';
           this.ctx.textBaseline = 'top';
-          this.ctx.fillText('Empty sheet — double-click or press Enter to write...', innerX, bodyY + 6);
+          let emptyPrompt = 'Empty sheet — double-click or press Enter to write...';
+          while (emptyPrompt.length > 5 && this.ctx.measureText(emptyPrompt).width > innerW) {
+            emptyPrompt = emptyPrompt.slice(0, -1);
+          }
+          if (emptyPrompt.length < 'Empty sheet — double-click or press Enter to write...'.length) {
+            emptyPrompt = emptyPrompt.trim() + '...';
+          }
+          this.ctx.fillText(emptyPrompt, innerX, bodyY + 6);
         }
       } else {
-        // Portfolio: list up to 6 children in shelf view
+        // Portfolio: list children that fit within availableBodyH
         const children = Array.isArray(node.children) ? node.children : [];
         if (children.length > 0) {
-          const maxShow = Math.min(6, children.length);
+          const maxPossibleRows = Math.max(1, Math.floor(availableBodyH / 24));
+          const maxShow = Math.min(maxPossibleRows, children.length);
           for (let i = 0; i < maxShow; i++) {
-            if (i === 5 && children.length > 6) {
+            if (i === maxPossibleRows - 1 && children.length > maxPossibleRows) {
               this.ctx.font = "italic 12px 'Vollkorn', serif";
               this.ctx.fillStyle = '#7c6f64';
               this.ctx.textAlign = 'left';
-              this.ctx.fillText(`+ ${children.length - 5} more items in this portfolio...`, innerX, bodyY + (i * 24));
+              let moreLabel = `+ ${children.length - i} more items in this portfolio...`;
+              while (moreLabel.length > 5 && this.ctx.measureText(moreLabel).width > innerW) {
+                moreLabel = moreLabel.slice(0, -1);
+              }
+              this.ctx.fillText(moreLabel, innerX, bodyY + (i * 24));
               break;
             }
             const child = children[i];
@@ -439,19 +503,19 @@ window.MyProjectCanvasRenderer = {
             let itemText = icon + (child.title || 'Untitled');
             const itemRowY = bodyY + (i * 24);
 
-            this.ctx.font = "14px 'Vollkorn', serif";
-            this.ctx.fillStyle = '#3c3836';
-            this.ctx.textAlign = 'left';
-            this.ctx.textBaseline = 'top';
-
             let wordBadge = '';
             if (isChildSheet && this.getWordCountFunction) {
               const childWords = this.getWordCountFunction(child.content || '');
               wordBadge = `${childWords}w`;
             }
 
+            this.ctx.font = "14px 'Vollkorn', serif";
+            this.ctx.fillStyle = '#3c3836';
+            this.ctx.textAlign = 'left';
+            this.ctx.textBaseline = 'top';
+
             const badgeWidth = wordBadge ? this.ctx.measureText(wordBadge).width + 16 : 0;
-            const maxTitleWidth = innerW - badgeWidth;
+            const maxTitleWidth = Math.max(20, innerW - badgeWidth);
 
             if (this.ctx.measureText(itemText).width > maxTitleWidth) {
               while (itemText.length > 4 && this.ctx.measureText(itemText + '...').width > maxTitleWidth) {
@@ -473,7 +537,14 @@ window.MyProjectCanvasRenderer = {
           this.ctx.fillStyle = '#a89984';
           this.ctx.textAlign = 'left';
           this.ctx.textBaseline = 'top';
-          this.ctx.fillText('Empty archival portfolio — double-click or press Enter to open drawer...', innerX, bodyY + 12);
+          let emptyDrawerPrompt = 'Empty archival portfolio — double-click or press Enter to open drawer...';
+          while (emptyDrawerPrompt.length > 5 && this.ctx.measureText(emptyDrawerPrompt).width > innerW) {
+            emptyDrawerPrompt = emptyDrawerPrompt.slice(0, -1);
+          }
+          if (emptyDrawerPrompt.length < 'Empty archival portfolio — double-click or press Enter to open drawer...'.length) {
+            emptyDrawerPrompt = emptyDrawerPrompt.trim() + '...';
+          }
+          this.ctx.fillText(emptyDrawerPrompt, innerX, bodyY + 12);
         }
       }
 
@@ -494,14 +565,33 @@ window.MyProjectCanvasRenderer = {
         this.ctx.fillRect(innerX, node.y + node.height - 30, barWidth, 2.5);
       }
 
+      // Comment / certification indicator badges on bottom right
+      const commentCount = Array.isArray(node.comments) ? node.comments.length : 0;
+      const certCount = Array.isArray(node.certifiedWords) ? node.certifiedWords.length : 0;
+      let badgeReservationW = 0;
+      if (commentCount > 0 || certCount > 0) {
+        let badges = [];
+        if (commentCount > 0) badges.push(`💬 ${commentCount}`);
+        if (certCount > 0) badges.push(`✦ ${certCount}`);
+        const badgeStr = badges.join('  ');
+        this.ctx.font = "11px 'Vollkorn', serif";
+        badgeReservationW = this.ctx.measureText(badgeStr).width + 12;
+        this.ctx.fillStyle = '#7c6f64';
+        this.ctx.textAlign = 'right';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText(badgeStr, rightX, footerY - 6);
+      }
+
       // Tags pills (bottom left)
       if (Array.isArray(node.tags) && node.tags.length > 0) {
         let tagOffset = innerX;
-        node.tags.slice(0, 3).forEach(tag => {
+        const maxTagAreaRight = rightX - badgeReservationW - 10;
+        for (let t = 0; t < Math.min(3, node.tags.length); t++) {
+          const tag = node.tags[t];
           const tagStr = '#' + tag;
           this.ctx.font = "11px 'Vollkorn', serif";
           const tagW = this.ctx.measureText(tagStr).width;
-          if (tagOffset + tagW + 12 < rightX - 60) {
+          if (tagOffset + tagW + 12 <= maxTagAreaRight) {
             // Draw tag pill background
             this.ctx.fillStyle = 'rgba(213, 196, 161, 0.35)';
             this.ctx.beginPath();
@@ -514,23 +604,13 @@ window.MyProjectCanvasRenderer = {
             this.ctx.textBaseline = 'middle';
             this.ctx.fillText(tagStr, tagOffset + 5, footerY - 6);
             tagOffset += tagW + 16;
+          } else {
+            break;
           }
-        });
+        }
       }
 
-      // Comment / certification indicator badges on bottom right
-      const commentCount = Array.isArray(node.comments) ? node.comments.length : 0;
-      const certCount = Array.isArray(node.certifiedWords) ? node.certifiedWords.length : 0;
-      if (commentCount > 0 || certCount > 0) {
-        let badges = [];
-        if (commentCount > 0) badges.push(`💬 ${commentCount}`);
-        if (certCount > 0) badges.push(`✦ ${certCount}`);
-        this.ctx.font = "11px 'Vollkorn', serif";
-        this.ctx.fillStyle = '#7c6f64';
-        this.ctx.textAlign = 'right';
-        this.ctx.textBaseline = 'middle';
-        this.ctx.fillText(badges.join('  '), rightX, footerY - 6);
-      }
+      this.ctx.restore();
     }
 
     this.ctx.restore();
@@ -561,15 +641,10 @@ window.MyProjectCanvasRenderer = {
       this._drawTrellisLines(selectedNodeGlobal, currentNodes, scale);
     }
 
-    // 3. Draw all visible nodes (excluding archived)
-    const allLevels = [nodes, ...viewStack.map(n => n.children)];
-    allLevels.forEach((levelNodes) => {
-      const isCurrentLevel = levelNodes === currentNodes;
-      (levelNodes || []).forEach(node => {
-        if (node && node.archived) return; // ARCHIVE: Exclude archived portfolios and sheets
-        const isNodeInViewStack = viewStack.includes(node);
-        this._drawNode(node, isCurrentLevel, isNodeInViewStack && !isCurrentLevel, scale);
-      });
+    // 3. Draw visible nodes at current level only (clean focused desk; background levels disabled)
+    (currentNodes || []).forEach(node => {
+      if (node && node.archived) return; // ARCHIVE: Exclude archived portfolios and sheets
+      this._drawNode(node, true, false, scale);
     });
 
     this.ctx.restore();

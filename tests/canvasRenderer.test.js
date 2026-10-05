@@ -20,6 +20,7 @@ describe('MyProjectCanvasRenderer Unit Tests', () => {
             fillText: jest.fn(),
             measureText: jest.fn(() => ({ width: 50 })),
             roundRect: jest.fn(),
+            clip: jest.fn(),
             moveTo: jest.fn(),
             lineTo: jest.fn(),
             quadraticCurveTo: jest.fn(),

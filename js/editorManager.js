@@ -128,10 +128,12 @@ window.MyProjectEditorManager = {
                         editor.ui.registry.addIcon('craft-book', '<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M19 2H6a3 3 0 0 0-3 3v14a3 3 0 0 0 3 3h13a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1ZM6 4h12v12H6a1 1 0 0 1-1-.1V5a1 1 0 0 1 1-1Zm12 16H6a1 1 0 0 1 0-2h12v2Z"/></svg>');
                         editor.ui.registry.addIcon('craft-drawer', '<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Zm0 6H5V5h14v4Zm-5 2v2h-4v-2h4Zm5 8H5v-4h4v1a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1h4v4Z"/></svg>');
                         editor.ui.registry.addIcon('craft-save', '<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2ZM5 5v14h14V7.8L16.2 5H5Zm2 2h8v3H7V7Zm0 7h10v5H7v-5Z"/></svg>');
+                        editor.ui.registry.addIcon('craft-comment', '<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>');
+                        editor.ui.registry.addIcon('craft-fullscreen', '<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>');
 
                         // 1. Scholar Annotation Tools (Group 4)
                         editor.ui.registry.addButton('comment', {
-                            icon: 'comment',
+                            icon: 'craft-comment',
                             text: 'Comment',
                             tooltip: 'Add Comment to Selection (Ctrl+M)',
                             onAction: () => this.addCommentAtSelection()
@@ -173,7 +175,7 @@ window.MyProjectEditorManager = {
                             }
                         });
                         editor.ui.registry.addToggleButton('fullview', {
-                            icon: 'fullscreen',
+                            icon: 'craft-fullscreen',
                             text: 'Full Screen',
                             tooltip: 'Toggle Full Screen Focus Mode (F11)',
                             onAction: (api) => {
@@ -277,13 +279,26 @@ window.MyProjectEditorManager = {
                                     this.uiManager.archiveNode(currentNode);
                                 }
                             }
-                            if (typeof AppConstants !== 'undefined' && e.key === AppConstants.KEY_ESCAPE) {
+                            if (e.key === 'Escape' || e.key === 'Esc' || e.keyCode === 27 || (typeof AppConstants !== 'undefined' && e.key === AppConstants.KEY_ESCAPE)) {
+                                e.preventDefault();
                                 e.stopPropagation();
+                                const activeModal = document.querySelector('.modal:not(.hidden), #archive-modal:not(.hidden), #compendium-modal:not(.hidden)');
+                                if (activeModal) {
+                                    const closeBtn = activeModal.querySelector('.close-button, .close-btn, .modal-close-btn, .craft-close-btn, #close-comment-modal, #close-certify-word-btn, #close-etymology-btn, #close-compendium-btn, #close-archive-btn');
+                                    if (closeBtn) {
+                                        closeBtn.click();
+                                        return;
+                                    } else {
+                                        activeModal.classList.add('hidden');
+                                        return;
+                                    }
+                                }
                                 if (this.isFullView) {
                                     this.toggleFullView(false);
-                                } else {
-                                    this.closeEditorMode();
+                                    return;
                                 }
+                                this.closeEditorMode();
+                                return;
                             }
                             if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'm') {
                                 e.preventDefault();
@@ -643,6 +658,25 @@ window.MyProjectEditorManager = {
             });
         }
 
+        // 5-Minute Warm-Up Controls (Craft Drawer)
+        const warmupNextBtn = document.getElementById('warmup-next-btn');
+        const warmupCopyBtn = document.getElementById('warmup-copy-btn');
+        const warmupTimerBtn = document.getElementById('warmup-timer-btn');
+        const warmupInsertBtn = document.getElementById('warmup-insert-btn');
+
+        if (warmupNextBtn) {
+            warmupNextBtn.addEventListener('click', () => this.drawRandomWarmUpPassage());
+        }
+        if (warmupCopyBtn) {
+            warmupCopyBtn.addEventListener('click', () => this.copyCurrentWarmUpPassage());
+        }
+        if (warmupTimerBtn) {
+            warmupTimerBtn.addEventListener('click', () => this.startWarmUpTimer());
+        }
+        if (warmupInsertBtn) {
+            warmupInsertBtn.addEventListener('click', () => this.insertWarmUpIntoSheet());
+        }
+
         if (!this._documentKeyListenersAttached && typeof document !== 'undefined') {
             this._documentKeyListenersAttached = true;
             document.addEventListener('keydown', (e) => {
@@ -650,9 +684,24 @@ window.MyProjectEditorManager = {
                 if (e.key === 'F11' || (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f')) {
                     e.preventDefault();
                     this.toggleFullView();
-                } else if (e.key === 'Escape' && this.isFullView) {
+                } else if (e.key === 'Escape' || e.key === 'Esc' || e.keyCode === 27) {
                     e.preventDefault();
-                    this.toggleFullView(false);
+                    const activeModal = document.querySelector('.modal:not(.hidden), #archive-modal:not(.hidden), #compendium-modal:not(.hidden)');
+                    if (activeModal) {
+                        const closeBtn = activeModal.querySelector('.close-button, .close-btn, .modal-close-btn, .craft-close-btn, #close-comment-modal, #close-certify-word-btn, #close-etymology-btn, #close-compendium-btn, #close-archive-btn');
+                        if (closeBtn) {
+                            closeBtn.click();
+                            return;
+                        } else {
+                            activeModal.classList.add('hidden');
+                            return;
+                        }
+                    }
+                    if (this.isFullView) {
+                        this.toggleFullView(false);
+                    } else {
+                        this.closeEditorMode();
+                    }
                 }
             });
         }
@@ -870,6 +919,7 @@ window.MyProjectEditorManager = {
         this.renderCraftCertifiedList(node);
         this.updateStrunkMetrics(node ? (node.content || '') : '');
         this.initScenicMaxims();
+        this.drawRandomWarmUpPassage();
 
         // If TinyMCE is available and initialized, use it. Otherwise fall back to
         // a simple textarea so the editor can still be used.
@@ -959,6 +1009,27 @@ window.MyProjectEditorManager = {
                 }
                 this.updateStrunkMetrics(clean);
                 this._scheduleAutoSave();
+            };
+            ta.onkeydown = (e) => {
+                if (e.key === 'Escape' || e.key === 'Esc' || e.keyCode === 27) {
+                    e.preventDefault();
+                    const activeModal = document.querySelector('.modal:not(.hidden), #archive-modal:not(.hidden), #compendium-modal:not(.hidden)');
+                    if (activeModal) {
+                        const closeBtn = activeModal.querySelector('.close-button, .close-btn, .modal-close-btn, .craft-close-btn, #close-comment-modal, #close-certify-word-btn, #close-etymology-btn, #close-compendium-btn, #close-archive-btn');
+                        if (closeBtn) {
+                            closeBtn.click();
+                            return;
+                        } else {
+                            activeModal.classList.add('hidden');
+                            return;
+                        }
+                    }
+                    if (this.isFullView) {
+                        this.toggleFullView(false);
+                    } else {
+                        this.closeEditorMode();
+                    }
+                }
             };
             ta.focus();
         } catch (err) {
@@ -1374,6 +1445,102 @@ window.MyProjectEditorManager = {
 
             container.appendChild(item);
         });
+    },
+
+    /**
+     * Draws a random or specified literary warm-up passage for copywork priming.
+     * @param {string} [passageId]
+     */
+    drawRandomWarmUpPassage: function(passageId) {
+        if (!window.MyProjectWarmUp) return;
+        const currentId = this._currentWarmUpPassage ? this._currentWarmUpPassage.id : null;
+        const passage = passageId
+            ? window.MyProjectWarmUp.getPassageById(passageId)
+            : window.MyProjectWarmUp.getRandomPassage(currentId);
+        if (!passage) return;
+        this._currentWarmUpPassage = passage;
+
+        const authorWorkEl = document.getElementById('warmup-author-work');
+        const quoteEl = document.getElementById('warmup-quote-text');
+
+        if (authorWorkEl) {
+            authorWorkEl.textContent = `${passage.author} — ${passage.work}`;
+        }
+        if (quoteEl) {
+            quoteEl.textContent = `"${passage.text}"`;
+        }
+    },
+
+    /**
+     * Copies current warm-up passage text and citation to system clipboard.
+     */
+    copyCurrentWarmUpPassage: function() {
+        if (!this._currentWarmUpPassage && window.MyProjectWarmUp) {
+            this.drawRandomWarmUpPassage();
+        }
+        if (!this._currentWarmUpPassage) return;
+
+        const text = `"${this._currentWarmUpPassage.text}"\n— ${this._currentWarmUpPassage.author}, ${this._currentWarmUpPassage.work}`;
+        try {
+            if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                navigator.clipboard.writeText(text);
+            }
+        } catch (e) {
+            console.warn('[editor] Failed to copy to clipboard:', e);
+        }
+
+        const copyBtn = document.getElementById('warmup-copy-btn');
+        if (copyBtn) {
+            const originalText = copyBtn.textContent;
+            copyBtn.textContent = '✓ Copied!';
+            setTimeout(() => { copyBtn.textContent = originalText; }, 2000);
+        }
+    },
+
+    /**
+     * Starts a 5-minute countdown timer on the scholar status bar.
+     */
+    startWarmUpTimer: function() {
+        if (this.uiManager && typeof this.uiManager.startTimer === 'function') {
+            this.uiManager.startTimer(5);
+        }
+        const timerBtn = document.getElementById('warmup-timer-btn');
+        if (timerBtn) {
+            const originalText = timerBtn.textContent;
+            timerBtn.textContent = '⏱ 5m Running…';
+            setTimeout(() => { timerBtn.textContent = originalText; }, 3000);
+        }
+    },
+
+    /**
+     * Inserts the current warm-up copywork quote block directly into the sheet.
+     */
+    insertWarmUpIntoSheet: function() {
+        if (!this._currentWarmUpPassage && window.MyProjectWarmUp) {
+            this.drawRandomWarmUpPassage();
+        }
+        if (!this._currentWarmUpPassage) return;
+
+        const passage = this._currentWarmUpPassage;
+        const html = window.MyProjectWarmUp.generateSheetContent(passage);
+
+        if (this.tinyMCEAvailable && this.tinymceEditor) {
+            this.tinymceEditor.insertContent(html);
+        } else {
+            const ta = document.getElementById('main-editor-fallback') || document.getElementById('main-editor');
+            if (ta) {
+                const plain = `\n\n--- 5-Minute Warm-Up (${passage.author} — ${passage.work}) ---\n"${passage.text}"\n\nMy Writing:\n`;
+                ta.value += plain;
+                ta.dispatchEvent(new Event('input'));
+            }
+        }
+
+        const insertBtn = document.getElementById('warmup-insert-btn');
+        if (insertBtn) {
+            const originalText = insertBtn.textContent;
+            insertBtn.textContent = '✓ Inserted!';
+            setTimeout(() => { insertBtn.textContent = originalText; }, 2000);
+        }
     }
 };
 
