@@ -3,6 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <title>Morada — v1.0-Beta</title>
+    <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400&family=Cinzel:wght@500;700&family=Vollkorn:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <script src="node_modules/tinymce/tinymce.min.js"></script>
     <script src="node_modules/sortablejs/Sortable.min.js"></script>
@@ -19,8 +23,11 @@
       <div class="content-area">
         <header class="scholar-masthead" id="breadcrumb-bar">
           <div class="masthead-left">
-            <span class="masthead-brand" title="Morada v1.0-Beta · The Scholar's Desk">MORADA</span>
-            <span class="masthead-version-badge" title="Public Beta Edition" style="font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--color-accent, #b57614); border: 1px solid rgba(181, 118, 20, 0.4); padding: 2px 6px; border-radius: 4px; text-transform: uppercase; margin-left: 2px; vertical-align: middle;">BETA</span>
+            <div class="masthead-brand-group" id="masthead-home-trigger" title="Morada — Return to The Desk">
+              <div class="logo-symbol masthead-logo-symbol" title="Morada">M</div>
+              <span class="masthead-brand" title="Morada v1.0-Beta · The Scholar's Desk">MORADA</span>
+              <span class="masthead-version-badge" title="Public Beta Edition">BETA</span>
+            </div>
             <span class="masthead-divider">/</span>
             <button id="breadcrumb-back-btn" class="masthead-btn back-btn hidden" title="Back to Parent Portfolio">⟵ Back</button>
             <nav id="breadcrumb-path" class="masthead-breadcrumbs">The Desk</nav>
@@ -274,7 +281,10 @@
       <div class="modal-content archive-modal-content">
         <div class="modal-header archive-modal-header">
           <div class="archive-header-title">
-            <h2>The Archives Vault</h2>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="logo-symbol masthead-logo-symbol" style="width: 24px; height: 24px; font-size: 14px; border-radius: 5px;">M</div>
+              <h2>The Archives Vault</h2>
+            </div>
             <span class="archive-header-subtitle">Archived portfolios & sheets safely stored away from the desk</span>
           </div>
           <span class="close-button" id="close-archive-btn" title="Close Archives (Esc)">&times;</span>
@@ -307,7 +317,10 @@
 
     <div id="compendium-modal" class="hidden">
       <div class="compendium-header">
-        <h2>Manuscript Press</h2>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="logo-symbol masthead-logo-symbol" style="width: 24px; height: 24px; font-size: 14px; border-radius: 5px;">M</div>
+          <h2>Manuscript Press</h2>
+        </div>
         <input type="text" id="compendium-filter" placeholder="Filter by text or #tag...">
         <button id="close-compendium-btn">×</button>
       </div>

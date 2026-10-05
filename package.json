@@ -32,6 +32,7 @@
     "appId": "com.morada.app",
     "productName": "Morada",
     "copyright": "Copyright © 2026",
+    "icon": "assets/icon.png",
     "directories": {
       "output": "dist"
     },

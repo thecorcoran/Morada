@@ -209,6 +209,21 @@ window.MyProjectUIManager = {
             }
             if (this.drawFunction) this.drawFunction();
         });
+        const homeTrigger = document.getElementById('masthead-home-trigger');
+        if (homeTrigger) {
+            homeTrigger.addEventListener('click', () => {
+                const viewStack = this.stateManager.getViewStack();
+                if (!viewStack || viewStack.length === 0) return;
+                viewStack.length = 0;
+                this.stateManager.setCurrentNodes(this.stateManager.getRootNodes());
+                this.stateManager.setViewStack(viewStack);
+                this.updateUIChrome();
+                if (typeof this.fitNodesToView === 'function') {
+                    this.fitNodesToView(80);
+                }
+                if (this.drawFunction) this.drawFunction();
+            });
+        }
         if (this.openCompendiumBtn) this.openCompendiumBtn.addEventListener('click', () => this.openCompendium());
         this.autoTidyBtn = document.getElementById('auto-tidy-btn');
         if (this.autoTidyBtn) this.autoTidyBtn.addEventListener('click', () => this.autoTidyDesk());

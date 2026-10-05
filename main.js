@@ -7,12 +7,14 @@ const fs = require('node:fs/promises');
 app.commandLine.appendSwitch('ignore-certificate-errors');
 
 const createWindow = () => {
+  const iconPath = path.join(__dirname, 'assets', 'icon.png');
   const mainWindow = new BrowserWindow({
     fullscreen: false,
     fullscreenable: true,
     width: 1200,
     height: 800,
     center: true,
+    icon: iconPath,
     // NEW: Add the webPreferences block here
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -38,8 +40,8 @@ const createWindow = () => {
         'Content-Security-Policy': [
           "default-src 'self';",
           "script-src 'self' https://cdn.tiny.cloud https://cdn.jsdelivr.net;",
-          "style-src 'self' 'unsafe-inline' https://cdn.tiny.cloud;",
-          "font-src 'self' data: https://cdn.tiny.cloud;",
+          "style-src 'self' 'unsafe-inline' https://cdn.tiny.cloud https://fonts.googleapis.com;",
+          "font-src 'self' data: https://cdn.tiny.cloud https://fonts.gstatic.com;",
           "img-src 'self' data: blob: https://sp.tinymce.com;",
           "connect-src 'self' https://cdn.tiny.cloud https://en.wiktionary.org;"
         ].join(' ')
