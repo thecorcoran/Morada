@@ -5,7 +5,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "postinstall": "mkdir -p ./assets && ncp node_modules/tinymce/skins ./assets/skins && ncp node_modules/tinymce/themes ./assets/themes",
+    "postinstall": "node scripts/postinstall.js",
     "test": "jest",
     "lint": "eslint .",
     "pack": "electron-builder --dir",
@@ -33,6 +33,11 @@
     "productName": "Morada",
     "copyright": "Copyright © 2026",
     "icon": "assets/icon.png",
+    "publish": {
+      "provider": "github",
+      "owner": "thecorcoran",
+      "repo": "Morada"
+    },
     "directories": {
       "output": "dist"
     },
