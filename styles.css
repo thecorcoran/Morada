@@ -435,15 +435,18 @@ body {
 
 .node-editor {
   position: absolute;
-  border: 1px solid #777;
   outline: none;
-  padding: 8px;
-  background-color: var(--color-bg-light-secondary);
-  color: var(--color-text-dark);
-  font-family: var(--font-primary);
-  text-align: center;
-  box-shadow: 0 4px 15px var(--color-shadow);
-  z-index: 10;
+  border: 2px solid #076678;
+  border-radius: 4px;
+  padding: 2px 6px;
+  background-color: #ffffff;
+  color: #1d2021;
+  font-family: var(--font-primary, 'Vollkorn', Georgia, serif);
+  font-weight: bold;
+  text-align: left;
+  box-shadow: 0 2px 8px rgba(7, 102, 120, 0.25);
+  box-sizing: border-box;
+  z-index: 1000;
 }
 
 /* --- General Hidden Class --- */

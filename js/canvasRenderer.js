@@ -428,14 +428,16 @@ window.MyProjectCanvasRenderer = {
       this.ctx.textAlign = 'left';
       this.ctx.textBaseline = 'top';
 
-      let displayTitle = node.title || 'Untitled';
-      if (this.ctx.measureText(displayTitle).width > innerW) {
-        while (displayTitle.length > 3 && this.ctx.measureText(displayTitle + '...').width > innerW) {
-          displayTitle = displayTitle.slice(0, -1);
+      if (!node.isEditing) {
+        let displayTitle = node.title || 'Untitled';
+        if (this.ctx.measureText(displayTitle).width > innerW) {
+          while (displayTitle.length > 3 && this.ctx.measureText(displayTitle + '...').width > innerW) {
+            displayTitle = displayTitle.slice(0, -1);
+          }
+          displayTitle += '...';
         }
-        displayTitle += '...';
+        this.ctx.fillText(displayTitle, innerX, node.y + 36);
       }
-      this.ctx.fillText(displayTitle, innerX, node.y + 36);
 
       // 3. Subtle separator rule below title
       if (this.ctx.moveTo && this.ctx.lineTo) {

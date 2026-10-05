@@ -12,6 +12,8 @@ let isDragging = false;
 let isPotentialDrag = false;
 let dragStartScreenPos = { x: 0, y: 0 };
 let lastMousePosition = { x: 0, y: 0 };
+let lastClickTime = 0;
+let lastClickedNodeId = null;
 
 // --- Initialization ---
 async function init() {
@@ -93,6 +95,33 @@ async function init() {
 
 function setupEventListeners() {
     canvas.addEventListener('mousedown', onMouseDown);
+    canvas.addEventListener('dblclick', (e) => {
+        onMouseDown(e);
+    });
+
+    let lastTouchTime = 0;
+    let lastTouchPos = { x: 0, y: 0 };
+    canvas.addEventListener('touchstart', (e) => {
+        if (e.touches && e.touches.length === 1) {
+            const touch = e.touches[0];
+            const now = Date.now();
+            const dist = Math.hypot(touch.clientX - lastTouchPos.x, touch.clientY - lastTouchPos.y);
+            const isDoubleTap = (now - lastTouchTime < 380) && (dist < 35);
+            lastTouchTime = now;
+            lastTouchPos = { x: touch.clientX, y: touch.clientY };
+
+            const syntheticEvent = {
+                clientX: touch.clientX,
+                clientY: touch.clientY,
+                detail: isDoubleTap ? 2 : 1,
+                button: 0,
+                type: isDoubleTap ? 'dblclick' : 'mousedown',
+                preventDefault: () => { try { e.preventDefault(); } catch (err) {} }
+            };
+            onMouseDown(syntheticEvent);
+        }
+    }, { passive: true });
+
     window.addEventListener('mouseup', onMouseUp);
     window.addEventListener('mousemove', onMouseMove);
     canvas.addEventListener('wheel', onWheel);
@@ -111,6 +140,11 @@ function setupEventListeners() {
 function onMouseDown(e) {
     const { x, y } = getMousePos(e);
     lastMousePosition = { x, y };
+
+    const scale = MyProjectStateManager.getScale();
+    const offsetX = MyProjectStateManager.getOffsetX();
+    const offsetY = MyProjectStateManager.getOffsetY();
+    const worldPos = MyProjectCanvasRenderer.getCanvasWorldPosition(e.clientX, e.clientY, canvas, scale, offsetX, offsetY);
 
     const clickedNode = MyProjectNodeManager.getNodeAtPosition(x, y);
 
@@ -202,37 +236,54 @@ function onMouseDown(e) {
         return;
     }
 
+    const now = Date.now();
+    const isQuickSecondTap = Boolean(lastClickTime && (now - lastClickTime < 400) && lastClickedNodeId === (clickedNode ? clickedNode.id : '__desk__'));
+    const isDoubleAction = Boolean(e.detail === 2 || e.type === 'dblclick' || isQuickSecondTap);
+    lastClickTime = now;
+    lastClickedNodeId = clickedNode ? clickedNode.id : '__desk__';
+
     if (clickedNode) {
         const selectedNode = MyProjectStateManager.getSelectedNode();
         if (selectedNode && selectedNode.isEditing && selectedNode.id !== clickedNode.id) {
-            MyProjectUIManager.createTitleEditor(selectedNode);
+            const existing = document.querySelector('.node-editor');
+            if (existing) {
+                try { existing.blur(); } catch (err) {}
+            }
         }
         MyProjectStateManager.setSelectedNode(clickedNode);
 
-        // Support double-click to rename placeholders or title zone, open text nodes, or enter containers
-        if (e.detail === 2 || e.type === 'dblclick') {
+        // Double-click / Double-tap action
+        if (isDoubleAction) {
             isPotentialDrag = false;
             isDragging = false;
 
-            // 1. Double-clicking on placeholder names ("New Portfolio", "New Sheet", etc.) or the title zone triggers inline rename
-            const isPlaceholderTitle = !clickedNode.title ||
-                /^(new portfolio|new sheet|new chamber|new scriptorium|untitled)$/i.test(clickedNode.title.trim());
-            const isTitleZone = (worldPos.y >= clickedNode.y + 16 && worldPos.y <= clickedNode.y + 68);
+            // 1. If double-clicked specifically ON THE NAME (title) of the portfolio or note:
+            // The title starts at clickedNode.x + 18, and sits vertically between clickedNode.y + 20 and clickedNode.y + 64.
+            const titleText = clickedNode.title || 'Untitled';
+            const approxCharW = 11;
+            const titleWidth = Math.max(60, Math.min(clickedNode.width - 36, titleText.length * approxCharW + 24));
+            const isClickOnName = (
+                worldPos.y >= clickedNode.y + 20 &&
+                worldPos.y <= clickedNode.y + 64 &&
+                worldPos.x >= clickedNode.x + 12 &&
+                worldPos.x <= clickedNode.x + 24 + titleWidth
+            );
 
-            if (isPlaceholderTitle || isTitleZone) {
-                console.log('[renderer] double-click title edit for node', clickedNode.id);
+            if (isClickOnName) {
+                console.log('[renderer] double-click ON NAME -> inline title edit for node', clickedNode.id);
                 if (window.MyProjectUIManager && typeof window.MyProjectUIManager.createTitleEditor === 'function') {
                     window.MyProjectUIManager.createTitleEditor(clickedNode);
                     return;
                 }
             }
 
+            // 2. Double-clicking anywhere else on the portfolio or note enters or opens it:
             if (clickedNode.type === 'text') {
-                console.log('[renderer] double-click/open attempt for text node', clickedNode.id);
+                console.log('[renderer] double-click/open text note', clickedNode.id);
                 MyProjectEditorManager.openEditorMode(clickedNode);
                 return;
             } else if (clickedNode.type === 'container') {
-                console.log('[renderer] double-click/enter container', clickedNode.id);
+                console.log('[renderer] double-click/enter container portfolio', clickedNode.id);
                 MyProjectStateManager.pushToViewStack(clickedNode);
                 MyProjectStateManager.setCurrentNodes(clickedNode.children || []);
                 MyProjectUIManager.updateUIChrome();
@@ -249,18 +300,18 @@ function onMouseDown(e) {
     } else {
         // Clicked empty space: clear selection and close any node inspector
         MyProjectStateManager.setSelectedNode(null);
+        const existing = document.querySelector('.node-editor');
+        if (existing) {
+            try { existing.blur(); } catch (err) {}
+        }
         try { const m = document.getElementById('node-inspector-modal'); if (m) m.remove(); } catch (e) {}
 
-        if (e.detail === 2) {
+        if (isDoubleAction) {
             // Double click empty space: create a new node
             // Shift + double-click -> Sheet (text)
             // Normal double-click -> Portfolio (container)
             const isText = !!e.shiftKey;
             const id = 'node-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
-            const scale = MyProjectStateManager.getScale();
-            const offsetX = MyProjectStateManager.getOffsetX();
-            const offsetY = MyProjectStateManager.getOffsetY();
-            const worldPos = MyProjectCanvasRenderer.getCanvasWorldPosition(e.clientX, e.clientY, canvas, scale, offsetX, offsetY);
             const newNode = MyProjectNodeManager.createNode(worldPos.x, worldPos.y, isText, id);
             const current = MyProjectStateManager.getCurrentNodes();
             current.push(newNode);
@@ -539,8 +590,8 @@ function getMousePos(e) {
 }
 
 function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    canvas.width = canvas.clientWidth || window.innerWidth;
+    canvas.height = canvas.clientHeight || window.innerHeight;
     draw();
 }
 

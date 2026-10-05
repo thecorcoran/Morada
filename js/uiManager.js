@@ -1381,10 +1381,10 @@ window.MyProjectUIManager = {
         const offsetX = this.stateManager.getOffsetX();
         const offsetY = this.stateManager.getOffsetY();
 
-        // Title begins at (node.x + 18, node.y + 34) in world space
+        // Title begins at (node.x + 18, node.y + 32) in world space
         const titleWorldX = node.x + 18;
-        const titleWorldY = node.y + 34;
-        const titleWorldW = Math.max(80, node.width - 36);
+        const titleWorldY = node.y + 32;
+        const titleWorldW = Math.max(140, Math.min(node.width - 36, (node.title ? node.title.length * 13 + 30 : 160)));
 
         const screenX = (titleWorldX - this.canvas.width / 2 - offsetX) * scale + this.canvas.width / 2 + canvasX;
         const screenY = (titleWorldY - this.canvas.height / 2 - offsetY) * scale + this.canvas.height / 2 + canvasY;
@@ -1394,16 +1394,17 @@ window.MyProjectUIManager = {
         editor.style.left = `${screenX}px`;
         editor.style.top = `${screenY}px`;
         editor.style.width = `${screenW}px`;
-        editor.style.height = `${Math.max(24, 28 * scale)}px`;
-        editor.style.fontSize = `${Math.max(13, 16 * scale)}px`;
+        editor.style.height = `${Math.max(26, 30 * scale)}px`;
+        editor.style.fontSize = `${Math.max(13, 17 * scale)}px`;
         editor.style.fontFamily = "'Vollkorn', Georgia, serif";
         editor.style.fontWeight = "bold";
+        editor.style.textAlign = "left";
         editor.style.color = "#1d2021";
         editor.style.backgroundColor = "#ffffff";
         editor.style.border = "2px solid #076678";
         editor.style.borderRadius = "4px";
         editor.style.boxShadow = "0 2px 8px rgba(7, 102, 120, 0.25)";
-        editor.style.padding = "2px 6px";
+        editor.style.padding = "2px 8px";
         editor.style.outline = "none";
         editor.style.boxSizing = "border-box";
         editor.style.zIndex = '1000';
