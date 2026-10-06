@@ -357,7 +357,11 @@ window.MyProjectUIManager = {
 
         // Keyboard shortcuts while editor is focused
         document.addEventListener('keydown', (e) => {
-            const isEditorOpen = this.isEditorOpen && this.isEditorOpen();
+            const isEditorOpen = (typeof this.isEditorOpen === 'function')
+                ? this.isEditorOpen()
+                : (window.MyProjectEditorManager && typeof window.MyProjectEditorManager.isEditorOpen === 'function'
+                    ? window.MyProjectEditorManager.isEditorOpen()
+                    : Boolean(this.editorMode && !this.editorMode.classList.contains('hidden')));
             if (!isEditorOpen) return;
             // Ctrl+M -> add comment
             if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'm') {
@@ -2373,6 +2377,21 @@ MyProjectUIManager.ensureNodeVisible = function(node, margin = 80) {
     } catch (err) {
         console.warn('ensureNodeVisible failed', err);
     }
+};
+
+/**
+ * Checks if editor mode is open.
+ * @returns {boolean}
+ */
+MyProjectUIManager.isEditorOpen = function() {
+    if (this.editorMode) {
+        return !this.editorMode.classList.contains('hidden');
+    }
+    if (typeof document !== 'undefined') {
+        const em = document.getElementById('editor-mode');
+        return Boolean(em && !em.classList.contains('hidden'));
+    }
+    return false;
 };
 
 Object.assign(window.MyProjectUIManager, ArchiveManager, SearchManager, CompendiumManager);

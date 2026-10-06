@@ -14,6 +14,7 @@ let dragStartScreenPos = { x: 0, y: 0 };
 let lastMousePosition = { x: 0, y: 0 };
 let lastClickTime = 0;
 let lastClickedNodeId = null;
+let lastDoubleActionHandledTime = 0;
 
 // --- Initialization ---
 async function init() {
@@ -318,6 +319,10 @@ function onMouseDown(e) {
 
         // Double-click / Double-tap action
         if (isDoubleAction) {
+            if (now - lastDoubleActionHandledTime < 250) {
+                return;
+            }
+            lastDoubleActionHandledTime = now;
             isPotentialDrag = false;
             isDragging = false;
 

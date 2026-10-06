@@ -476,5 +476,22 @@ describe('MyProjectEditorManager & Craft Drawer Integration Tests', () => {
         EditorManager.tinyMCEAvailable = false;
         expect(EditorManager.isTinyMCEActive()).toBe(false);
     });
+
+    test('openEditorMode guarantees textarea is enabled and responsive for typing', () => {
+        const testNode = { id: 'sheet-typing-verify', title: 'Typing Sheet', content: 'Initial prose' };
+        EditorManager.openEditorMode(testNode);
+
+        const ta = EditorManager.getTextareaElement();
+        expect(ta).toBeTruthy();
+        expect(ta.disabled).toBe(false);
+        expect(ta.readOnly).toBe(false);
+        expect(ta.style.display).toBe('block');
+        expect(EditorManager.isEditorOpen()).toBe(true);
+
+        // Simulate typing into the sheet
+        ta.value = 'Initial prose with brilliant new thought';
+        ta.oninput();
+        expect(testNode.content).toBe('Initial prose with brilliant new thought');
+    });
 });
 

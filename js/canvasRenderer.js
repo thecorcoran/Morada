@@ -706,8 +706,12 @@ window.MyProjectCanvasRenderer = {
 
   getCanvasWorldPosition: function(mouseX, mouseY, canvasEl, currentScale, currentOffsetX, currentOffsetY) {
     const rect = canvasEl.getBoundingClientRect();
-    const canvasMouseX = mouseX - rect.left;
-    const canvasMouseY = mouseY - rect.top;
+    const clientW = canvasEl.clientWidth || canvasEl.width || 1;
+    const clientH = canvasEl.clientHeight || canvasEl.height || 1;
+    const scaleX = canvasEl.width / clientW;
+    const scaleY = canvasEl.height / clientH;
+    const canvasMouseX = (mouseX - rect.left) * scaleX;
+    const canvasMouseY = (mouseY - rect.top) * scaleY;
 
     const worldX = (canvasMouseX - canvasEl.width / 2) / currentScale + canvasEl.width / 2 + currentOffsetX;
     const worldY = (canvasMouseY - canvasEl.height / 2) / currentScale + canvasEl.height / 2 + currentOffsetY;

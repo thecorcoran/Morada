@@ -18,18 +18,7 @@
     <link rel="stylesheet" href="node_modules/@fontsource/vollkorn/700.css">
     <link rel="stylesheet" href="styles.css">
     <script src="node_modules/tinymce/tinymce.min.js"></script>
-    <script>
-      if (typeof tinymce === 'undefined') {
-        var s = document.createElement('script');
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/7.1.2/tinymce.min.js';
-        s.onload = function() {
-          if (window.MyProjectEditorManager && typeof window.MyProjectEditorManager.initTinyMCE === 'function') {
-            window.MyProjectEditorManager.initTinyMCE();
-          }
-        };
-        document.head.appendChild(s);
-      }
-    </script>
+
     <script src="node_modules/sortablejs/Sortable.min.js"></script>
     <script>
       if (typeof Sortable === 'undefined') {
