@@ -316,34 +316,12 @@ function onMouseDown(e) {
             window.MyProjectUIManager.updateUIChrome();
         }
 
-        // Double-click / Double-tap action
+        // Double-click / Double-tap action: Opens the sheet into editor or enters the portfolio
         if (isDoubleAction) {
             isPotentialDrag = false;
             isDragging = false;
 
-            // 1. If double-clicked specifically ON THE NAME (title) of the portfolio or note:
-            // The title starts at clickedNode.x + 18, and sits vertically between clickedNode.y + 20 and clickedNode.y + 64.
-            const titleText = clickedNode.title || 'Untitled';
-            const approxCharW = 11;
-            const titleWidth = Math.max(60, Math.min(clickedNode.width - 36, titleText.length * approxCharW + 24));
-            const isClickOnName = (
-                worldPos.y >= clickedNode.y + 20 &&
-                worldPos.y <= clickedNode.y + 64 &&
-                worldPos.x >= clickedNode.x + 12 &&
-                worldPos.x <= clickedNode.x + 24 + titleWidth
-            );
-
-            if (isClickOnName) {
-                if (window.MyProjectUIManager && typeof window.MyProjectUIManager.createTitleEditor === 'function') {
-                    window.MyProjectUIManager.createTitleEditor(clickedNode);
-                    return;
-                }
-            }
-
-            // 2. Double-clicking anywhere else on the portfolio or note enters or opens it:
             if (clickedNode.type === 'text') {
-                isPotentialDrag = false;
-                isDragging = false;
                 MyProjectEditorManager.openEditorMode(clickedNode);
                 return;
             } else if (clickedNode.type === 'container') {
@@ -509,6 +487,14 @@ function onKeyDown(e) {
                 e.preventDefault();
                 if (window.MyProjectUIManager && typeof window.MyProjectUIManager.archiveNode === 'function') {
                     window.MyProjectUIManager.archiveNode(selectedNode);
+                }
+            }
+            break;
+        case 'F2':
+            if (selectedNode && !selectedNode.isEditing) {
+                e.preventDefault();
+                if (window.MyProjectUIManager && typeof window.MyProjectUIManager.createTitleEditor === 'function') {
+                    window.MyProjectUIManager.createTitleEditor(selectedNode);
                 }
             }
             break;
