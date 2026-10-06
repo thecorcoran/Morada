@@ -36,338 +36,385 @@ window.MyProjectEditorManager = {
 
         // Try to initialize TinyMCE, but don't let its absence break the app.
         this.tinyMCEAvailable = false;
+        this.initTinyMCE();
+    },
+
+    /**
+     * Initializes the TinyMCE editor instance. Safe to call multiple times or upon CDN script load.
+     */
+    initTinyMCE: function() {
+        if (this._tinymceInitStarted || (this.tinymceEditor && this.tinyMCEAvailable)) {
+            return;
+        }
+        if (typeof tinymce === 'undefined' || !tinymce || typeof tinymce.init !== 'function') {
+            console.warn('[editor] TinyMCE not available; falling back to textarea editor');
+            return;
+        }
+
+        this._tinymceInitStarted = true;
+        this.tinyMCEAvailable = false;
         try {
-            if (typeof tinymce !== 'undefined' && tinymce && typeof tinymce.init === 'function') {
-                tinymce.init({
-                    selector: '#main-editor', // From index.html
-                    license_key: 'gpl',
-                    base_url: 'node_modules/tinymce',
-                    suffix: '.min',
-                    plugins: 'lists link wordcount',
-                    menu: {
-                        file: { title: 'File', items: 'newdocument | preview | print | archive_item | saveclose_item' },
-                        edit: { title: 'Edit', items: 'undo redo | cut copy paste | selectall' },
-                        view: { title: 'View', items: 'fullview_item | visualaid visualchars visualblocks' },
-                        insert: { title: 'Insert', items: 'link insert_maxim_item | hr' },
-                        format: { title: 'Format', items: 'bold italic underline strikethrough superscript subscript | removeformat' },
-                        craft: { title: 'Craft', items: 'craftdrawer_item | comment_item certify_item etymology_item | maxim_item insert_maxim_item' },
-                        tools: { title: 'Tools', items: 'wordcount' }
-                    },
-                    menubar: 'file edit view insert format craft tools',
-                    toolbar: 'undo redo | bold italic underline blockquote | bullist numlist | comment certify etymology | craftdrawer fullview | saveclose',
-                    statusbar: true,
-                    content_css: false,
-                    content_style: `
+            const isFileProtocol = (typeof window !== 'undefined' && window.location && window.location.protocol === 'file:');
+            const baseUrl = (typeof tinymce !== 'undefined' && tinymce.baseURL && tinymce.baseURL !== (typeof window !== 'undefined' && window.location ? window.location.origin : ''))
+                ? tinymce.baseURL
+                : (isFileProtocol ? 'node_modules/tinymce' : 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/7.1.2');
+
+            tinymce.init({
+                selector: '#main-editor', // From index.html
+                license_key: 'gpl',
+                base_url: baseUrl,
+                suffix: '.min',
+                plugins: 'lists link wordcount',
+                menu: {
+                    file: { title: 'File', items: 'newdocument | preview | print | archive_item | saveclose_item' },
+                    edit: { title: 'Edit', items: 'undo redo | cut copy paste | selectall' },
+                    view: { title: 'View', items: 'fullview_item | visualaid visualchars visualblocks' },
+                    insert: { title: 'Insert', items: 'link insert_maxim_item | hr' },
+                    format: { title: 'Format', items: 'bold italic underline strikethrough superscript subscript | removeformat' },
+                    craft: { title: 'Craft', items: 'craftdrawer_item | comment_item certify_item etymology_item | maxim_item insert_maxim_item' },
+                    tools: { title: 'Tools', items: 'wordcount' }
+                },
+                menubar: 'file edit view insert format craft tools',
+                toolbar: 'undo redo | bold italic underline blockquote | bullist numlist | comment certify etymology | craftdrawer fullview | saveclose',
+                statusbar: true,
+                content_css: false,
+                content_style: `
+                    body {
+                        font-family: 'Vollkorn', Georgia, serif;
+                        font-size: ${typeof AppConstants !== 'undefined' ? AppConstants.EDITOR_DEFAULT_FONT_SIZE : '18px'};
+                        line-height: ${typeof AppConstants !== 'undefined' ? AppConstants.EDITOR_DEFAULT_LINE_HEIGHT : '1.7'};
+                        background-color: ${typeof AppConstants !== 'undefined' ? AppConstants.EDITOR_BACKGROUND_COLOR : '#fdfaf4'};
+                        color: #2c2523;
+                        max-width: 820px;
+                        margin: 0 auto;
+                        padding: 2.5rem 3.5rem;
+                        box-sizing: border-box;
+                    }
+                    @media (max-width: 600px) {
                         body {
-                            font-family: 'Vollkorn', Georgia, serif;
-                            font-size: ${typeof AppConstants !== 'undefined' ? AppConstants.EDITOR_DEFAULT_FONT_SIZE : '18px'};
-                            line-height: ${typeof AppConstants !== 'undefined' ? AppConstants.EDITOR_DEFAULT_LINE_HEIGHT : '1.7'};
-                            background-color: ${typeof AppConstants !== 'undefined' ? AppConstants.EDITOR_BACKGROUND_COLOR : '#fdfaf4'};
-                            color: #2c2523;
-                            max-width: 820px;
-                            margin: 0 auto;
-                            padding: 2.5rem 3.5rem;
-                            box-sizing: border-box;
+                            padding: 1rem 0.8rem !important;
+                            font-size: 16px !important;
                         }
-                        .comment-highlight {
-                            background-color: #fff275;
-                            border-bottom: 2px solid #dab600;
-                            border-radius: 2px;
-                            padding: 1px 2px;
-                            cursor: pointer;
-                        }
-                        .comment-highlight:hover {
-                            background-color: #ffe600;
-                        }
-                        .certified-word {
-                            background-color: #c7f9cc;
-                            border-bottom: 2px solid #38b000;
-                            border-radius: 2px;
-                            padding: 1px 2px;
-                            cursor: pointer;
-                        }
-                        .certified-word:hover {
-                            background-color: #80ed99;
-                        }
-                        .strunk-passive {
-                            border-bottom: 2px dotted #8b5cf6;
-                            background-color: rgba(139, 92, 246, 0.12);
-                            cursor: help;
-                            border-radius: 2px;
-                            padding: 0 1px;
-                        }
-                        .strunk-passive:hover {
-                            background-color: rgba(139, 92, 246, 0.25);
-                        }
-                        .strunk-adverb {
-                            border-bottom: 2px dashed #f59e0b;
-                            background-color: rgba(245, 158, 11, 0.12);
-                            cursor: help;
-                            border-radius: 2px;
-                            padding: 0 1px;
-                        }
-                        .strunk-adverb:hover {
-                            background-color: rgba(245, 158, 11, 0.25);
-                        }
-                    `,
-                    height: "100%",
-                    width: "100%",
-                    setup: (editor) => {
-                        this.tinymceEditor = editor;
-                        this.tinyMCEAvailable = true;
+                    }
+                    .comment-highlight {
+                        background-color: #fff275;
+                        border-bottom: 2px solid #dab600;
+                        border-radius: 2px;
+                        padding: 1px 2px;
+                        cursor: pointer;
+                    }
+                    .comment-highlight:hover {
+                        background-color: #ffe600;
+                    }
+                    .certified-word {
+                        background-color: #c7f9cc;
+                        border-bottom: 2px solid #38b000;
+                        border-radius: 2px;
+                        padding: 1px 2px;
+                        cursor: pointer;
+                    }
+                    .certified-word:hover {
+                        background-color: #80ed99;
+                    }
+                    .strunk-passive {
+                        border-bottom: 2px dotted #8b5cf6;
+                        background-color: rgba(139, 92, 246, 0.12);
+                        cursor: help;
+                        border-radius: 2px;
+                        padding: 0 1px;
+                    }
+                    .strunk-passive:hover {
+                        background-color: rgba(139, 92, 246, 0.25);
+                    }
+                    .strunk-adverb {
+                        border-bottom: 2px dashed #f59e0b;
+                        background-color: rgba(245, 158, 11, 0.12);
+                        cursor: help;
+                        border-radius: 2px;
+                        padding: 0 1px;
+                    }
+                    .strunk-adverb:hover {
+                        background-color: rgba(245, 158, 11, 0.25);
+                    }
+                `,
+                height: "100%",
+                width: "100%",
+                setup: (editor) => {
+                    this.tinymceEditor = editor;
+                    this.tinyMCEAvailable = true;
+                    this._tinymceInitStarted = false;
 
-                        // Mark main content container as tinymce-active to hide redundant outer fallback toolbar
+                    // Mark main content container as tinymce-active to hide redundant outer fallback toolbar
+                    try {
+                        const editorMain = document.getElementById('editor-main-content');
+                        if (editorMain) editorMain.classList.add('tinymce-active');
+                    } catch (e) {}
+
+                    // Register custom Scholar's Desk icons
+                    editor.ui.registry.addIcon('craft-quill', '<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M3 21v-3l11-11 3 3L6 21H3Zm14.7-12.3-3-3L16.4 4a1.4 1.4 0 0 1 2 0l1.6 1.6a1.4 1.4 0 0 1 0 2l-2.3 2.1Z"/></svg>');
+                    editor.ui.registry.addIcon('craft-book', '<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M19 2H6a3 3 0 0 0-3 3v14a3 3 0 0 0 3 3h13a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1ZM6 4h12v12H6a1 1 0 0 1-1-.1V5a1 1 0 0 1 1-1Zm12 16H6a1 1 0 0 1 0-2h12v2Z"/></svg>');
+                    editor.ui.registry.addIcon('craft-drawer', '<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Zm0 6H5V5h14v4Zm-5 2v2h-4v-2h4Zm5 8H5v-4h4v1a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1h4v4Z"/></svg>');
+                    editor.ui.registry.addIcon('craft-save', '<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2ZM5 5v14h14V7.8L16.2 5H5Zm2 2h8v3H7V7Zm0 7h10v5H7v-5Z"/></svg>');
+                    editor.ui.registry.addIcon('craft-comment', '<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>');
+                    editor.ui.registry.addIcon('craft-fullscreen', '<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>');
+
+                    // 1. Scholar Annotation Tools (Group 4)
+                    editor.ui.registry.addButton('comment', {
+                        icon: 'craft-comment',
+                        text: 'Comment',
+                        tooltip: 'Add Comment to Selection (Ctrl+M)',
+                        onAction: () => this.addCommentAtSelection()
+                    });
+                    editor.ui.registry.addButton('certify', {
+                        icon: 'craft-quill',
+                        text: 'Certify',
+                        tooltip: 'Certify Highlighted Word (Percy) (Ctrl+Shift+C)',
+                        onAction: () => this.certifySelection()
+                    });
+                    editor.ui.registry.addButton('etymology', {
+                        icon: 'craft-book',
+                        text: 'Etymology',
+                        tooltip: 'Look up Word Etymology (Wiktionary) (Ctrl+Shift+E)',
+                        onAction: () => this.lookupEtymologyAtSelection()
+                    });
+
+                    // 2. Workspace & Layout Controls (Group 5: Right-Docked Toggle Buttons)
+                    editor.ui.registry.addToggleButton('craftdrawer', {
+                        icon: 'craft-drawer',
+                        text: 'Craft Drawer',
+                        tooltip: 'Toggle Craft Drawer Sidebar (Ctrl+Shift+D)',
+                        onAction: (api) => {
+                            this.toggleCraftDrawer();
+                            const sidebar = (this.uiManager && this.uiManager.editorInspectorSidebar)
+                                ? this.uiManager.editorInspectorSidebar
+                                : document.getElementById('editor-inspector-sidebar');
+                            const isOpen = sidebar && !sidebar.classList.contains('hidden');
+                            api.setActive(Boolean(isOpen));
+                        },
+                        onSetup: (api) => {
+                            this._tinymceCraftDrawerApi = api;
+                            const sidebar = (this.uiManager && this.uiManager.editorInspectorSidebar)
+                                ? this.uiManager.editorInspectorSidebar
+                                : document.getElementById('editor-inspector-sidebar');
+                            const isOpen = sidebar && !sidebar.classList.contains('hidden');
+                            api.setActive(Boolean(isOpen));
+                            return () => { this._tinymceCraftDrawerApi = null; };
+                        }
+                    });
+                    editor.ui.registry.addToggleButton('fullview', {
+                        icon: 'craft-fullscreen',
+                        text: 'Full Screen',
+                        tooltip: 'Toggle Full Screen Focus Mode (F11)',
+                        onAction: (api) => {
+                            this.toggleFullView();
+                            api.setActive(Boolean(this.isFullView));
+                        },
+                        onSetup: (api) => {
+                            this._tinymceFullViewApi = api;
+                            api.setActive(Boolean(this.isFullView));
+                            return () => { this._tinymceFullViewApi = null; };
+                        }
+                    });
+
+                    // 3. Primary Document Action: Save & Close Sheet (Group 6: Rightmost Exit)
+                    editor.ui.registry.addButton('saveclose', {
+                        icon: 'craft-save',
+                        text: 'Save & Close',
+                        tooltip: 'Save Sheet & Return to Desk (Esc)',
+                        onAction: () => this.closeEditorMode()
+                    });
+
+                    // Right-dock workspace controls dynamically after editor rendering
+                    editor.on('init', () => {
                         try {
-                            const editorMain = document.getElementById('editor-main-content');
-                            if (editorMain) editorMain.classList.add('tinymce-active');
-                        } catch (e) {}
-
-                        // Register custom Scholar's Desk icons
-                        editor.ui.registry.addIcon('craft-quill', '<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M3 21v-3l11-11 3 3L6 21H3Zm14.7-12.3-3-3L16.4 4a1.4 1.4 0 0 1 2 0l1.6 1.6a1.4 1.4 0 0 1 0 2l-2.3 2.1Z"/></svg>');
-                        editor.ui.registry.addIcon('craft-book', '<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M19 2H6a3 3 0 0 0-3 3v14a3 3 0 0 0 3 3h13a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1ZM6 4h12v12H6a1 1 0 0 1-1-.1V5a1 1 0 0 1 1-1Zm12 16H6a1 1 0 0 1 0-2h12v2Z"/></svg>');
-                        editor.ui.registry.addIcon('craft-drawer', '<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Zm0 6H5V5h14v4Zm-5 2v2h-4v-2h4Zm5 8H5v-4h4v1a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1h4v4Z"/></svg>');
-                        editor.ui.registry.addIcon('craft-save', '<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2ZM5 5v14h14V7.8L16.2 5H5Zm2 2h8v3H7V7Zm0 7h10v5H7v-5Z"/></svg>');
-                        editor.ui.registry.addIcon('craft-comment', '<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>');
-                        editor.ui.registry.addIcon('craft-fullscreen', '<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>');
-
-                        // 1. Scholar Annotation Tools (Group 4)
-                        editor.ui.registry.addButton('comment', {
-                            icon: 'craft-comment',
-                            text: 'Comment',
-                            tooltip: 'Add Comment to Selection (Ctrl+M)',
-                            onAction: () => this.addCommentAtSelection()
-                        });
-                        editor.ui.registry.addButton('certify', {
-                            icon: 'craft-quill',
-                            text: 'Certify',
-                            tooltip: 'Certify Highlighted Word (Percy) (Ctrl+Shift+C)',
-                            onAction: () => this.certifySelection()
-                        });
-                        editor.ui.registry.addButton('etymology', {
-                            icon: 'craft-book',
-                            text: 'Etymology',
-                            tooltip: 'Look up Word Etymology (Wiktionary) (Ctrl+Shift+E)',
-                            onAction: () => this.lookupEtymologyAtSelection()
-                        });
-
-                        // 2. Workspace & Layout Controls (Group 5: Right-Docked Toggle Buttons)
-                        editor.ui.registry.addToggleButton('craftdrawer', {
-                            icon: 'craft-drawer',
-                            text: 'Craft Drawer',
-                            tooltip: 'Toggle Craft Drawer Sidebar (Ctrl+Shift+D)',
-                            onAction: (api) => {
-                                this.toggleCraftDrawer();
-                                const sidebar = (this.uiManager && this.uiManager.editorInspectorSidebar)
-                                    ? this.uiManager.editorInspectorSidebar
-                                    : document.getElementById('editor-inspector-sidebar');
-                                const isOpen = sidebar && !sidebar.classList.contains('hidden');
-                                api.setActive(Boolean(isOpen));
-                            },
-                            onSetup: (api) => {
-                                this._tinymceCraftDrawerApi = api;
-                                const sidebar = (this.uiManager && this.uiManager.editorInspectorSidebar)
-                                    ? this.uiManager.editorInspectorSidebar
-                                    : document.getElementById('editor-inspector-sidebar');
-                                const isOpen = sidebar && !sidebar.classList.contains('hidden');
-                                api.setActive(Boolean(isOpen));
-                                return () => { this._tinymceCraftDrawerApi = null; };
+                            const container = editor.editorContainer || document.querySelector('.tox.tox-tinymce');
+                            if (container) {
+                                const drawerBtn = container.querySelector('[data-mce-name="craftdrawer"]') ||
+                                                  container.querySelector('[aria-label*="Craft Drawer"]') ||
+                                                  container.querySelector('[title*="Craft Drawer"]');
+                                if (drawerBtn) {
+                                    const group = drawerBtn.closest('.tox-toolbar__group');
+                                    if (group) group.style.marginLeft = 'auto';
+                                }
                             }
-                        });
-                        editor.ui.registry.addToggleButton('fullview', {
-                            icon: 'craft-fullscreen',
-                            text: 'Full Screen',
-                            tooltip: 'Toggle Full Screen Focus Mode (F11)',
-                            onAction: (api) => {
-                                this.toggleFullView();
-                                api.setActive(Boolean(this.isFullView));
-                            },
-                            onSetup: (api) => {
-                                this._tinymceFullViewApi = api;
-                                api.setActive(Boolean(this.isFullView));
-                                return () => { this._tinymceFullViewApi = null; };
-                            }
-                        });
+                        } catch (err) {
+                            console.warn('[editor] Failed to dock workspace group right:', err);
+                        }
 
-                        // 3. Primary Document Action: Save & Close Sheet (Group 6: Rightmost Exit)
-                        editor.ui.registry.addButton('saveclose', {
-                            icon: 'craft-save',
-                            text: 'Save & Close',
-                            tooltip: 'Save Sheet & Return to Desk (Esc)',
-                            onAction: () => this.closeEditorMode()
-                        });
-
-                        // Right-dock workspace controls dynamically after editor rendering
-                        editor.on('init', () => {
+                        // If editor mode was already opened before TinyMCE finished initializing, populate it now
+                        if (this.isEditorOpen()) {
                             try {
-                                const container = editor.editorContainer || document.querySelector('.tox.tox-tinymce');
-                                if (container) {
-                                    const drawerBtn = container.querySelector('[data-mce-name="craftdrawer"]') ||
-                                                      container.querySelector('[aria-label*="Craft Drawer"]') ||
-                                                      container.querySelector('[title*="Craft Drawer"]');
-                                    if (drawerBtn) {
-                                        const group = drawerBtn.closest('.tox-toolbar__group');
-                                        if (group) group.style.marginLeft = 'auto';
+                                const selectedNode = this.stateManager ? this.stateManager.getSelectedNode() : null;
+                                if (selectedNode) {
+                                    editor.setContent(selectedNode.content || '');
+                                    if (this.uiManager && typeof this.uiManager.updateEditorWordCount === 'function') {
+                                        this.uiManager.updateEditorWordCount(selectedNode.content || '');
                                     }
+                                    if (this.uiManager && this.uiManager.renderTags) this.uiManager.renderTags(selectedNode);
+                                    if (this.uiManager && this.uiManager.renderFootnotes) this.uiManager.renderFootnotes(selectedNode);
+                                    this.applyStrunkHighlights();
                                 }
-                            } catch (err) {
-                                console.warn('[editor] Failed to dock workspace group right:', err);
+                                const fallbackTa = document.getElementById('main-editor-fallback');
+                                if (fallbackTa) fallbackTa.style.display = 'none';
+                                editor.focus();
+                            } catch (e) {
+                                console.warn('[editor] populate on late init failed', e);
                             }
-                        });
+                        }
+                    });
 
-                        // Register custom menu items for menubar
-                        editor.ui.registry.addMenuItem('craftdrawer_item', {
-                            text: 'Toggle Craft Drawer',
-                            shortcut: 'Ctrl+Shift+D',
-                            onAction: () => this.toggleCraftDrawer()
-                        });
-                        editor.ui.registry.addMenuItem('comment_item', {
-                            text: 'Add Comment at Selection',
-                            shortcut: 'Ctrl+M',
-                            onAction: () => this.addCommentAtSelection()
-                        });
-                        editor.ui.registry.addMenuItem('certify_item', {
-                            text: 'Certify Word (Percy)',
-                            shortcut: 'Ctrl+Shift+C',
-                            onAction: () => this.certifySelection()
-                        });
-                        editor.ui.registry.addMenuItem('etymology_item', {
-                            text: 'Lookup Etymology (Wiktionary)',
-                            shortcut: 'Ctrl+Shift+E',
-                            onAction: () => this.lookupEtymologyAtSelection()
-                        });
-                        editor.ui.registry.addMenuItem('maxim_item', {
-                            text: 'Draw Scenic Maxim',
-                            onAction: () => this.drawRandomMaxim()
-                        });
-                        editor.ui.registry.addMenuItem('insert_maxim_item', {
-                            text: 'Insert Featured Maxim into Sheet',
-                            onAction: () => this.insertCurrentMaximIntoSheet()
-                        });
-                        editor.ui.registry.addMenuItem('fullview_item', {
-                            text: 'Toggle Full Screen Writing',
-                            shortcut: 'F11',
-                            onAction: () => this.toggleFullView()
-                        });
-                        editor.ui.registry.addMenuItem('archive_item', {
-                            text: 'Archive Sheet',
-                            shortcut: 'Ctrl+Shift+A',
-                            onAction: () => {
-                                const currentNode = this.stateManager ? this.stateManager.getSelectedNode() : null;
-                                this.closeEditorMode();
-                                if (currentNode && this.uiManager && typeof this.uiManager.archiveNode === 'function') {
-                                    this.uiManager.archiveNode(currentNode);
-                                }
+                    // Register custom menu items for menubar
+                    editor.ui.registry.addMenuItem('craftdrawer_item', {
+                        text: 'Toggle Craft Drawer',
+                        shortcut: 'Ctrl+Shift+D',
+                        onAction: () => this.toggleCraftDrawer()
+                    });
+                    editor.ui.registry.addMenuItem('comment_item', {
+                        text: 'Add Comment at Selection',
+                        shortcut: 'Ctrl+M',
+                        onAction: () => this.addCommentAtSelection()
+                    });
+                    editor.ui.registry.addMenuItem('certify_item', {
+                        text: 'Certify Word (Percy)',
+                        shortcut: 'Ctrl+Shift+C',
+                        onAction: () => this.certifySelection()
+                    });
+                    editor.ui.registry.addMenuItem('etymology_item', {
+                        text: 'Lookup Etymology (Wiktionary)',
+                        shortcut: 'Ctrl+Shift+E',
+                        onAction: () => this.lookupEtymologyAtSelection()
+                    });
+                    editor.ui.registry.addMenuItem('maxim_item', {
+                        text: 'Draw Scenic Maxim',
+                        onAction: () => this.drawRandomMaxim()
+                    });
+                    editor.ui.registry.addMenuItem('insert_maxim_item', {
+                        text: 'Insert Featured Maxim into Sheet',
+                        onAction: () => this.insertCurrentMaximIntoSheet()
+                    });
+                    editor.ui.registry.addMenuItem('fullview_item', {
+                        text: 'Toggle Full Screen Writing',
+                        shortcut: 'F11',
+                        onAction: () => this.toggleFullView()
+                    });
+                    editor.ui.registry.addMenuItem('archive_item', {
+                        text: 'Archive Sheet',
+                        shortcut: 'Ctrl+Shift+A',
+                        onAction: () => {
+                            const currentNode = this.stateManager ? this.stateManager.getSelectedNode() : null;
+                            this.closeEditorMode();
+                            if (currentNode && this.uiManager && typeof this.uiManager.archiveNode === 'function') {
+                                this.uiManager.archiveNode(currentNode);
                             }
-                        });
-                        editor.ui.registry.addMenuItem('saveclose_item', {
-                            text: 'Save & Close Sheet',
-                            shortcut: 'Esc',
-                            onAction: () => this.closeEditorMode()
-                        });
+                        }
+                    });
+                    editor.ui.registry.addMenuItem('saveclose_item', {
+                        text: 'Save & Close Sheet',
+                        shortcut: 'Esc',
+                        onAction: () => this.closeEditorMode()
+                    });
 
-                        editor.on('keydown', (e) => {
-                            if (e.key === 'F11' || (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f')) {
-                                e.preventDefault();
-                                this.toggleFullView();
+                    editor.on('keydown', (e) => {
+                        if (e.key === 'F11' || (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f')) {
+                            e.preventDefault();
+                            this.toggleFullView();
+                        }
+                        if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a') {
+                            e.preventDefault();
+                            const currentNode = this.stateManager ? this.stateManager.getSelectedNode() : null;
+                            this.closeEditorMode();
+                            if (currentNode && this.uiManager && typeof this.uiManager.archiveNode === 'function') {
+                                this.uiManager.archiveNode(currentNode);
                             }
-                            if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a') {
-                                e.preventDefault();
-                                const currentNode = this.stateManager ? this.stateManager.getSelectedNode() : null;
-                                this.closeEditorMode();
-                                if (currentNode && this.uiManager && typeof this.uiManager.archiveNode === 'function') {
-                                    this.uiManager.archiveNode(currentNode);
-                                }
-                            }
-                            if (e.key === 'Escape' || e.key === 'Esc' || e.keyCode === 27 || (typeof AppConstants !== 'undefined' && e.key === AppConstants.KEY_ESCAPE)) {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                const activeModal = document.querySelector('.modal:not(.hidden), #archive-modal:not(.hidden), #compendium-modal:not(.hidden)');
-                                if (activeModal) {
-                                    const closeBtn = activeModal.querySelector('.close-button, .close-btn, .modal-close-btn, .craft-close-btn, #close-comment-modal, #close-certify-word-btn, #close-etymology-btn, #close-compendium-btn, #close-archive-btn');
-                                    if (closeBtn) {
-                                        closeBtn.click();
-                                        return;
-                                    } else {
-                                        activeModal.classList.add('hidden');
-                                        return;
-                                    }
-                                }
-                                if (this.isFullView) {
-                                    this.toggleFullView(false);
+                        }
+                        if (e.key === 'Escape' || e.key === 'Esc' || e.keyCode === 27 || (typeof AppConstants !== 'undefined' && e.key === AppConstants.KEY_ESCAPE)) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const activeModal = document.querySelector('.modal:not(.hidden), #archive-modal:not(.hidden), #compendium-modal:not(.hidden)');
+                            if (activeModal) {
+                                const closeBtn = activeModal.querySelector('.close-button, .close-btn, .modal-close-btn, .craft-close-btn, #close-comment-modal, #close-certify-word-btn, #close-etymology-btn, #close-compendium-btn, #close-archive-btn');
+                                if (closeBtn) {
+                                    closeBtn.click();
+                                    return;
+                                } else {
+                                    activeModal.classList.add('hidden');
                                     return;
                                 }
-                                this.closeEditorMode();
+                            }
+                            if (this.isFullView) {
+                                this.toggleFullView(false);
                                 return;
                             }
-                            if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'm') {
-                                e.preventDefault();
-                                this.addCommentAtSelection();
-                            }
-                            if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'c') {
-                                e.preventDefault();
-                                this.certifySelection();
-                            }
-                            if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'e') {
-                                e.preventDefault();
+                            this.closeEditorMode();
+                            return;
+                        }
+                        if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'm') {
+                            e.preventDefault();
+                            this.addCommentAtSelection();
+                        }
+                        if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'c') {
+                            e.preventDefault();
+                            this.certifySelection();
+                        }
+                        if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'e') {
+                            e.preventDefault();
+                            this.lookupEtymologyAtSelection();
+                        }
+                        if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
+                            e.preventDefault();
+                            this.toggleCraftDrawer();
+                        }
+                    });
+                    try {
+                        editor.ui.registry.addMenuItem('lookupetymology', {
+                            text: 'Look up Etymology',
+                            icon: 'search',
+                            onAction: () => {
                                 this.lookupEtymologyAtSelection();
                             }
-                            if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
-                                e.preventDefault();
-                                this.toggleCraftDrawer();
-                            }
                         });
-                        try {
-                            editor.ui.registry.addMenuItem('lookupetymology', {
-                                text: 'Look up Etymology',
-                                icon: 'search',
-                                onAction: () => {
-                                    this.lookupEtymologyAtSelection();
+                    } catch (err) {}
+                    editor.on('click', (ev) => {
+                        let target = ev.target;
+                        while (target && target !== editor.getBody()) {
+                            if (target.classList && target.classList.contains('comment-highlight')) {
+                                if (this.uiManager && typeof this.uiManager.openCommentModal === 'function') {
+                                    this.uiManager.openCommentModal(target.id, target.textContent);
                                 }
-                            });
-                        } catch (err) {}
-                        editor.on('click', (ev) => {
-                            let target = ev.target;
-                            while (target && target !== editor.getBody()) {
-                                if (target.classList && target.classList.contains('comment-highlight')) {
-                                    if (this.uiManager && typeof this.uiManager.openCommentModal === 'function') {
-                                        this.uiManager.openCommentModal(target.id, target.textContent);
-                                    }
-                                    break;
-                                }
-                                if (target.classList && target.classList.contains('certified-word')) {
-                                    if (this.uiManager && typeof this.uiManager.openCertifyModal === 'function') {
-                                        this.uiManager.openCertifyModal(target.id, target.textContent);
-                                    }
-                                    break;
-                                }
-                                target = target.parentElement;
+                                break;
                             }
-                        });
-                        editor.on('input change', () => {
-                            const rawContent = this.tinymceEditor.getContent();
-                            const cleanContent = (window.MyProjectStrunkEngine && typeof window.MyProjectStrunkEngine.cleanStrunkMarkers === 'function')
-                                ? window.MyProjectStrunkEngine.cleanStrunkMarkers(rawContent)
-                                : rawContent;
+                            if (target.classList && target.classList.contains('certified-word')) {
+                                if (this.uiManager && typeof this.uiManager.openCertifyModal === 'function') {
+                                    this.uiManager.openCertifyModal(target.id, target.textContent);
+                                }
+                                break;
+                            }
+                            target = target.parentElement;
+                        }
+                    });
+                    editor.on('input change', () => {
+                        const rawContent = this.tinymceEditor.getContent();
+                        const cleanContent = (window.MyProjectStrunkEngine && typeof window.MyProjectStrunkEngine.cleanStrunkMarkers === 'function')
+                            ? window.MyProjectStrunkEngine.cleanStrunkMarkers(rawContent)
+                            : rawContent;
 
-                            const selectedNode = this.stateManager ? this.stateManager.getSelectedNode() : null;
-                            if (selectedNode) {
-                                selectedNode.content = cleanContent;
-                            }
-                            if (this.uiManager && typeof this.uiManager.updateEditorWordCount === 'function') {
-                                this.uiManager.updateEditorWordCount(cleanContent);
-                            }
-                            this.updateStrunkMetrics(cleanContent);
-                            this._scheduleStrunkHighlightRefresh();
-                            this._scheduleAutoSave();
-                        });
-                    }
-                });
-            } else {
-                console.warn('[editor] TinyMCE not available; falling back to textarea editor');
-            }
+                        const selectedNode = this.stateManager ? this.stateManager.getSelectedNode() : null;
+                        if (selectedNode) {
+                            selectedNode.content = cleanContent;
+                        }
+                        if (this.uiManager && typeof this.uiManager.updateEditorWordCount === 'function') {
+                            this.uiManager.updateEditorWordCount(cleanContent);
+                        }
+                        this.updateStrunkMetrics(cleanContent);
+                        this._scheduleStrunkHighlightRefresh();
+                        this._scheduleAutoSave();
+                    });
+                }
+            });
         } catch (err) {
             console.error('[editor] TinyMCE init failed:', err);
             this.tinyMCEAvailable = false;
+            this._tinymceInitStarted = false;
         }
 
         if (typeof window !== 'undefined' && typeof window.addEventListener === 'function' && !this._beforeUnloadAttached) {
@@ -721,18 +768,24 @@ window.MyProjectEditorManager = {
         // Initialize Craft Drawer controls
         this.initCraftDrawer();
 
-        // Ensure the Craft Drawer sidebar is visible when opening
+        // Ensure Craft Drawer is visible on desktop, but start hidden on mobile so editor is immediately usable
+        const isMobileScreen = typeof window !== 'undefined' && typeof window.innerWidth === 'number' && window.innerWidth <= 768;
         try {
             if (this.uiManager && this.uiManager.editorInspectorSidebar) {
-                this.uiManager.editorInspectorSidebar.classList.remove('hidden');
+                if (isMobileScreen) {
+                    this.uiManager.editorInspectorSidebar.classList.add('hidden');
+                } else {
+                    this.uiManager.editorInspectorSidebar.classList.remove('hidden');
+                }
             }
-        } catch (err) { console.warn('[editor] failed to show inspector sidebar', err); }
+        } catch (err) { console.warn('[editor] failed to adjust inspector sidebar', err); }
 
+        const isSidebarOpen = Boolean(this.uiManager && this.uiManager.editorInspectorSidebar && !this.uiManager.editorInspectorSidebar.classList.contains('hidden'));
         const toggleBtn = document.getElementById('toggle-craft-drawer-btn');
-        if (toggleBtn) toggleBtn.textContent = 'Craft Drawer ▾';
+        if (toggleBtn) toggleBtn.textContent = isSidebarOpen ? 'Craft Drawer ▾' : 'Craft Drawer ▸';
 
         if (this._tinymceCraftDrawerApi && typeof this._tinymceCraftDrawerApi.setActive === 'function') {
-            this._tinymceCraftDrawerApi.setActive(true);
+            this._tinymceCraftDrawerApi.setActive(isSidebarOpen);
         }
         if (this._tinymceFullViewApi && typeof this._tinymceFullViewApi.setActive === 'function') {
             this._tinymceFullViewApi.setActive(Boolean(this.isFullView));
@@ -744,12 +797,17 @@ window.MyProjectEditorManager = {
         this.initScenicMaxims();
         this.drawRandomWarmUpPassage();
 
+        // If TinyMCE is not yet initialized or ready, attempt initialization now
+        if (!this.tinyMCEAvailable && !this.tinymceEditor && typeof tinymce !== 'undefined' && typeof tinymce.init === 'function') {
+            this.initTinyMCE();
+        }
+
         // If TinyMCE is available and initialized, use it. Otherwise fall back to
         // a simple textarea so the editor can still be used.
         if (this.tinyMCEAvailable && this.tinymceEditor) {
             try {
-                this.tinymceEditor.setContent(node.content || '');
-                this.uiManager.updateEditorWordCount(node.content || '');
+                this.tinymceEditor.setContent(node ? (node.content || '') : '');
+                this.uiManager.updateEditorWordCount(node ? (node.content || '') : '');
                 if (this.uiManager.renderTags) this.uiManager.renderTags(node);
                 if (this.uiManager.renderFootnotes) this.uiManager.renderFootnotes(node);
 
@@ -811,6 +869,12 @@ window.MyProjectEditorManager = {
             const editorMain = document.getElementById('editor-main-content');
             if (editorMain) editorMain.classList.remove('tinymce-active');
 
+            // Hide any broken or partial TinyMCE wrapper
+            const tox = (typeof document !== 'undefined' && typeof document.querySelector === 'function')
+                ? document.querySelector('.tox.tox-tinymce')
+                : null;
+            if (tox) tox.style.display = 'none';
+
             let ta = document.getElementById('main-editor-fallback') || document.getElementById('main-editor');
             if (!ta) {
                 ta = document.createElement('textarea');
@@ -820,7 +884,7 @@ window.MyProjectEditorManager = {
             }
             ta.classList.remove('hidden');
             ta.style.display = 'block';
-            ta.value = node.content || '';
+            ta.value = node ? (node.content || '') : '';
             this.uiManager.updateEditorWordCount(ta.value);
             if (this.uiManager.renderTags) this.uiManager.renderTags(node);
             if (this.uiManager.renderFootnotes) this.uiManager.renderFootnotes(node);
@@ -828,7 +892,7 @@ window.MyProjectEditorManager = {
                 const clean = (window.MyProjectStrunkEngine && typeof window.MyProjectStrunkEngine.cleanStrunkMarkers === 'function')
                     ? window.MyProjectStrunkEngine.cleanStrunkMarkers(ta.value)
                     : ta.value;
-                node.content = clean;
+                if (node) node.content = clean;
                 if (this.uiManager && typeof this.uiManager.updateEditorWordCount === 'function') {
                     this.uiManager.updateEditorWordCount(clean);
                 }
@@ -856,7 +920,9 @@ window.MyProjectEditorManager = {
                     }
                 }
             };
-            ta.focus();
+            setTimeout(() => {
+                try { ta.focus(); } catch (err) {}
+            }, 50);
         } catch (err) {
             console.error('[editor] fallback textarea failed:', err);
         }

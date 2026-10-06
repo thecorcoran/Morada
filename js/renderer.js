@@ -131,6 +131,11 @@ function setupEventListeners() {
     }, { passive: false });
 
     window.addEventListener('touchmove', (e) => {
+        if (window.MyProjectEditorManager && typeof window.MyProjectEditorManager.isEditorOpen === 'function' && window.MyProjectEditorManager.isEditorOpen()) {
+            isDragging = false;
+            isPotentialDrag = false;
+            return;
+        }
         if (e.touches && e.touches.length === 1) {
             const touch = e.touches[0];
             lastTouchPos = { x: touch.clientX, y: touch.clientY };
@@ -157,6 +162,12 @@ function setupEventListeners() {
     }, { passive: false });
 
     window.addEventListener('touchend', () => {
+        if (window.MyProjectEditorManager && typeof window.MyProjectEditorManager.isEditorOpen === 'function' && window.MyProjectEditorManager.isEditorOpen()) {
+            pinchStartDist = 0;
+            isDragging = false;
+            isPotentialDrag = false;
+            return;
+        }
         pinchStartDist = 0;
         const syntheticEvent = {
             clientX: lastTouchPos.x,
@@ -214,6 +225,8 @@ function onMouseDown(e) {
                         menu.classList.add('hidden');
                         if (!clickedNode) return;
                         if (clickedNode.type === 'text') {
+                            isPotentialDrag = false;
+                            isDragging = false;
                             MyProjectEditorManager.openEditorMode(clickedNode);
                         } else {
                             MyProjectStateManager.pushToViewStack(clickedNode);
@@ -329,6 +342,8 @@ function onMouseDown(e) {
 
             // 2. Double-clicking anywhere else on the portfolio or note enters or opens it:
             if (clickedNode.type === 'text') {
+                isPotentialDrag = false;
+                isDragging = false;
                 MyProjectEditorManager.openEditorMode(clickedNode);
                 return;
             } else if (clickedNode.type === 'container') {
@@ -500,6 +515,8 @@ function onKeyDown(e) {
         case 'Enter':
             if (selectedNode) {
                 if (selectedNode.type === 'text') {
+                    isPotentialDrag = false;
+                    isDragging = false;
                     MyProjectEditorManager.openEditorMode(selectedNode);
                 } else {
                     MyProjectStateManager.pushToViewStack(selectedNode);

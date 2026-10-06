@@ -377,4 +377,45 @@ describe('MyProjectEditorManager & Craft Drawer Integration Tests', () => {
         const breadcrumb = mockElements['editor-breadcrumb-label'];
         expect(breadcrumb.textContent).toBe('The Desk / Chapter 1 / Scene 1');
     });
+
+    test('openEditorMode on mobile screen should keep craft drawer hidden to allow note typing', () => {
+        const origWidth = window.innerWidth;
+        try {
+            window.innerWidth = 412; // Mobile viewport
+            const testNode = { id: 'sheet-mobile', title: 'Mobile Note', content: 'Mobile text' };
+            EditorManager.openEditorMode(testNode);
+
+            const sidebar = mockElements['editor-inspector-sidebar'];
+            expect(sidebar.classList.contains('hidden')).toBe(true);
+
+            const toggleBtn = document.getElementById('toggle-craft-drawer-btn');
+            expect(toggleBtn.textContent).toContain('▸');
+        } finally {
+            window.innerWidth = origWidth;
+        }
+    });
+
+    test('openEditorMode on desktop screen should show craft drawer', () => {
+        const origWidth = window.innerWidth;
+        try {
+            window.innerWidth = 1200; // Desktop viewport
+            const testNode = { id: 'sheet-desktop', title: 'Desktop Note', content: 'Desktop text' };
+            EditorManager.openEditorMode(testNode);
+
+            const sidebar = mockElements['editor-inspector-sidebar'];
+            expect(sidebar.classList.contains('hidden')).toBe(false);
+
+            const toggleBtn = document.getElementById('toggle-craft-drawer-btn');
+            expect(toggleBtn.textContent).toContain('▾');
+        } finally {
+            window.innerWidth = origWidth;
+        }
+    });
+
+    test('initTinyMCE can be called safely when tinymce is unavailable without throwing', () => {
+        expect(() => {
+            EditorManager.initTinyMCE();
+        }).not.toThrow();
+    });
 });
+

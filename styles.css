@@ -1864,6 +1864,10 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
   box-sizing: border-box;
   outline: none;
   resize: none;
+  touch-action: manipulation;
+  -webkit-user-select: text;
+  user-select: text;
+  cursor: text;
 }
 
 .editor-save-indicator {
@@ -3373,11 +3377,61 @@ body.theme-midnight .warmup-actions .accent-action {
     left: 0;
   }
 
+  #editor-toolbar {
+    padding: 6px 8px !important;
+    gap: 6px !important;
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    max-height: 48px !important;
+  }
+
+  #editor-toolbar button {
+    padding: 5px 8px !important;
+    font-size: 12px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .editor-breadcrumb-label {
+    max-width: 140px !important;
+    font-size: 12px !important;
+    flex-shrink: 0 !important;
+  }
+
   #editor-main-content {
+    width: 100% !important;
+    height: calc(100vh - 16px) !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    position: relative;
+    z-index: 10;
+  }
+
+  #main-editor,
+  #main-editor-fallback {
     width: 100% !important;
     height: 100% !important;
     flex: 1 1 auto !important;
-    min-width: 0 !important;
+    min-height: 250px !important;
+    font-size: 16px !important;
+    padding: 14px 16px !important;
+    touch-action: manipulation !important;
+    -webkit-user-select: text !important;
+    user-select: text !important;
+    cursor: text !important;
+    z-index: 10;
+  }
+
+  .tox.tox-tinymce {
+    width: 100% !important;
+    height: 100% !important;
+    flex: 1 1 auto !important;
+    min-height: 250px !important;
+    z-index: 10;
   }
 
   #editor-inspector-sidebar {
