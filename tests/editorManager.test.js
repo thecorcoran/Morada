@@ -435,5 +435,46 @@ describe('MyProjectEditorManager & Craft Drawer Integration Tests', () => {
             window.innerWidth = origWidth;
         }
     });
+
+    test('desktop openEditorMode keeps native textarea visible and editable if TinyMCE is not ready', () => {
+        const origWidth = window.innerWidth;
+        try {
+            window.innerWidth = 1200; // Desktop screen
+            expect(EditorManager.isMobileMode()).toBe(false);
+
+            EditorManager.tinyMCEAvailable = false;
+            EditorManager.tinymceEditor = null;
+
+            const desktopNode = { id: 'sheet-desk-test', title: 'Desktop Typing Test', content: 'Prose to type' };
+            EditorManager.openEditorMode(desktopNode);
+
+            const ta = EditorManager.getTextareaElement();
+            expect(ta).toBeTruthy();
+            expect(ta.value).toBe('Prose to type');
+            expect(ta.style.display).toBe('block');
+            expect(EditorManager.isEditorOpen()).toBe(true);
+
+            // User edits in textarea
+            ta.value = 'User typed new words on desktop';
+            EditorManager.flushAndSaveCurrentSheet();
+            expect(desktopNode.content).toBe('User typed new words on desktop');
+        } finally {
+            window.innerWidth = origWidth;
+        }
+    });
+
+    test('isTinyMCEActive returns false when TinyMCE container is not visible or not present', () => {
+        EditorManager.tinyMCEAvailable = true;
+        EditorManager.tinymceEditor = {
+            editorContainer: { style: { display: 'none' } }
+        };
+        expect(EditorManager.isTinyMCEActive()).toBe(false);
+
+        EditorManager.tinymceEditor.editorContainer.style.display = 'flex';
+        expect(EditorManager.isTinyMCEActive()).toBe(true);
+
+        EditorManager.tinyMCEAvailable = false;
+        expect(EditorManager.isTinyMCEActive()).toBe(false);
+    });
 });
 

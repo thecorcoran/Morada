@@ -542,6 +542,8 @@ body {
   height: 100%;
   display: flex;
   flex-direction: column;
+  position: relative;
+  z-index: 10;
 }
 
 .tox.tox-tinymce {
@@ -1851,7 +1853,9 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
 #main-editor,
 #main-editor-fallback {
   width: 100%;
-  flex-grow: 1;
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 350px;
   background-color: #fdfaf4;
   color: #2c2520;
   font-family: var(--font-primary, 'Vollkorn', Georgia, serif);
@@ -1864,10 +1868,12 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
   box-sizing: border-box;
   outline: none;
   resize: none;
-  touch-action: manipulation;
+  touch-action: auto;
   -webkit-user-select: text;
   user-select: text;
   cursor: text;
+  position: relative;
+  z-index: 10;
 }
 
 .editor-save-indicator {

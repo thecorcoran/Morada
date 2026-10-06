@@ -34,6 +34,24 @@ window.MyProjectEditorManager = {
         this.initCraftDrawer();
         this._initFormattingControls();
 
+        // Ensure clicking on editor background transfers focus directly to active editor
+        try {
+            const editorMain = document.getElementById('editor-main-content');
+            if (editorMain && !editorMain._hasFocusTransferHandler) {
+                editorMain._hasFocusTransferHandler = true;
+                editorMain.addEventListener('click', (e) => {
+                    if (e.target === editorMain) {
+                        if (this.isTinyMCEActive() && typeof this.tinymceEditor.focus === 'function') {
+                            this.tinymceEditor.focus();
+                        } else {
+                            const ta = this.getTextareaElement();
+                            if (ta) ta.focus();
+                        }
+                    }
+                });
+            }
+        } catch (e) {}
+
         // Try to initialize TinyMCE, but don't let its absence break the app.
         this.tinyMCEAvailable = false;
         this.initTinyMCE();
@@ -53,6 +71,21 @@ window.MyProjectEditorManager = {
         const isMobileUA = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
         if (isMobileUA && width <= 1024) return true;
         return false;
+    },
+
+    /**
+     * Checks if TinyMCE is fully initialized, ready, and actively visible in the DOM.
+     * @returns {boolean}
+     */
+    isTinyMCEActive: function() {
+        if (this.isMobileMode() || !this.tinyMCEAvailable || !this.tinymceEditor) return false;
+        try {
+            const container = (this.tinymceEditor && this.tinymceEditor.editorContainer)
+                || (typeof document !== 'undefined' ? document.querySelector('.tox.tox-tinymce') : null);
+            return Boolean(container && container.style.display !== 'none');
+        } catch (e) {
+            return false;
+        }
     },
 
     /**
@@ -171,14 +204,9 @@ window.MyProjectEditorManager = {
                 width: "100%",
                 setup: (editor) => {
                     this.tinymceEditor = editor;
-                    this.tinyMCEAvailable = true;
+                    // Do NOT mark available until 'init' event confirms UI and body are ready
+                    this.tinyMCEAvailable = false;
                     this._tinymceInitStarted = false;
-
-                    // Mark main content container as tinymce-active to hide redundant outer fallback toolbar
-                    try {
-                        const editorMain = document.getElementById('editor-main-content');
-                        if (editorMain) editorMain.classList.add('tinymce-active');
-                    } catch (e) {}
 
                     // Register custom Scholar's Desk icons
                     editor.ui.registry.addIcon('craft-quill', '<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M3 21v-3l11-11 3 3L6 21H3Zm14.7-12.3-3-3L16.4 4a1.4 1.4 0 0 1 2 0l1.6 1.6a1.4 1.4 0 0 1 0 2l-2.3 2.1Z"/></svg>');
@@ -187,6 +215,23 @@ window.MyProjectEditorManager = {
                     editor.ui.registry.addIcon('craft-save', '<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2ZM5 5v14h14V7.8L16.2 5H5Zm2 2h8v3H7V7Zm0 7h10v5H7v-5Z"/></svg>');
                     editor.ui.registry.addIcon('craft-comment', '<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>');
                     editor.ui.registry.addIcon('craft-fullscreen', '<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>');
+
+                    // Handle resource load errors gracefully
+                    editor.on('SkinLoadError ThemeLoadError PluginLoadError Error', (e) => {
+                        console.warn('[editor] TinyMCE resource error, remaining on native textarea:', e);
+                        this.tinyMCEAvailable = false;
+                        try {
+                            const tox = editor.editorContainer || document.querySelector('.tox.tox-tinymce');
+                            if (tox) tox.style.display = 'none';
+                            const editorMain = document.getElementById('editor-main-content');
+                            if (editorMain) editorMain.classList.remove('tinymce-active');
+                            const ta = this.getTextareaElement();
+                            if (ta && this.isEditorOpen()) {
+                                ta.style.display = 'block';
+                                ta.focus();
+                            }
+                        } catch (err) {}
+                    });
 
                     // 1. Scholar Annotation Tools (Group 4)
                     editor.ui.registry.addButton('comment', {
@@ -256,7 +301,12 @@ window.MyProjectEditorManager = {
 
                     // Right-dock workspace controls dynamically after editor rendering
                     editor.on('init', () => {
+                        this.tinyMCEAvailable = true;
+                        this._tinymceInitStarted = false;
                         try {
+                            const editorMain = document.getElementById('editor-main-content');
+                            if (editorMain) editorMain.classList.add('tinymce-active');
+
                             const container = editor.editorContainer || document.querySelector('.tox.tox-tinymce');
                             if (container) {
                                 const drawerBtn = container.querySelector('[data-mce-name="craftdrawer"]') ||
@@ -271,33 +321,30 @@ window.MyProjectEditorManager = {
                             console.warn('[editor] Failed to dock workspace group right:', err);
                         }
 
-                        // If editor mode was already opened before TinyMCE finished initializing, populate it now
-                        if (this.isEditorOpen()) {
+                        // If editor mode was already opened before TinyMCE finished initializing, smoothly activate TinyMCE
+                        if (this.isEditorOpen() && !this.isMobileMode()) {
                             try {
-                                const tox = (typeof document !== 'undefined' && typeof document.querySelector === 'function')
-                                    ? document.querySelector('.tox.tox-tinymce')
-                                    : null;
-                                if (tox) tox.style.display = 'flex';
-
-                                const editorMain = document.getElementById('editor-main-content');
-                                if (editorMain) editorMain.classList.add('tinymce-active');
-
+                                const tox = editor.editorContainer || document.querySelector('.tox.tox-tinymce');
                                 const ta = this.getTextareaElement();
                                 const currentContent = ta ? ta.value : '';
-                                if (ta) ta.style.display = 'none';
 
-                                const selectedNode = this.stateManager ? this.stateManager.getSelectedNode() : null;
-                                const contentToLoad = currentContent || (selectedNode ? (selectedNode.content || '') : '');
-                                editor.setContent(contentToLoad);
-                                if (this.uiManager && typeof this.uiManager.updateEditorWordCount === 'function') {
-                                    this.uiManager.updateEditorWordCount(contentToLoad);
+                                if (tox && typeof editor.getBody === 'function' && editor.getBody()) {
+                                    tox.style.display = 'flex';
+                                    if (ta) ta.style.display = 'none';
+
+                                    const selectedNode = this.stateManager ? this.stateManager.getSelectedNode() : null;
+                                    const contentToLoad = currentContent || (selectedNode ? (selectedNode.content || '') : '');
+                                    editor.setContent(contentToLoad);
+                                    if (this.uiManager && typeof this.uiManager.updateEditorWordCount === 'function') {
+                                        this.uiManager.updateEditorWordCount(contentToLoad);
+                                    }
+                                    if (selectedNode) {
+                                        if (this.uiManager && this.uiManager.renderTags) this.uiManager.renderTags(selectedNode);
+                                        if (this.uiManager && this.uiManager.renderFootnotes) this.uiManager.renderFootnotes(selectedNode);
+                                    }
+                                    this.applyStrunkHighlights();
+                                    editor.focus();
                                 }
-                                if (selectedNode) {
-                                    if (this.uiManager && this.uiManager.renderTags) this.uiManager.renderTags(selectedNode);
-                                    if (this.uiManager && this.uiManager.renderFootnotes) this.uiManager.renderFootnotes(selectedNode);
-                                }
-                                this.applyStrunkHighlights();
-                                editor.focus();
                             } catch (e) {
                                 console.warn('[editor] populate on late init failed', e);
                             }
@@ -497,7 +544,7 @@ window.MyProjectEditorManager = {
         if (!node) return;
         const spanId = 'comment-' + Date.now();
         try {
-            if (this.tinyMCEAvailable && this.tinymceEditor) {
+            if (this.isTinyMCEActive()) {
                 const selText = this.tinymceEditor.selection.getContent({ format: 'text' }) || '';
                 const selHtml = this.tinymceEditor.selection.getContent({ format: 'html' }) || '';
                 if (!selText.trim()) {
@@ -547,7 +594,7 @@ window.MyProjectEditorManager = {
         if (!node) return;
         const spanId = 'cert-' + Date.now();
         try {
-            if (this.tinyMCEAvailable && this.tinymceEditor) {
+            if (this.isTinyMCEActive()) {
                 const selText = this.tinymceEditor.selection.getContent({ format: 'text' }) || '';
                 const selHtml = this.tinymceEditor.selection.getContent({ format: 'html' }) || '';
                 if (!selText.trim()) {
@@ -593,7 +640,7 @@ window.MyProjectEditorManager = {
     lookupEtymologyAtSelection: function() {
         let selText = '';
         try {
-            if (this.tinyMCEAvailable && this.tinymceEditor) {
+            if (this.isTinyMCEActive()) {
                 selText = (this.tinymceEditor.selection.getContent({ format: 'text' }) || '').trim();
             }
         } catch (err) {
@@ -631,7 +678,7 @@ window.MyProjectEditorManager = {
         const node = this.stateManager.getSelectedNode();
         if (!node) return;
         try {
-            if (this.tinyMCEAvailable && this.tinymceEditor) {
+            if (this.isTinyMCEActive()) {
                 const doc = this.tinymceEditor.getDoc();
                 const el = doc.getElementById(spanId);
                 if (el) {
@@ -659,7 +706,7 @@ window.MyProjectEditorManager = {
         try {
             const ta = this.getTextareaElement();
             if (!ta) return;
-            const re = new RegExp(`<span[^>]*id="${spanId}"[^>]*>([\s\S]*?)<\\/span>`, 'i');
+            const re = new RegExp(`<span[^>]*id="${spanId}"[^>]*>([\\s\\S]*?)<\\/span>`, 'i');
             const m = node.content.match(re);
             if (m && m[1]) {
                 const inner = m[1];
@@ -703,7 +750,7 @@ window.MyProjectEditorManager = {
      * @param {string} type - 'bold', 'italic', 'h2', 'quote', 'bullet'
      */
     applyFormatting: function(type) {
-        if (this.tinyMCEAvailable && this.tinymceEditor) {
+        if (this.isTinyMCEActive()) {
             try {
                 switch (type) {
                     case 'bold':
@@ -839,83 +886,78 @@ window.MyProjectEditorManager = {
         this.initScenicMaxims();
         this.drawRandomWarmUpPassage();
 
-        // On desktop: use TinyMCE if available
-        if (!isMobile) {
-            // If TinyMCE is not yet initialized or ready on desktop, attempt initialization now
-            if (!this.tinyMCEAvailable && !this.tinymceEditor && typeof tinymce !== 'undefined' && typeof tinymce.init === 'function') {
-                this.initTinyMCE();
-            }
+        // On desktop: check if TinyMCE is 100% initialized, present in the DOM, and interactive
+        const tox = (typeof document !== 'undefined' && typeof document.querySelector === 'function')
+            ? (this.tinymceEditor && this.tinymceEditor.editorContainer ? this.tinymceEditor.editorContainer : document.querySelector('.tox.tox-tinymce'))
+            : null;
+        const isTinyMCEFullyReady = !isMobile && this.tinyMCEAvailable && this.tinymceEditor && Boolean(this.tinymceEditor.initialized) && Boolean(tox) && typeof this.tinymceEditor.getBody === 'function' && Boolean(this.tinymceEditor.getBody());
 
-            // If TinyMCE is available and initialized, use it on desktop
-            if (this.tinyMCEAvailable && this.tinymceEditor) {
+        if (isTinyMCEFullyReady) {
+            try {
+                tox.style.display = 'flex';
+
+                const editorMain = document.getElementById('editor-main-content');
+                if (editorMain) editorMain.classList.add('tinymce-active');
+
+                const ta = this.getTextareaElement();
+                if (ta) ta.style.display = 'none';
+
+                this.tinymceEditor.setContent(node ? (node.content || '') : '');
+                this.uiManager.updateEditorWordCount(node ? (node.content || '') : '');
+                if (this.uiManager.renderTags) this.uiManager.renderTags(node);
+                if (this.uiManager.renderFootnotes) this.uiManager.renderFootnotes(node);
+
+                // Apply Strunk highlights if toggles were left enabled
+                this.applyStrunkHighlights();
+
+                // Attach hover tooltip listeners inside TinyMCE document to show comment/certify previews
                 try {
-                    const tox = (typeof document !== 'undefined' && typeof document.querySelector === 'function')
-                        ? document.querySelector('.tox.tox-tinymce')
-                        : null;
-                    if (tox) tox.style.display = 'flex';
+                    const doc = this.tinymceEditor.getDoc();
+                    const hoverHandler = (ev) => {
+                        try {
+                            const target = ev.target;
+                            if (!target) return;
+                            const iframe = this.tinymceEditor.iframeElement || document.querySelector('.tox-edit-area iframe');
+                            const rect = iframe ? iframe.getBoundingClientRect() : { left: 0, top: 0 };
+                            const clientX = ev.clientX + rect.left;
+                            const clientY = ev.clientY + rect.top;
 
-                    const editorMain = document.getElementById('editor-main-content');
-                    if (editorMain) editorMain.classList.add('tinymce-active');
-
-                    const ta = this.getTextareaElement();
-                    if (ta) ta.style.display = 'none';
-
-                    this.tinymceEditor.setContent(node ? (node.content || '') : '');
-                    this.uiManager.updateEditorWordCount(node ? (node.content || '') : '');
-                    if (this.uiManager.renderTags) this.uiManager.renderTags(node);
-                    if (this.uiManager.renderFootnotes) this.uiManager.renderFootnotes(node);
-
-                    // Apply Strunk highlights if toggles were left enabled
-                    this.applyStrunkHighlights();
-
-                    // Attach hover tooltip listeners inside TinyMCE document to show comment/certify previews
-                    try {
-                        const doc = this.tinymceEditor.getDoc();
-                        const hoverHandler = (ev) => {
-                            try {
-                                const target = ev.target;
-                                if (!target) return;
-                                const iframe = this.tinymceEditor.iframeElement || document.querySelector('.tox-edit-area iframe');
-                                const rect = iframe ? iframe.getBoundingClientRect() : { left: 0, top: 0 };
-                                const clientX = ev.clientX + rect.left;
-                                const clientY = ev.clientY + rect.top;
-
-                                if (target.classList && target.classList.contains('comment-highlight')) {
-                                    const selectedNode = this.stateManager.getSelectedNode();
-                                    const c = selectedNode && Array.isArray(selectedNode.comments)
-                                        ? selectedNode.comments.find(item => item.id === target.id || item.spanId === target.id)
-                                        : null;
-                                    const text = c ? `💬 Comment: "${c.text}"` : (target.textContent || '');
-                                    if (this.uiManager && typeof this.uiManager._showHoverTooltip === 'function') {
-                                        this.uiManager._showHoverTooltip(text, clientX, clientY);
-                                    }
-                                    return;
+                            if (target.classList && target.classList.contains('comment-highlight')) {
+                                const selectedNode = this.stateManager.getSelectedNode();
+                                const c = selectedNode && Array.isArray(selectedNode.comments)
+                                    ? selectedNode.comments.find(item => item.id === target.id || item.spanId === target.id)
+                                    : null;
+                                const text = c ? `💬 Comment: "${c.text}"` : (target.textContent || '');
+                                if (this.uiManager && typeof this.uiManager._showHoverTooltip === 'function') {
+                                    this.uiManager._showHoverTooltip(text, clientX, clientY);
                                 }
-                                if (target.classList && target.classList.contains('certified-word')) {
-                                    const selectedNode = this.stateManager.getSelectedNode();
-                                    const cw = selectedNode && Array.isArray(selectedNode.certifiedWords)
-                                        ? selectedNode.certifiedWords.find(item => item.spanId === target.id)
-                                        : null;
-                                    const def = cw ? cw.definition : (target.getAttribute('data-definition') || '');
-                                    const word = cw ? cw.word : target.textContent;
-                                    const text = `✓ Certified: "${word}" — ${def || '(no definition)'}`;
-                                    if (this.uiManager && typeof this.uiManager._showHoverTooltip === 'function') {
-                                        this.uiManager._showHoverTooltip(text, clientX, clientY);
-                                    }
-                                    return;
+                                return;
+                            }
+                            if (target.classList && target.classList.contains('certified-word')) {
+                                const selectedNode = this.stateManager.getSelectedNode();
+                                const cw = selectedNode && Array.isArray(selectedNode.certifiedWords)
+                                    ? selectedNode.certifiedWords.find(item => item.spanId === target.id)
+                                    : null;
+                                const def = cw ? cw.definition : (target.getAttribute('data-definition') || '');
+                                const word = cw ? cw.word : target.textContent;
+                                const text = `✓ Certified: "${word}" — ${def || '(no definition)'}`;
+                                if (this.uiManager && typeof this.uiManager._showHoverTooltip === 'function') {
+                                    this.uiManager._showHoverTooltip(text, clientX, clientY);
                                 }
-                                if (this.uiManager && typeof this.uiManager._hideHoverTooltip === 'function') this.uiManager._hideHoverTooltip();
-                            } catch (err) { /* ignore hover handler errors */ }
-                        };
-                        doc.addEventListener('mouseover', hoverHandler);
-                        doc.addEventListener('mousemove', hoverHandler);
-                        doc.addEventListener('mouseout', () => { if (this.uiManager && typeof this.uiManager._hideHoverTooltip === 'function') this.uiManager._hideHoverTooltip(); });
-                    } catch (err) { console.warn('[editor] attaching hover listeners failed', err); }
-                    this.tinymceEditor.focus();
-                    return;
-                } catch (err) {
-                    console.error('[editor] TinyMCE open failed, falling back:', err);
-                }
+                                return;
+                            }
+                            if (this.uiManager && typeof this.uiManager._hideHoverTooltip === 'function') this.uiManager._hideHoverTooltip();
+                        } catch (err) { /* ignore hover handler errors */ }
+                    };
+                    doc.addEventListener('mouseover', hoverHandler);
+                    doc.addEventListener('mousemove', hoverHandler);
+                    doc.addEventListener('mouseout', () => { if (this.uiManager && typeof this.uiManager._hideHoverTooltip === 'function') this.uiManager._hideHoverTooltip(); });
+                } catch (err) { console.warn('[editor] attaching hover listeners failed', err); }
+                this.tinymceEditor.focus();
+                return;
+            } catch (err) {
+                console.warn('[editor] TinyMCE open failed, falling back to native textarea:', err);
+                this.tinyMCEAvailable = false;
             }
         }
 
@@ -1006,7 +1048,13 @@ window.MyProjectEditorManager = {
 
         try {
             let content = '';
-            if (!this.isMobileMode() && this.tinymceEditor && this.tinyMCEAvailable) {
+            const tox = (typeof document !== 'undefined' && typeof document.querySelector === 'function')
+                ? document.querySelector('.tox.tox-tinymce')
+                : null;
+            const isToxVisible = Boolean(tox && tox.style.display !== 'none');
+            const isTinyMCEActive = !this.isMobileMode() && this.tinymceEditor && this.tinyMCEAvailable && isToxVisible;
+
+            if (isTinyMCEActive) {
                 content = this.tinymceEditor.getContent();
             } else {
                 const ta = this.getTextareaElement();
