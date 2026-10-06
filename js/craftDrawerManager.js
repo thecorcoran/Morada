@@ -350,7 +350,7 @@ window.CraftDrawerManager = {
         }
 
         try {
-            const ta = document.getElementById('main-editor-fallback');
+            const ta = (this.getTextareaElement && this.getTextareaElement()) || document.getElementById('main-editor') || document.getElementById('main-editor-fallback');
             if (ta) {
                 const start = ta.selectionStart || ta.value.length;
                 const end = ta.selectionEnd || ta.value.length;

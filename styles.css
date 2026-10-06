@@ -3419,7 +3419,7 @@ body.theme-midnight .warmup-actions .accent-action {
     min-height: 250px !important;
     font-size: 16px !important;
     padding: 14px 16px !important;
-    touch-action: manipulation !important;
+    touch-action: auto !important;
     -webkit-user-select: text !important;
     user-select: text !important;
     cursor: text !important;

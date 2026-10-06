@@ -40,9 +40,39 @@ window.MyProjectEditorManager = {
     },
 
     /**
+     * Checks if current environment is a mobile viewport or mobile touch device.
+     * Guaranteed false in Electron desktop app to preserve full desktop features.
+     * @returns {boolean}
+     */
+    isMobileMode: function() {
+        if (typeof window === 'undefined') return false;
+        // Check window width: if mobile phone/tablet screen (<= 768px), it's mobile mode
+        const width = typeof window.innerWidth === 'number' ? window.innerWidth : 1024;
+        if (width <= 768) return true;
+        const ua = (typeof navigator !== 'undefined' && navigator.userAgent) ? navigator.userAgent : '';
+        const isMobileUA = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+        if (isMobileUA && width <= 1024) return true;
+        return false;
+    },
+
+    /**
+     * Helper to retrieve the active raw textarea element (#main-editor or #main-editor-fallback).
+     * @returns {HTMLTextAreaElement|null}
+     */
+    getTextareaElement: function() {
+        return (typeof document !== 'undefined')
+            ? (document.getElementById('main-editor') || document.getElementById('main-editor-fallback'))
+            : null;
+    },
+
+    /**
      * Initializes the TinyMCE editor instance. Safe to call multiple times or upon CDN script load.
+     * On mobile browsers, TinyMCE iframe is bypassed in favor of native mobile textarea.
      */
     initTinyMCE: function() {
+        if (this.isMobileMode()) {
+            return;
+        }
         if (this._tinymceInitStarted || (this.tinymceEditor && this.tinyMCEAvailable)) {
             return;
         }
@@ -478,7 +508,7 @@ window.MyProjectEditorManager = {
 
         // Fallback: manipulate textarea content
         try {
-            const ta = document.getElementById('main-editor-fallback');
+            const ta = this.getTextareaElement();
             if (!ta) return;
             const start = ta.selectionStart || 0;
             const end = ta.selectionEnd || 0;
@@ -526,7 +556,7 @@ window.MyProjectEditorManager = {
         }
 
         try {
-            const ta = document.getElementById('main-editor-fallback');
+            const ta = this.getTextareaElement();
             if (!ta) return;
             const start = ta.selectionStart || 0;
             const end = ta.selectionEnd || 0;
@@ -561,7 +591,7 @@ window.MyProjectEditorManager = {
 
         if (!selText) {
             try {
-                const ta = document.getElementById('main-editor-fallback');
+                const ta = this.getTextareaElement();
                 if (ta) {
                     const start = ta.selectionStart || 0;
                     const end = ta.selectionEnd || 0;
@@ -616,7 +646,7 @@ window.MyProjectEditorManager = {
 
         // Fallback: try to focus the raw textarea and select the inner text of the span
         try {
-            const ta = document.getElementById('main-editor-fallback');
+            const ta = this.getTextareaElement();
             if (!ta) return;
             const re = new RegExp(`<span[^>]*id="${spanId}"[^>]*>([\s\S]*?)<\\/span>`, 'i');
             const m = node.content.match(re);
@@ -689,7 +719,7 @@ window.MyProjectEditorManager = {
         }
 
         // Fallback textarea formatting
-        const ta = document.getElementById('main-editor-fallback') || document.getElementById('main-editor');
+        const ta = this.getTextareaElement();
         if (!ta) return;
         const start = ta.selectionStart != null ? ta.selectionStart : 0;
         const end = ta.selectionEnd != null ? ta.selectionEnd : start;
@@ -769,10 +799,11 @@ window.MyProjectEditorManager = {
         this.initCraftDrawer();
 
         // Ensure Craft Drawer is visible on desktop, but start hidden on mobile so editor is immediately usable
-        const isMobileScreen = typeof window !== 'undefined' && typeof window.innerWidth === 'number' && window.innerWidth <= 768;
+        const isMobile = this.isMobileMode();
+        // Ensure Craft Drawer is visible on desktop, but start hidden on mobile so editor is immediately usable
         try {
             if (this.uiManager && this.uiManager.editorInspectorSidebar) {
-                if (isMobileScreen) {
+                if (isMobile) {
                     this.uiManager.editorInspectorSidebar.classList.add('hidden');
                 } else {
                     this.uiManager.editorInspectorSidebar.classList.remove('hidden');
@@ -797,74 +828,76 @@ window.MyProjectEditorManager = {
         this.initScenicMaxims();
         this.drawRandomWarmUpPassage();
 
-        // If TinyMCE is not yet initialized or ready, attempt initialization now
-        if (!this.tinyMCEAvailable && !this.tinymceEditor && typeof tinymce !== 'undefined' && typeof tinymce.init === 'function') {
-            this.initTinyMCE();
-        }
+        // On desktop: use TinyMCE if available
+        if (!isMobile) {
+            // If TinyMCE is not yet initialized or ready on desktop, attempt initialization now
+            if (!this.tinyMCEAvailable && !this.tinymceEditor && typeof tinymce !== 'undefined' && typeof tinymce.init === 'function') {
+                this.initTinyMCE();
+            }
 
-        // If TinyMCE is available and initialized, use it. Otherwise fall back to
-        // a simple textarea so the editor can still be used.
-        if (this.tinyMCEAvailable && this.tinymceEditor) {
-            try {
-                this.tinymceEditor.setContent(node ? (node.content || '') : '');
-                this.uiManager.updateEditorWordCount(node ? (node.content || '') : '');
-                if (this.uiManager.renderTags) this.uiManager.renderTags(node);
-                if (this.uiManager.renderFootnotes) this.uiManager.renderFootnotes(node);
-
-                // Apply Strunk highlights if toggles were left enabled
-                this.applyStrunkHighlights();
-
-                // Attach hover tooltip listeners inside TinyMCE document to show comment/certify previews
+            // If TinyMCE is available and initialized, use it on desktop
+            if (this.tinyMCEAvailable && this.tinymceEditor) {
                 try {
-                    const doc = this.tinymceEditor.getDoc();
-                    const hoverHandler = (ev) => {
-                        try {
-                            const target = ev.target;
-                            if (!target) return;
-                            const iframe = this.tinymceEditor.iframeElement || document.querySelector('.tox-edit-area iframe');
-                            const rect = iframe ? iframe.getBoundingClientRect() : { left: 0, top: 0 };
-                            const clientX = ev.clientX + rect.left;
-                            const clientY = ev.clientY + rect.top;
+                    this.tinymceEditor.setContent(node ? (node.content || '') : '');
+                    this.uiManager.updateEditorWordCount(node ? (node.content || '') : '');
+                    if (this.uiManager.renderTags) this.uiManager.renderTags(node);
+                    if (this.uiManager.renderFootnotes) this.uiManager.renderFootnotes(node);
 
-                            if (target.classList && target.classList.contains('comment-highlight')) {
-                                const selectedNode = this.stateManager.getSelectedNode();
-                                const c = selectedNode && Array.isArray(selectedNode.comments)
-                                    ? selectedNode.comments.find(item => item.id === target.id || item.spanId === target.id)
-                                    : null;
-                                const text = c ? `💬 Comment: "${c.text}"` : (target.textContent || '');
-                                if (this.uiManager && typeof this.uiManager._showHoverTooltip === 'function') {
-                                    this.uiManager._showHoverTooltip(text, clientX, clientY);
+                    // Apply Strunk highlights if toggles were left enabled
+                    this.applyStrunkHighlights();
+
+                    // Attach hover tooltip listeners inside TinyMCE document to show comment/certify previews
+                    try {
+                        const doc = this.tinymceEditor.getDoc();
+                        const hoverHandler = (ev) => {
+                            try {
+                                const target = ev.target;
+                                if (!target) return;
+                                const iframe = this.tinymceEditor.iframeElement || document.querySelector('.tox-edit-area iframe');
+                                const rect = iframe ? iframe.getBoundingClientRect() : { left: 0, top: 0 };
+                                const clientX = ev.clientX + rect.left;
+                                const clientY = ev.clientY + rect.top;
+
+                                if (target.classList && target.classList.contains('comment-highlight')) {
+                                    const selectedNode = this.stateManager.getSelectedNode();
+                                    const c = selectedNode && Array.isArray(selectedNode.comments)
+                                        ? selectedNode.comments.find(item => item.id === target.id || item.spanId === target.id)
+                                        : null;
+                                    const text = c ? `💬 Comment: "${c.text}"` : (target.textContent || '');
+                                    if (this.uiManager && typeof this.uiManager._showHoverTooltip === 'function') {
+                                        this.uiManager._showHoverTooltip(text, clientX, clientY);
+                                    }
+                                    return;
                                 }
-                                return;
-                            }
-                            if (target.classList && target.classList.contains('certified-word')) {
-                                const selectedNode = this.stateManager.getSelectedNode();
-                                const cw = selectedNode && Array.isArray(selectedNode.certifiedWords)
-                                    ? selectedNode.certifiedWords.find(item => item.spanId === target.id)
-                                    : null;
-                                const def = cw ? cw.definition : (target.getAttribute('data-definition') || '');
-                                const word = cw ? cw.word : target.textContent;
-                                const text = `✓ Certified: "${word}" — ${def || '(no definition)'}`;
-                                if (this.uiManager && typeof this.uiManager._showHoverTooltip === 'function') {
-                                    this.uiManager._showHoverTooltip(text, clientX, clientY);
+                                if (target.classList && target.classList.contains('certified-word')) {
+                                    const selectedNode = this.stateManager.getSelectedNode();
+                                    const cw = selectedNode && Array.isArray(selectedNode.certifiedWords)
+                                        ? selectedNode.certifiedWords.find(item => item.spanId === target.id)
+                                        : null;
+                                    const def = cw ? cw.definition : (target.getAttribute('data-definition') || '');
+                                    const word = cw ? cw.word : target.textContent;
+                                    const text = `✓ Certified: "${word}" — ${def || '(no definition)'}`;
+                                    if (this.uiManager && typeof this.uiManager._showHoverTooltip === 'function') {
+                                        this.uiManager._showHoverTooltip(text, clientX, clientY);
+                                    }
+                                    return;
                                 }
-                                return;
-                            }
-                            if (this.uiManager && typeof this.uiManager._hideHoverTooltip === 'function') this.uiManager._hideHoverTooltip();
-                        } catch (err) { /* ignore hover handler errors */ }
-                    };
-                    doc.addEventListener('mouseover', hoverHandler);
-                    doc.addEventListener('mousemove', hoverHandler);
-                    doc.addEventListener('mouseout', () => { if (this.uiManager && typeof this.uiManager._hideHoverTooltip === 'function') this.uiManager._hideHoverTooltip(); });
-                } catch (err) { console.warn('[editor] attaching hover listeners failed', err); }
-                this.tinymceEditor.focus();
-                return;
-            } catch (err) {
-                console.error('[editor] TinyMCE open failed, falling back:', err);
+                                if (this.uiManager && typeof this.uiManager._hideHoverTooltip === 'function') this.uiManager._hideHoverTooltip();
+                            } catch (err) { /* ignore hover handler errors */ }
+                        };
+                        doc.addEventListener('mouseover', hoverHandler);
+                        doc.addEventListener('mousemove', hoverHandler);
+                        doc.addEventListener('mouseout', () => { if (this.uiManager && typeof this.uiManager._hideHoverTooltip === 'function') this.uiManager._hideHoverTooltip(); });
+                    } catch (err) { console.warn('[editor] attaching hover listeners failed', err); }
+                    this.tinymceEditor.focus();
+                    return;
+                } catch (err) {
+                    console.error('[editor] TinyMCE open failed, falling back:', err);
+                }
             }
         }
 
-        // Fallback textarea
+        // Native Textarea Editor (runs on mobile, and as desktop fallback if TinyMCE unavailable)
         try {
             const editorMain = document.getElementById('editor-main-content');
             if (editorMain) editorMain.classList.remove('tinymce-active');
@@ -875,10 +908,10 @@ window.MyProjectEditorManager = {
                 : null;
             if (tox) tox.style.display = 'none';
 
-            let ta = document.getElementById('main-editor-fallback') || document.getElementById('main-editor');
+            let ta = this.getTextareaElement();
             if (!ta) {
                 ta = document.createElement('textarea');
-                ta.id = 'main-editor-fallback';
+                ta.id = 'main-editor';
                 const container = editorMain || document.body;
                 container.appendChild(ta);
             }
@@ -951,10 +984,10 @@ window.MyProjectEditorManager = {
 
         try {
             let content = '';
-            if (this.tinymceEditor && this.tinyMCEAvailable) {
+            if (!this.isMobileMode() && this.tinymceEditor && this.tinyMCEAvailable) {
                 content = this.tinymceEditor.getContent();
             } else {
-                const ta = document.getElementById('main-editor-fallback') || document.getElementById('main-editor');
+                const ta = this.getTextareaElement();
                 content = ta ? ta.value : (selectedNode.content || '');
             }
 

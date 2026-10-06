@@ -417,5 +417,23 @@ describe('MyProjectEditorManager & Craft Drawer Integration Tests', () => {
             EditorManager.initTinyMCE();
         }).not.toThrow();
     });
+
+    test('isMobileMode identifies mobile screens and routes openEditorMode to textarea', () => {
+        const origWidth = window.innerWidth;
+        try {
+            window.innerWidth = 390;
+            expect(EditorManager.isMobileMode()).toBe(true);
+
+            const testNode = { id: 'sheet-phone', title: 'Phone Note', content: 'Native mobile typing' };
+            EditorManager.openEditorMode(testNode);
+
+            const ta = EditorManager.getTextareaElement();
+            expect(ta).toBeTruthy();
+            expect(ta.value).toBe('Native mobile typing');
+            expect(ta.style.display).not.toBe('none');
+        } finally {
+            window.innerWidth = origWidth;
+        }
+    });
 });
 
