@@ -1476,7 +1476,7 @@ window.MyProjectUIManager = {
     updateEditorWordCount: function(content) {
         if (this.editorWordCount) {
             const wordCount = this.getWordCount(content);
-            this.editorWordCount.textContent = `Words: ${wordCount}`;
+            this.editorWordCount.textContent = String(wordCount);
             // Update word goal UI
             if (this.wordGoalCurrent) {
                 this.wordGoalCurrent.textContent = String(wordCount);
@@ -1499,7 +1499,8 @@ window.MyProjectUIManager = {
             node.tags.forEach(tag => {
                 const tagPill = document.createElement('div');
                 tagPill.className = 'tag-pill';
-                tagPill.textContent = tag;
+                const rawTag = typeof tag === 'string' ? tag.replace(/^#+/, '') : String(tag || '');
+                tagPill.textContent = '#' + rawTag;
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'tag-delete-btn';
                 deleteBtn.textContent = '×';

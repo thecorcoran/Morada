@@ -194,10 +194,13 @@ window.MyProjectCanvasRenderer = {
    */
   _drawDeskGrid: function(scale, offsetX, offsetY) {
     const spacing = 40; // World pixels between alignment dots
-    const startX = offsetX - (this.canvas.width / 2) / scale;
-    const endX = offsetX + (this.canvas.width / 2) / scale;
-    const startY = offsetY - (this.canvas.height / 2) / scale;
-    const endY = offsetY + (this.canvas.height / 2) / scale;
+    // draw() centers the view on world point (W/2 + offsetX, H/2 + offsetY)
+    const centerX = this.canvas.width / 2 + offsetX;
+    const centerY = this.canvas.height / 2 + offsetY;
+    const startX = centerX - (this.canvas.width / 2) / scale;
+    const endX = centerX + (this.canvas.width / 2) / scale;
+    const startY = centerY - (this.canvas.height / 2) / scale;
+    const endY = centerY + (this.canvas.height / 2) / scale;
 
     const firstGridX = Math.floor(startX / spacing) * spacing;
     const firstGridY = Math.floor(startY / spacing) * spacing;
@@ -254,7 +257,8 @@ window.MyProjectCanvasRenderer = {
       this.ctx.setLineDash([]);
 
       // Draw tag label badge at midpoint
-      const labelText = '#' + sharedTags[0];
+      const rawTag = typeof sharedTags[0] === 'string' ? sharedTags[0].replace(/^#+/, '') : String(sharedTags[0] || '');
+      const labelText = '#' + rawTag;
       this.ctx.font = `${Math.max(10, 11 / scale)}px 'Vollkorn', serif`;
       this.ctx.fillStyle = theme.trellisLabel || 'rgba(139, 90, 43, 0.9)';
       this.ctx.textAlign = 'center';
@@ -294,7 +298,8 @@ window.MyProjectCanvasRenderer = {
       this.ctx.stroke();
       this.ctx.setLineDash([]);
 
-      const labelText = filter.startsWith('#') ? filter : '#' + filter;
+      const rawFilter = typeof filter === 'string' ? filter.replace(/^#+/, '') : String(filter || '');
+      const labelText = '#' + rawFilter;
       this.ctx.font = `bold ${Math.max(10, 11 / scale)}px 'Vollkorn', serif`;
       this.ctx.fillStyle = 'rgba(181, 118, 20, 0.9)';
       this.ctx.textAlign = 'center';
@@ -636,7 +641,8 @@ window.MyProjectCanvasRenderer = {
         const maxTagAreaRight = rightX - badgeReservationW - 10;
         for (let t = 0; t < Math.min(3, node.tags.length); t++) {
           const tag = node.tags[t];
-          const tagStr = '#' + tag;
+          const rawTag = typeof tag === 'string' ? tag.replace(/^#+/, '') : String(tag || '');
+          const tagStr = '#' + rawTag;
           this.ctx.font = "11px 'Vollkorn', serif";
           const tagW = this.ctx.measureText(tagStr).width;
           if (tagOffset + tagW + 12 <= maxTagAreaRight) {

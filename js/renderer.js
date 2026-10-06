@@ -25,6 +25,9 @@ async function init() {
         const loadedNodes = await MyProjectDataStorage.loadNodes();
     MyProjectStateManager.setRootNodes(loadedNodes);
 
+    // Initialize CanvasRenderer before UIManager so draw calls succeed immediately
+    MyProjectCanvasRenderer.init(canvas, MyProjectUIManager.getWordCount);
+
     // Initialize Managers with a reference to the state manager
     MyProjectUIManager.init({
         canvas: canvas, // Pass canvas to UIManager
@@ -49,8 +52,6 @@ async function init() {
         drawFunction: draw,
         saveNodesFunction: () => MyProjectDataStorage.saveNodes(MyProjectStateManager.getRootNodes()),
     });
-
-    MyProjectCanvasRenderer.init(canvas, MyProjectUIManager.getWordCount);
 
     // Initial draw
     resizeCanvas();

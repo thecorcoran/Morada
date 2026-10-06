@@ -2,10 +2,6 @@ const { app, BrowserWindow, ipcMain, session, Menu } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 
-// In minimal or containerized environments where system root certificates (e.g. ~/.pki/nssdb)
-// may not be present, ignore certificate errors to allow external HTTPS lookups (e.g. Wiktionary).
-app.commandLine.appendSwitch('ignore-certificate-errors');
-
 const createWindow = () => {
   const iconPath = path.join(__dirname, 'assets', 'icon.png');
   const mainWindow = new BrowserWindow({
@@ -24,11 +20,6 @@ const createWindow = () => {
   });
 
   // Helpful logging to diagnose startup issues and renderer errors.
-
-  // Allow certificate bypass for external lookups like Wiktionary in container/sandbox runs
-  session.defaultSession.setCertificateVerifyProc((request, callback) => {
-    callback(0); // 0 = trust / accept
-  });
 
   // Set a Content Security Policy (CSP) for the application.
   // This is the recommended, most secure way to apply a CSP in Electron.
@@ -219,6 +210,13 @@ ipcMain.handle('fs-rename', async (event, oldPath, newPath) => {
     console.error(`Error renaming file from ${oldPath} to ${newPath}:`, err);
     throw err;
   }
+});
+
+// .docx generation runs here (not in the sandboxed preload, which cannot require local modules).
+let docxExporter = null;
+ipcMain.handle('export-docx', async (event, nodes, options) => {
+  if (!docxExporter) docxExporter = require('./js/docxExporter.js');
+  return docxExporter.generateBase64(nodes, options);
 });
 
 app.whenReady().then(() => {

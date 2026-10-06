@@ -5,7 +5,10 @@
 
 const { contextBridge, ipcRenderer } = require('electron');
 
-const docxExporter = require('./js/docxExporter.js');
+// NOTE: Electron 20+ sandboxes preload scripts by default, so they may only require
+// 'electron' (and a few built-ins). Requiring local files (e.g. ./js/docxExporter.js)
+// throws and prevents electronAPI from being exposed at all — which silently disables
+// on-disk saving. Heavy work like .docx generation therefore runs in the main process.
 
 // Expose a controlled API to the renderer process (window object).
 // We are using IPC to invoke functions on the main process, which is the most
@@ -14,7 +17,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // These functions now use ipcRenderer.invoke to call async handlers in the main process.
   // They return Promises, making the file operations non-blocking.
   getDataPaths: () => ipcRenderer.invoke('get-data-paths'),
-  exportDocx: (nodes, options) => docxExporter.generateBase64(nodes, options),
+  exportDocx: (nodes, options) => ipcRenderer.invoke('export-docx', nodes, options),
   fs: {
     exists: (path) => ipcRenderer.invoke('fs-exists', path),
     copyFile: (src, dest) => ipcRenderer.invoke('fs-copy-file', src, dest),
