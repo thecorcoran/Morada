@@ -17,13 +17,19 @@ window.MyProjectDataStorage = {
   _internalManuscriptList: [],
 
   /**
-   * Initializes the data storage module by fetching the data paths from the main process.
+   * Initializes the data storage module by fetching the data paths from the main process
+   * or falling back gracefully to localStorage when running in a web or mobile browser.
    */
   async init() {
-    // Use the secure API exposed by preload (`electronAPI`).
-    const paths = await window.electronAPI.getDataPaths();
-    this._activeDataPath = paths.dataPath;
-    this._backupDataPath = paths.backupPath;
+    if (typeof window !== 'undefined' && window.electronAPI && typeof window.electronAPI.getDataPaths === 'function') {
+      const paths = await window.electronAPI.getDataPaths();
+      this._activeDataPath = paths.dataPath;
+      this._backupDataPath = paths.backupPath;
+    } else {
+      // Browser / mobile / web fallback
+      this._activeDataPath = 'morada_active_data';
+      this._backupDataPath = 'morada_backup_data';
+    }
   },
 
   /**
@@ -43,7 +49,54 @@ window.MyProjectDataStorage = {
   },
 
   /**
-   * Saves the provided tree of nodes to the JSON file.
+   * Default starter guide nodes provided on fresh launch or web preview
+   * so first-time users immediately see an organized, tactile desk.
+   * @returns {Array<Object>}
+   */
+  getDefaultStarterNodes() {
+    return [
+      {
+        id: 'node-welcome-portfolio',
+        title: 'Welcome to Morada',
+        type: 'container',
+        x: 80,
+        y: 80,
+        width: 320,
+        height: 200,
+        tags: ['#welcome'],
+        isExpanded: true,
+        children: [
+          {
+            id: 'node-welcome-sheet',
+            title: 'Your First Scene',
+            type: 'text',
+            content: '<p>Welcome to <strong>Morada</strong> — a visual, fractal writing environment designed for deep creative focus and scenic construction.</p><p>Double-click or double-tap this sheet to open the prose editor. Use the <em>Craft Drawer</em> on the right for <strong>Strunk & White</strong> stylistic auditing and <strong>Scenic Method</strong> craft maxims.</p>',
+            x: 60,
+            y: 60,
+            width: 300,
+            height: 180,
+            tags: ['#draft'],
+            children: []
+          }
+        ]
+      },
+      {
+        id: 'node-getting-started-sheet',
+        title: 'The Scholar\'s Guide',
+        type: 'text',
+        content: '<p><strong>Quick Gestures &amp; Controls:</strong></p><ul><li><strong>Double-click or double-tap</strong> empty canvas space to create a new card.</li><li><strong>Click + Sheet</strong> in the masthead to add a new scene.</li><li><strong>Drag</strong> cards to arrange them visually across your desk.</li><li><strong>Manuscript Press</strong> at the top compiles your work into Word (.docx), HTML, or Markdown.</li></ul>',
+        x: 460,
+        y: 80,
+        width: 320,
+        height: 200,
+        tags: ['#guide'],
+        children: []
+      }
+    ];
+  },
+
+  /**
+   * Saves the provided tree of nodes to the JSON file or browser localStorage.
    * It creates a backup of the existing data file, updates an emergency mirror,
    * and performs an atomic write (write to .tmp then rename) so the main data file
    * is never corrupted if power is lost during write.
@@ -55,32 +108,37 @@ window.MyProjectDataStorage = {
       return;
     }
     try {
-      // 1. Create a pre-save backup of the current data file before saving
-      if (await window.electronAPI.fs.exists(this._activeDataPath)) {
-        try {
-          await window.electronAPI.fs.copyFile(this._activeDataPath, this._backupDataPath);
-        } catch (backupErr) {
-          console.warn("[Storage] Backup creation skipped:", backupErr && backupErr.message);
+      // 1. Create a pre-save backup of the current data file before saving (Electron)
+      if (typeof window !== 'undefined' && window.electronAPI && window.electronAPI.fs && typeof window.electronAPI.fs.exists === 'function') {
+        if (await window.electronAPI.fs.exists(this._activeDataPath)) {
+          try {
+            await window.electronAPI.fs.copyFile(this._activeDataPath, this._backupDataPath);
+          } catch (backupErr) {
+            console.warn("[Storage] Backup creation skipped:", backupErr && backupErr.message);
+          }
         }
       }
 
       // 2. Prepare JSON data
       const data = JSON.stringify(rootNodesToSave, null, 2);
 
-      // 3. Emergency mirror in localStorage if available
+      // 3. Emergency mirror in localStorage if available (Web, Mobile, and Electron recovery)
       try {
         if (typeof localStorage !== 'undefined' && localStorage && typeof localStorage.setItem === 'function') {
           localStorage.setItem('morada_emergency_backup', data);
+          localStorage.setItem(this._activeDataPath, data);
         }
       } catch (lsErr) {}
 
-      // 4. Atomic write: write to a .tmp file then rename over the active file
-      if (window.electronAPI.fs && typeof window.electronAPI.fs.rename === 'function') {
-        const tempPath = this._activeDataPath + '.tmp';
-        await window.electronAPI.fs.writeFile(tempPath, data);
-        await window.electronAPI.fs.rename(tempPath, this._activeDataPath);
-      } else {
-        await window.electronAPI.fs.writeFile(this._activeDataPath, data);
+      // 4. Atomic write: write to a .tmp file then rename over the active file (Electron)
+      if (typeof window !== 'undefined' && window.electronAPI && window.electronAPI.fs) {
+        if (typeof window.electronAPI.fs.rename === 'function') {
+          const tempPath = this._activeDataPath + '.tmp';
+          await window.electronAPI.fs.writeFile(tempPath, data);
+          await window.electronAPI.fs.rename(tempPath, this._activeDataPath);
+        } else if (typeof window.electronAPI.fs.writeFile === 'function') {
+          await window.electronAPI.fs.writeFile(this._activeDataPath, data);
+        }
       }
     } catch (err) {
       console.error(`Error saving nodes to ${this._activeDataPath}: ${err.message}`, err);
@@ -92,7 +150,8 @@ window.MyProjectDataStorage = {
    * Tier 1: Primary data file (morada-data.json)
    * Tier 2: Automated backup file (morada-data.json.bak)
    * Tier 3: Emergency localStorage mirror (morada_emergency_backup)
-   * @returns {Array<Object>} The loaded (and normalized) array of root node objects, or an empty array on failure.
+   * Tier 4: Starter guide nodes (Welcome to Morada)
+   * @returns {Array<Object>} The loaded (and normalized) array of root node objects.
    */
   async loadNodes() {
     if (!this._activeDataPath) {
@@ -104,14 +163,16 @@ window.MyProjectDataStorage = {
 
     const loadFromFile = async (filePath) => {
       try {
-        if (await window.electronAPI.fs.exists(filePath)) {
-          const data = await window.electronAPI.fs.readFile(filePath, 'utf8');
-          const parsed = JSON.parse(data);
-          let nodes = Array.isArray(parsed) ? parsed : (parsed.nodes || parsed.manuscript || parsed.rootNodes || []);
-          this._rootNodes = nodes;
-          this.normalizeNodes(this._rootNodes);
-          console.log(`Nodes loaded successfully from ${filePath}`);
-          return this._rootNodes;
+        if (typeof window !== 'undefined' && window.electronAPI && window.electronAPI.fs && typeof window.electronAPI.fs.exists === 'function') {
+          if (await window.electronAPI.fs.exists(filePath)) {
+            const data = await window.electronAPI.fs.readFile(filePath, 'utf8');
+            const parsed = JSON.parse(data);
+            let nodes = Array.isArray(parsed) ? parsed : (parsed.nodes || parsed.manuscript || parsed.rootNodes || []);
+            this._rootNodes = nodes;
+            this.normalizeNodes(this._rootNodes);
+            console.log(`Nodes loaded successfully from ${filePath}`);
+            return this._rootNodes;
+          }
         }
       } catch (err) {
         console.error(`Error loading or parsing file from ${filePath}: ${err.message}`, err);
@@ -119,26 +180,27 @@ window.MyProjectDataStorage = {
       return null;
     };
 
-    // Tier 1: Try active data file
+    // Tier 1: Try active data file (Electron)
     let loadedData = await loadFromFile(this._activeDataPath);
 
-    // Tier 2: Try .bak file
-    if (loadedData === null && await window.electronAPI.fs.exists(this._backupDataPath)) {
-      console.log("Attempting to load from backup file.");
-      loadedData = await loadFromFile(this._backupDataPath);
-      if (loadedData !== null) {
-        // If backup is successful, restore it to the main file
-        await this.saveNodes(loadedData);
+    // Tier 2: Try .bak file (Electron)
+    if (loadedData === null && typeof window !== 'undefined' && window.electronAPI && window.electronAPI.fs && typeof window.electronAPI.fs.exists === 'function') {
+      if (await window.electronAPI.fs.exists(this._backupDataPath)) {
+        console.log("Attempting to load from backup file.");
+        loadedData = await loadFromFile(this._backupDataPath);
+        if (loadedData !== null) {
+          await this.saveNodes(loadedData);
+        }
       }
     }
 
-    // Tier 3: Try emergency localStorage mirror
+    // Tier 3: Try localStorage mirror (Browser, Mobile, or Electron recovery)
     if (loadedData === null && typeof localStorage !== 'undefined' && localStorage && typeof localStorage.getItem === 'function') {
       try {
-        const emergencyData = localStorage.getItem('morada_emergency_backup');
-        if (emergencyData) {
+        const storedData = localStorage.getItem(this._activeDataPath) || localStorage.getItem('morada_emergency_backup');
+        if (storedData) {
           console.warn("[Storage] Recovering data from emergency localStorage mirror.");
-          const parsed = JSON.parse(emergencyData);
+          const parsed = JSON.parse(storedData);
           let nodes = Array.isArray(parsed) ? parsed : (parsed.nodes || parsed.manuscript || parsed.rootNodes || []);
           if (nodes.length > 0) {
             this._rootNodes = nodes;
@@ -153,8 +215,9 @@ window.MyProjectDataStorage = {
     }
 
     if (loadedData === null) {
-      console.log("Starting with an empty dataset.");
-      this._rootNodes = [];
+      console.log("Starting with default starter dataset.");
+      this._rootNodes = this.getDefaultStarterNodes();
+      this.normalizeNodes(this._rootNodes);
       return this._rootNodes;
     }
 
@@ -162,7 +225,7 @@ window.MyProjectDataStorage = {
   },
 
   /**
-   * Restores the main data file from the backup file.
+   * Restores the main data file from the backup file or browser storage.
    * @returns {boolean} True if restoration was successful, false otherwise.
    */
   async restoreFromBackup() {
@@ -171,14 +234,23 @@ window.MyProjectDataStorage = {
       return false;
     }
     try {
-      if (await window.electronAPI.fs.exists(this._backupDataPath)) {
-        await window.electronAPI.fs.copyFile(this._backupDataPath, this._activeDataPath);
-        console.log(`Successfully restored data from ${this._backupDataPath} to ${this._activeDataPath}`);
-        return true;
-      } else {
-        console.warn("No backup file found to restore from.");
-        return false;
+      if (typeof window !== 'undefined' && window.electronAPI && window.electronAPI.fs && typeof window.electronAPI.fs.exists === 'function') {
+        if (await window.electronAPI.fs.exists(this._backupDataPath)) {
+          await window.electronAPI.fs.copyFile(this._backupDataPath, this._activeDataPath);
+          console.log(`Successfully restored data from ${this._backupDataPath} to ${this._activeDataPath}`);
+          return true;
+        } else {
+          console.warn("No backup file found to restore from.");
+          return false;
+        }
+      } else if (typeof localStorage !== 'undefined' && localStorage && typeof localStorage.getItem === 'function') {
+        const backupData = localStorage.getItem(this._backupDataPath) || localStorage.getItem('morada_emergency_backup');
+        if (backupData) {
+          localStorage.setItem(this._activeDataPath, backupData);
+          return true;
+        }
       }
+      return false;
     } catch (err) {
       console.error(`Error restoring from backup: ${err.message}`, err);
       return false;

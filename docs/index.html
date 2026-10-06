@@ -308,6 +308,58 @@
             }
         }
 
+        @media (max-width: 768px) {
+            header {
+                padding: 16px 20px;
+                flex-direction: column;
+                gap: 14px;
+                align-items: center;
+            }
+
+            nav a {
+                margin: 0 10px;
+                font-size: 13px;
+            }
+
+            .hero {
+                margin: 40px auto 30px;
+                padding: 0 16px;
+            }
+
+            .hero h1 {
+                font-size: 32px;
+            }
+
+            .hero p {
+                font-size: 16px;
+                margin-bottom: 28px;
+            }
+
+            .btn-download-primary {
+                padding: 14px 24px;
+                font-size: 15px;
+                width: 100%;
+                justify-content: center;
+            }
+
+            .preview-wrapper {
+                padding: 0 14px;
+                margin-bottom: 50px;
+            }
+
+            .preview-mockup {
+                padding: 14px;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .install-tabs {
+                justify-content: center;
+            }
+        }
+
         .mockup-node {
             border-radius: 8px;
             padding: 16px;
@@ -594,6 +646,10 @@
                     <a href="https://github.com/thecorcoran/Morada/releases" target="_blank" rel="noopener">All Releases &amp; Checksums</a>
                 </div>
 
+                <div class="mobile-device-notice" id="mobile-notice" style="display: none; margin-top: 10px; padding: 10px 16px; border-radius: 8px; background: rgba(212, 163, 115, 0.12); border: 1px solid rgba(212, 163, 115, 0.35); font-size: 13px; color: var(--accent-gold); max-width: 580px; text-align: center;">
+                    📱 <em>Visiting on mobile? Morada is engineered as a desktop workstation (Windows, macOS, Linux) for long-form prose and canvas drafting.</em>
+                </div>
+
                 <div class="platform-strip">
                     <a id="link-win" data-asset="win" href="https://github.com/thecorcoran/Morada/releases/latest" class="platform-link">
                         🪟 Windows (.exe)
@@ -787,15 +843,22 @@
                 deb:      { re: /\.deb$/i,        label: 'Debian / Ubuntu (.deb)', link: 'link-linux-deb', tab: 'linux' }
             };
 
+            var isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
             var preferred = null;
-            if (/Win/i.test(platform) || /Windows/i.test(ua)) preferred = 'win';
-            else if (/Mac/i.test(platform) || /Macintosh/i.test(ua)) preferred = 'mac';
-            else if (/Linux/i.test(platform) || /X11/i.test(ua)) preferred = 'appimage';
+            if (!isMobile) {
+                if (/Win/i.test(platform) || /Windows/i.test(ua)) preferred = 'win';
+                else if (/Mac/i.test(platform) || /Macintosh/i.test(ua)) preferred = 'mac';
+                else if (/Linux/i.test(platform) || /X11/i.test(ua)) preferred = 'appimage';
+            }
 
             if (preferred) {
                 primaryText.textContent = 'Download Morada for ' + ASSETS[preferred].label;
                 highlightPlatform(ASSETS[preferred].link);
                 switchTab(ASSETS[preferred].tab);
+            } else if (isMobile) {
+                primaryText.textContent = 'Desktop Downloads (Win / Mac / Linux)';
+                var mobNotice = document.getElementById('mobile-notice');
+                if (mobNotice) mobNotice.style.display = 'block';
             }
 
             function applyRelease(release) {

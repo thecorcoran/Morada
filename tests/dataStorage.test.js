@@ -207,4 +207,33 @@ describe('MyProjectDataStorage', () => {
         expect(loaded[0].id).toBe('ls-tier3');
         expect(loaded[0].title).toBe('Rescued from LocalStorage');
     });
+
+    test('should initialize and persist gracefully in browser/mobile without electronAPI', async () => {
+        delete global.window.electronAPI;
+        let mockStorage = {};
+        global.localStorage = {
+            getItem: (k) => mockStorage[k] || null,
+            setItem: (k, v) => { mockStorage[k] = v; }
+        };
+
+        await DataStorage.init();
+        expect(DataStorage._activeDataPath).toBe('morada_active_data');
+
+        // On first run with empty storage, it loads starter nodes
+        const initial = await DataStorage.loadNodes();
+        expect(initial.length).toBeGreaterThan(0);
+        expect(initial[0].title).toContain('Welcome to Morada');
+
+        // Saving persists to localStorage
+        const customNodes = [{ id: 'mobile-1', title: 'Mobile Draft', children: [], tags: [] }];
+        await DataStorage.saveNodes(customNodes);
+        expect(mockStorage['morada_active_data']).toBeDefined();
+        expect(mockStorage['morada_active_data']).toContain('Mobile Draft');
+
+        // Loading reloads from localStorage
+        const reloaded = await DataStorage.loadNodes();
+        expect(reloaded).toHaveLength(1);
+        expect(reloaded[0].title).toBe('Mobile Draft');
+    });
 });
+

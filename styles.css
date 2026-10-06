@@ -3233,3 +3233,70 @@ body.theme-midnight .warmup-actions .accent-action {
   color: #ffffff !important;
 }
 
+/* ==========================================================================
+   MOBILE & TOUCH DISPLAY RESPONSIVENESS
+   ========================================================================== */
+@media (max-width: 768px) {
+  .scholar-masthead,
+  .breadcrumb-bar {
+    padding: 6px 10px;
+    gap: 8px;
+    min-height: 48px;
+    flex-wrap: wrap;
+  }
+
+  .masthead-brand {
+    font-size: 13px;
+    letter-spacing: 1px;
+  }
+
+  .masthead-center {
+    order: 3;
+    width: 100%;
+    max-width: 100%;
+    margin: 4px 0 0 0;
+  }
+
+  .masthead-right {
+    overflow-x: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+    gap: 6px;
+  }
+
+  .creation-group {
+    border-right: none;
+    padding-right: 0;
+  }
+
+  .masthead-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  /* Make modal dialogs responsive on mobile */
+  .modal-content,
+  #compendium-modal .modal-content,
+  #archive-modal .modal-content {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    max-height: 90vh !important;
+    margin: 10px auto;
+    padding: 16px !important;
+  }
+
+  /* Editor mobile layout */
+  #editor-mode {
+    width: 100vw;
+    height: 100vh;
+  }
+
+  #editor-drawer-container {
+    width: 100% !important;
+    position: absolute;
+    bottom: 0;
+    max-height: 50vh;
+  }
+}

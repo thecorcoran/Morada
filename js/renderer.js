@@ -99,6 +99,9 @@ function setupEventListeners() {
 
     let lastTouchTime = 0;
     let lastTouchPos = { x: 0, y: 0 };
+    let pinchStartDist = 0;
+    let pinchStartScale = 1;
+
     canvas.addEventListener('touchstart', (e) => {
         if (e.touches && e.touches.length === 1) {
             const touch = e.touches[0];
@@ -114,10 +117,58 @@ function setupEventListeners() {
                 detail: isDoubleTap ? 2 : 1,
                 button: 0,
                 type: isDoubleTap ? 'dblclick' : 'mousedown',
-                preventDefault: () => { try { e.preventDefault(); } catch (err) {} }
+                preventDefault: () => { try { if (e.cancelable) e.preventDefault(); } catch (err) {} }
             };
             onMouseDown(syntheticEvent);
+        } else if (e.touches && e.touches.length === 2) {
+            pinchStartDist = Math.hypot(
+                e.touches[1].clientX - e.touches[0].clientX,
+                e.touches[1].clientY - e.touches[0].clientY
+            );
+            pinchStartScale = MyProjectStateManager.getScale();
         }
+    }, { passive: false });
+
+    window.addEventListener('touchmove', (e) => {
+        if (e.touches && e.touches.length === 1) {
+            const touch = e.touches[0];
+            lastTouchPos = { x: touch.clientX, y: touch.clientY };
+            const syntheticEvent = {
+                clientX: touch.clientX,
+                clientY: touch.clientY,
+                preventDefault: () => { try { if (e.cancelable) e.preventDefault(); } catch (err) {} }
+            };
+            onMouseMove(syntheticEvent);
+            if (isDragging && e.cancelable) {
+                e.preventDefault();
+            }
+        } else if (e.touches && e.touches.length === 2 && pinchStartDist > 0) {
+            const currentDist = Math.hypot(
+                e.touches[1].clientX - e.touches[0].clientX,
+                e.touches[1].clientY - e.touches[0].clientY
+            );
+            const ratio = currentDist / pinchStartDist;
+            const newScale = Math.min(Math.max(pinchStartScale * ratio, 0.2), 3.0);
+            MyProjectStateManager.setScale(newScale);
+            draw();
+            if (e.cancelable) e.preventDefault();
+        }
+    }, { passive: false });
+
+    window.addEventListener('touchend', () => {
+        pinchStartDist = 0;
+        const syntheticEvent = {
+            clientX: lastTouchPos.x,
+            clientY: lastTouchPos.y,
+            preventDefault: () => {}
+        };
+        onMouseUp(syntheticEvent);
+    }, { passive: true });
+
+    window.addEventListener('touchcancel', () => {
+        pinchStartDist = 0;
+        isDragging = false;
+        isPotentialDrag = false;
     }, { passive: true });
 
     window.addEventListener('mouseup', onMouseUp);
