@@ -233,8 +233,16 @@ window.MyProjectUIManager = {
         if (this.autoTidyBtn) this.autoTidyBtn.addEventListener('click', () => this.autoTidyDesk());
         if (this.openScriptoriumBtn) this.openScriptoriumBtn.addEventListener('click', () => {
             const sel = this.stateManager.getSelectedNode();
-            if (!sel) return alert('No node selected');
-            if (typeof window.MyProjectEditorManager?.openEditorMode === 'function') {
+            if (!sel) return;
+            if (sel.type === 'container') {
+                this.stateManager.pushToViewStack(sel);
+                this.stateManager.setCurrentNodes(sel.children || []);
+                this.updateUIChrome();
+                if (typeof this.fitNodesToView === 'function') {
+                    this.fitNodesToView(80);
+                }
+                if (this.drawFunction) this.drawFunction();
+            } else if (typeof window.MyProjectEditorManager?.openEditorMode === 'function') {
                 window.MyProjectEditorManager.openEditorMode(sel);
             }
         });
@@ -1173,6 +1181,25 @@ window.MyProjectUIManager = {
         try {
             if (this.outlinerSidebar && !this.outlinerSidebar.classList.contains('hidden')) {
                 this.renderOutliner();
+            }
+        } catch (err) { /* non-fatal */ }
+
+        // Update Open Sheet / Enter Portfolio button state based on selection
+        try {
+            if (this.openScriptoriumBtn) {
+                const sel = this.stateManager ? this.stateManager.getSelectedNode() : null;
+                if (sel) {
+                    this.openScriptoriumBtn.classList.remove('hidden');
+                    if (sel.type === 'container') {
+                        this.openScriptoriumBtn.textContent = 'Enter Portfolio ➔';
+                        this.openScriptoriumBtn.title = `Enter "${sel.title || 'Portfolio'}"`;
+                    } else {
+                        this.openScriptoriumBtn.textContent = 'Open Sheet ✍';
+                        this.openScriptoriumBtn.title = `Open "${sel.title || 'Sheet'}" in Editor`;
+                    }
+                } else {
+                    this.openScriptoriumBtn.classList.add('hidden');
+                }
             }
         } catch (err) { /* non-fatal */ }
     },

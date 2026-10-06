@@ -298,6 +298,9 @@ function onMouseDown(e) {
             }
         }
         MyProjectStateManager.setSelectedNode(clickedNode);
+        if (window.MyProjectUIManager && typeof window.MyProjectUIManager.updateUIChrome === 'function') {
+            window.MyProjectUIManager.updateUIChrome();
+        }
 
         // Double-click / Double-tap action
         if (isDoubleAction) {
@@ -344,6 +347,9 @@ function onMouseDown(e) {
     } else {
         // Clicked empty space: clear selection and close any node inspector
         MyProjectStateManager.setSelectedNode(null);
+        if (window.MyProjectUIManager && typeof window.MyProjectUIManager.updateUIChrome === 'function') {
+            window.MyProjectUIManager.updateUIChrome();
+        }
         const existing = document.querySelector('.node-editor');
         if (existing) {
             try { existing.blur(); } catch (err) {}

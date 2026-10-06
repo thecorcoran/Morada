@@ -42,6 +42,10 @@ describe('MyProjectEditorManager & Craft Drawer Integration Tests', () => {
             click: function() {
                 if (eventListeners['click']) eventListeners['click']();
             },
+            setRangeText: function(replacement, start, end) {
+                this.value = this.value.substring(0, start) + replacement + this.value.substring(end);
+            },
+            dispatchEvent: jest.fn(),
             focus: jest.fn()
         };
     }
@@ -51,6 +55,12 @@ describe('MyProjectEditorManager & Craft Drawer Integration Tests', () => {
             'editor-mode': createMockElement('editor-mode'),
             'editor-main-content': createMockElement('editor-main-content'),
             'editor-toolbar': createMockElement('editor-toolbar'),
+            'editor-breadcrumb-label': createMockElement('editor-breadcrumb-label', 'span'),
+            'editor-bold-btn': createMockElement('editor-bold-btn', 'button'),
+            'editor-italic-btn': createMockElement('editor-italic-btn', 'button'),
+            'editor-h2-btn': createMockElement('editor-h2-btn', 'button'),
+            'editor-quote-btn': createMockElement('editor-quote-btn', 'button'),
+            'editor-bullet-btn': createMockElement('editor-bullet-btn', 'button'),
             'editor-fullview-btn': createMockElement('editor-fullview-btn', 'button'),
             'exit-fullview-btn': createMockElement('exit-fullview-btn', 'button'),
             'editor-inspector-sidebar': createMockElement('editor-inspector-sidebar'),
@@ -93,7 +103,8 @@ describe('MyProjectEditorManager & Craft Drawer Integration Tests', () => {
         mockStateManager = {
             getSelectedNode: () => selectedNode,
             setSelectedNode: (n) => { selectedNode = n; },
-            getRootNodes: () => rootNodes
+            getRootNodes: () => rootNodes,
+            getViewStack: () => []
         };
 
         mockUIManager = {
@@ -324,5 +335,46 @@ describe('MyProjectEditorManager & Craft Drawer Integration Tests', () => {
 
         jest.runOnlyPendingTimers();
         jest.useRealTimers();
+    });
+
+    test('applyFormatting formats text in fallback textarea mode', () => {
+        EditorManager.init({
+            stateManager: mockStateManager,
+            uiManager: mockUIManager,
+            dataStorage: mockDataStorage,
+            drawFunction: mockDrawFunction
+        });
+
+        const ta = mockElements['main-editor-fallback'];
+        ta.value = 'hello world';
+        ta.selectionStart = 0;
+        ta.selectionEnd = 5;
+
+        EditorManager.applyFormatting('bold');
+        expect(ta.value).toBe('**hello** world');
+
+        ta.value = 'section title';
+        ta.selectionStart = 0;
+        ta.selectionEnd = 13;
+        EditorManager.applyFormatting('h2');
+        expect(ta.value).toContain('## section title');
+    });
+
+    test('openEditorMode should update editor-breadcrumb-label with hierarchy', () => {
+        const viewStack = [{ id: 'p1', title: 'Chapter 1' }];
+        mockStateManager.getViewStack = () => viewStack;
+
+        EditorManager.init({
+            stateManager: mockStateManager,
+            uiManager: mockUIManager,
+            dataStorage: mockDataStorage,
+            drawFunction: mockDrawFunction
+        });
+
+        const testNode = { id: 'sheet-1', title: 'Scene 1', content: 'Prose content' };
+        EditorManager.openEditorMode(testNode);
+
+        const breadcrumb = mockElements['editor-breadcrumb-label'];
+        expect(breadcrumb.textContent).toBe('The Desk / Chapter 1 / Scene 1');
     });
 });

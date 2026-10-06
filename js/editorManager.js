@@ -32,6 +32,7 @@ window.MyProjectEditorManager = {
 
         // Initialize Craft Drawer controls
         this.initCraftDrawer();
+        this._initFormattingControls();
 
         // Try to initialize TinyMCE, but don't let its absence break the app.
         this.tinyMCEAvailable = false;
@@ -584,6 +585,103 @@ window.MyProjectEditorManager = {
             console.warn('[editor] focusSpan fallback failed', err);
         }
     },
+
+    /**
+     * Initializes formatting toolbar buttons (bold, italic, h2, quote, bullet)
+     */
+    _initFormattingControls: function() {
+        const formatTypes = [
+            { id: 'editor-bold-btn', type: 'bold' },
+            { id: 'editor-italic-btn', type: 'italic' },
+            { id: 'editor-h2-btn', type: 'h2' },
+            { id: 'editor-quote-btn', type: 'quote' },
+            { id: 'editor-bullet-btn', type: 'bullet' }
+        ];
+
+        formatTypes.forEach(({ id, type }) => {
+            const btn = document.getElementById(id);
+            if (btn && !btn._hasFormatListener) {
+                btn._hasFormatListener = true;
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.applyFormatting(type);
+                });
+            }
+        });
+    },
+
+    /**
+     * Applies text formatting either via TinyMCE commands or fallback textarea markdown wrappers.
+     * @param {string} type - 'bold', 'italic', 'h2', 'quote', 'bullet'
+     */
+    applyFormatting: function(type) {
+        if (this.tinyMCEAvailable && this.tinymceEditor) {
+            try {
+                switch (type) {
+                    case 'bold':
+                        this.tinymceEditor.execCommand('Bold');
+                        break;
+                    case 'italic':
+                        this.tinymceEditor.execCommand('Italic');
+                        break;
+                    case 'h2':
+                        this.tinymceEditor.execCommand('FormatBlock', false, 'h2');
+                        break;
+                    case 'quote':
+                        this.tinymceEditor.execCommand('FormatBlock', false, 'blockquote');
+                        break;
+                    case 'bullet':
+                        this.tinymceEditor.execCommand('InsertUnorderedList');
+                        break;
+                }
+                this.tinymceEditor.focus();
+                return;
+            } catch (err) {
+                console.warn('[editor] TinyMCE execCommand failed', err);
+            }
+        }
+
+        // Fallback textarea formatting
+        const ta = document.getElementById('main-editor-fallback') || document.getElementById('main-editor');
+        if (!ta) return;
+        const start = ta.selectionStart != null ? ta.selectionStart : 0;
+        const end = ta.selectionEnd != null ? ta.selectionEnd : start;
+        const val = ta.value || '';
+        const selectedText = val.substring(start, end);
+        let replacement = '';
+
+        switch (type) {
+            case 'bold':
+                replacement = `**${selectedText || 'bold text'}**`;
+                break;
+            case 'italic':
+                replacement = `*${selectedText || 'italic text'}*`;
+                break;
+            case 'h2':
+                replacement = selectedText ? `\n## ${selectedText}\n` : `\n## Heading\n`;
+                break;
+            case 'quote':
+                replacement = selectedText ? `\n> ${selectedText}\n` : `\n> Quote\n`;
+                break;
+            case 'bullet':
+                if (selectedText) {
+                    replacement = '\n' + selectedText.split('\n').map(line => `- ${line}`).join('\n') + '\n';
+                } else {
+                    replacement = `\n- Item\n`;
+                }
+                break;
+            default:
+                return;
+        }
+
+        if (typeof ta.setRangeText === 'function') {
+            ta.setRangeText(replacement, start, end, 'end');
+        } else {
+            ta.value = val.substring(0, start) + replacement + val.substring(end);
+        }
+        ta.dispatchEvent(new Event('input', { bubbles: true }));
+        ta.focus();
+    },
     // --- Craft Drawer, Strunk Metrics & Scenic Maxims are modularized in CraftDrawerManager ---
 
 
@@ -598,6 +696,23 @@ window.MyProjectEditorManager = {
         }
 
         this.stateManager.setSelectedNode(node);
+
+        // Update breadcrumb in editor toolbar
+        const breadcrumbEl = document.getElementById('editor-breadcrumb-label');
+        if (breadcrumbEl) {
+            let path = 'The Desk';
+            const viewStack = (this.stateManager && typeof this.stateManager.getViewStack === 'function') ? this.stateManager.getViewStack() : [];
+            viewStack.forEach(stNode => {
+                if (stNode && stNode.title && (!node || stNode.id !== node.id)) {
+                    path += ` / ${stNode.title}`;
+                }
+            });
+            if (node && node.title) {
+                path += ` / ${node.title}`;
+            }
+            breadcrumbEl.textContent = path;
+            breadcrumbEl.title = path;
+        }
 
         if (this.uiManager.editorMode) {
             this.uiManager.editorMode.classList.remove('hidden');
@@ -693,16 +808,18 @@ window.MyProjectEditorManager = {
 
         // Fallback textarea
         try {
-            let ta = document.getElementById('main-editor-fallback');
+            const editorMain = document.getElementById('editor-main-content');
+            if (editorMain) editorMain.classList.remove('tinymce-active');
+
+            let ta = document.getElementById('main-editor-fallback') || document.getElementById('main-editor');
             if (!ta) {
                 ta = document.createElement('textarea');
                 ta.id = 'main-editor-fallback';
-                ta.style.width = '100%';
-                ta.style.height = '100%';
-                const container = document.getElementById('editor-main-content') || document.body;
-                container.innerHTML = '';
+                const container = editorMain || document.body;
                 container.appendChild(ta);
             }
+            ta.classList.remove('hidden');
+            ta.style.display = 'block';
             ta.value = node.content || '';
             this.uiManager.updateEditorWordCount(ta.value);
             if (this.uiManager.renderTags) this.uiManager.renderTags(node);
@@ -771,7 +888,7 @@ window.MyProjectEditorManager = {
             if (this.tinymceEditor && this.tinyMCEAvailable) {
                 content = this.tinymceEditor.getContent();
             } else {
-                const ta = document.getElementById('main-editor-fallback');
+                const ta = document.getElementById('main-editor-fallback') || document.getElementById('main-editor');
                 content = ta ? ta.value : (selectedNode.content || '');
             }
 

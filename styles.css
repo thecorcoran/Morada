@@ -1739,17 +1739,45 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
     cursor: pointer;
 }
 
-/* Editor Toolbar & Scholar Aesthetic (Fallback Editor Toolbar) */
+/* Editor Toolbar & Scholar Aesthetic (Unified Editor Toolbar) */
 #editor-toolbar {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 10px;
-  padding: 6px 12px;
+  padding: 8px 14px;
   background-color: #faf5ec;
   border: 1px solid #d5c4a1;
   border-radius: var(--border-radius, 4px);
   box-shadow: 0 1px 3px rgba(60, 56, 54, 0.06);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.editor-breadcrumb-label {
+  font-family: var(--font-primary, 'Vollkorn', Georgia, serif);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #3c3836;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+  padding: 0 4px;
+}
+
+.editor-toolbar-separator {
+  width: 1px;
+  height: 20px;
+  background-color: #d5c4a1;
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+.editor-formatting-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 #editor-toolbar button {
@@ -1769,11 +1797,9 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
   gap: 6px;
 }
 
-#editor-toolbar button svg {
-  width: 15px;
-  height: 15px;
-  fill: currentColor;
-  flex-shrink: 0;
+#editor-toolbar button strong,
+#editor-toolbar button em {
+  font-size: 14px;
 }
 
 #editor-toolbar button:hover {
@@ -1813,6 +1839,24 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
   color: #ffffff;
   border-color: #120e0a;
   box-shadow: 0 2px 5px rgba(60, 56, 54, 0.25);
+}
+
+#main-editor,
+#main-editor-fallback {
+  width: 100%;
+  flex-grow: 1;
+  background-color: #fdfaf4;
+  color: #2c2520;
+  font-family: var(--font-primary, 'Vollkorn', Georgia, serif);
+  font-size: 16.5px;
+  line-height: 1.85;
+  padding: 24px 32px;
+  border: 1px solid #d5c4a1;
+  border-radius: var(--border-radius, 4px);
+  box-shadow: 0 4px 18px rgba(60, 56, 54, 0.08);
+  box-sizing: border-box;
+  outline: none;
+  resize: none;
 }
 
 .editor-save-indicator {
@@ -1940,8 +1984,8 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), textarea:focu
   background-color: #55500a;
 }
 
-/* Hide duplicate outer toolbar when TinyMCE is active so options live in text window */
-#editor-main-content.tinymce-active #editor-toolbar {
+/* When TinyMCE is active, hide duplicate formatting tools since TinyMCE has its own format row */
+#editor-main-content.tinymce-active #editor-formatting-tools {
   display: none !important;
 }
 
