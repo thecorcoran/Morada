@@ -316,11 +316,32 @@ function onMouseDown(e) {
             window.MyProjectUIManager.updateUIChrome();
         }
 
-        // Double-click / Double-tap action: Opens the sheet into editor or enters the portfolio
+        // Double-click / Double-tap action
         if (isDoubleAction) {
             isPotentialDrag = false;
             isDragging = false;
 
+            // 1. Double-clicking specifically on the card's Title text triggers inline title rename:
+            // Title is drawn at innerX = node.x + 18, innerY = node.y + 36 (font size 17px, line height ~22px).
+            // Title boundary: y from node.y + 30 to node.y + 60, x from node.x + 14 to min(node.x + node.width - 18, node.x + titleWidth + 24).
+            const titleText = clickedNode.title || 'Untitled';
+            const approxCharW = 11;
+            const titleTextWidth = Math.max(60, Math.min(clickedNode.width - 36, titleText.length * approxCharW + 24));
+            const isClickOnTitleText = (
+                worldPos.y >= clickedNode.y + 30 &&
+                worldPos.y <= clickedNode.y + 60 &&
+                worldPos.x >= clickedNode.x + 14 &&
+                worldPos.x <= clickedNode.x + 18 + titleTextWidth
+            );
+
+            if (isClickOnTitleText) {
+                if (window.MyProjectUIManager && typeof window.MyProjectUIManager.createTitleEditor === 'function') {
+                    window.MyProjectUIManager.createTitleEditor(clickedNode);
+                    return;
+                }
+            }
+
+            // 2. Double-clicking anywhere else on the card opens the sheet into editor or enters the portfolio:
             if (clickedNode.type === 'text') {
                 MyProjectEditorManager.openEditorMode(clickedNode);
                 return;

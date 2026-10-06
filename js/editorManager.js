@@ -274,18 +274,29 @@ window.MyProjectEditorManager = {
                         // If editor mode was already opened before TinyMCE finished initializing, populate it now
                         if (this.isEditorOpen()) {
                             try {
+                                const tox = (typeof document !== 'undefined' && typeof document.querySelector === 'function')
+                                    ? document.querySelector('.tox.tox-tinymce')
+                                    : null;
+                                if (tox) tox.style.display = 'flex';
+
+                                const editorMain = document.getElementById('editor-main-content');
+                                if (editorMain) editorMain.classList.add('tinymce-active');
+
+                                const ta = this.getTextareaElement();
+                                const currentContent = ta ? ta.value : '';
+                                if (ta) ta.style.display = 'none';
+
                                 const selectedNode = this.stateManager ? this.stateManager.getSelectedNode() : null;
+                                const contentToLoad = currentContent || (selectedNode ? (selectedNode.content || '') : '');
+                                editor.setContent(contentToLoad);
+                                if (this.uiManager && typeof this.uiManager.updateEditorWordCount === 'function') {
+                                    this.uiManager.updateEditorWordCount(contentToLoad);
+                                }
                                 if (selectedNode) {
-                                    editor.setContent(selectedNode.content || '');
-                                    if (this.uiManager && typeof this.uiManager.updateEditorWordCount === 'function') {
-                                        this.uiManager.updateEditorWordCount(selectedNode.content || '');
-                                    }
                                     if (this.uiManager && this.uiManager.renderTags) this.uiManager.renderTags(selectedNode);
                                     if (this.uiManager && this.uiManager.renderFootnotes) this.uiManager.renderFootnotes(selectedNode);
-                                    this.applyStrunkHighlights();
                                 }
-                                const fallbackTa = document.getElementById('main-editor-fallback');
-                                if (fallbackTa) fallbackTa.style.display = 'none';
+                                this.applyStrunkHighlights();
                                 editor.focus();
                             } catch (e) {
                                 console.warn('[editor] populate on late init failed', e);
@@ -838,6 +849,17 @@ window.MyProjectEditorManager = {
             // If TinyMCE is available and initialized, use it on desktop
             if (this.tinyMCEAvailable && this.tinymceEditor) {
                 try {
+                    const tox = (typeof document !== 'undefined' && typeof document.querySelector === 'function')
+                        ? document.querySelector('.tox.tox-tinymce')
+                        : null;
+                    if (tox) tox.style.display = 'flex';
+
+                    const editorMain = document.getElementById('editor-main-content');
+                    if (editorMain) editorMain.classList.add('tinymce-active');
+
+                    const ta = this.getTextareaElement();
+                    if (ta) ta.style.display = 'none';
+
                     this.tinymceEditor.setContent(node ? (node.content || '') : '');
                     this.uiManager.updateEditorWordCount(node ? (node.content || '') : '');
                     if (this.uiManager.renderTags) this.uiManager.renderTags(node);
