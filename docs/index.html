@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Morada — A Fractal Writing Environment</title>
-    <meta name="description" content="A visual, node-based desktop workspace for deep creative writing, scenic construction, and manuscript compilation.">
+    <title>Morada — A Visual Writing Workspace</title>
+    <meta name="description" content="A desktop writing application organized as an open canvas for long-form prose and scene drafting.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&family=Cinzel:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -123,31 +123,16 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 6px 18px;
-            border-radius: 20px;
-            background: rgba(212, 163, 115, 0.12);
-            border: 1px solid rgba(212, 163, 115, 0.35);
+            padding: 5px 16px;
+            border-radius: 16px;
+            background: rgba(212, 163, 115, 0.1);
+            border: 1px solid rgba(212, 163, 115, 0.3);
             color: var(--accent-gold);
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
-            letter-spacing: 1.5px;
+            letter-spacing: 1.2px;
             text-transform: uppercase;
             margin-bottom: 24px;
-        }
-
-        .hero-badge .pulse-dot {
-            width: 7px;
-            height: 7px;
-            background-color: var(--accent-gold);
-            border-radius: 50%;
-            box-shadow: 0 0 8px var(--accent-gold);
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 0.4; }
-            50% { opacity: 1; }
-            100% { opacity: 0.4; }
         }
 
         .hero h1 {
@@ -628,12 +613,11 @@
     <main>
         <section class="hero">
             <span class="hero-badge">
-                <span class="pulse-dot"></span>
-                Public Beta • <span data-release="tag">Latest Release</span>
+                Beta Release • <span data-release="tag">v1.0.0</span>
             </span>
-            <h1>The Scholar's Desk for <em>Deep Creative Writing</em></h1>
+            <h1>A visual canvas for <em>long-form writing</em></h1>
             <p>
-                A visual, fractal workspace for serious prose stylists. Organize chapters into leather-bound Portfolios, draft scenes on vellum Sheets, tune your ear with 5-minute master copywork, and hone your craft with the 55 Scenic Method maxims.
+                Organize chapters into portfolios, draft scenes on movable cards, and keep craft notes close at hand. Free, open source, and stored locally on your machine.
             </p>
 
             <div class="cta-container">
@@ -642,26 +626,26 @@
                     <span id="primary-download-text">Download Morada</span>
                 </a>
                 <div class="download-subtext">
-                    Free &amp; Open Source • 100% Local-First Writing (Zero Telemetry) • 
-                    <a href="https://github.com/thecorcoran/Morada/releases" target="_blank" rel="noopener">All Releases &amp; Checksums</a>
+                    Free &amp; open source • Local JSON storage • Windows, macOS, Linux •
+                    <a href="https://github.com/thecorcoran/Morada/releases" target="_blank" rel="noopener">All Releases</a>
                 </div>
 
                 <div class="mobile-device-notice" id="mobile-notice" style="display: none; margin-top: 10px; padding: 10px 16px; border-radius: 8px; background: rgba(212, 163, 115, 0.12); border: 1px solid rgba(212, 163, 115, 0.35); font-size: 13px; color: var(--accent-gold); max-width: 580px; text-align: center;">
-                    📱 <em>Visiting on mobile? Morada is engineered as a desktop workstation (Windows, macOS, Linux) for long-form prose and canvas drafting.</em>
+                    <em>Morada is designed for desktop computers (Windows, macOS, Linux). Desktop download links are below.</em>
                 </div>
 
                 <div class="platform-strip">
                     <a id="link-win" data-asset="win" href="https://github.com/thecorcoran/Morada/releases/latest" class="platform-link">
-                        🪟 Windows (.exe)
+                        Windows (.exe)
                     </a>
                     <a id="link-mac" data-asset="mac" href="https://github.com/thecorcoran/Morada/releases/latest" class="platform-link">
-                        🍎 macOS (.dmg)
+                        macOS (.dmg)
                     </a>
                     <a id="link-linux-appimage" data-asset="appimage" href="https://github.com/thecorcoran/Morada/releases/latest" class="platform-link">
-                        🐧 Linux (.AppImage)
+                        Linux (.AppImage)
                     </a>
                     <a id="link-linux-deb" data-asset="deb" href="https://github.com/thecorcoran/Morada/releases/latest" class="platform-link">
-                        📦 Debian / Ubuntu (.deb)
+                        Debian / Ubuntu (.deb)
                     </a>
                 </div>
             </div>
@@ -673,17 +657,17 @@
                     <span class="mockup-dot red"></span>
                     <span class="mockup-dot yellow"></span>
                     <span class="mockup-dot green"></span>
-                    <span class="mockup-title">Morada — The Scholar's Desk (Beta)</span>
+                    <span class="mockup-title">Morada — Workspace View</span>
                 </div>
                 <div class="mockup-canvas-grid">
                     <div class="mockup-node mockup-portfolio">
                         <div class="node-title">📁 Act I: The Sycamore Crossing</div>
                         <div class="node-prose">
-                            Chapter chamber containing 4 vellum sheets. Double-click title to rename in place; double-click body to enter child graph.
+                            Chapter folder containing 4 scene sheets. Double-click title to rename in place; double-click card body to step inside.
                         </div>
                         <div class="node-meta">
                             <span>4 Sheets • 3,420 Words</span>
-                            <span>Maxims: #1, #2, #5</span>
+                            <span>Chapter 1</span>
                         </div>
                     </div>
                     <div class="mockup-node mockup-sheet">
@@ -692,8 +676,8 @@
                             “The river was not grey, but the slate of an iron kettle. He felt the cold through the soles of his boots before he saw the ice...”
                         </div>
                         <div class="node-meta">
-                            <span>842 Words • Grade 7.2</span>
-                            <span>0 Passive • 0 Adverbs</span>
+                            <span>842 Words</span>
+                            <span>Draft</span>
                         </div>
                     </div>
                     <div class="mockup-node mockup-warmup">
@@ -702,7 +686,7 @@
                             “The suburb of Saffron Park lay on the sunset side of London, as red and ragged as a cloud of sunset...”
                         </div>
                         <div class="node-meta">
-                            <span>5-Minute Copywork</span>
+                            <span>5-Minute Warm-Up</span>
                             <span>The Man Who Was Thursday</span>
                         </div>
                     </div>
@@ -712,57 +696,57 @@
 
         <section id="features" class="features-section">
             <div class="section-header">
-                <h2>Forged for the Literary Mind</h2>
-                <p>Designed around the tactile rhythm of long-form writing, scenic architecture, and fail-safe local privacy.</p>
+                <h2>Designed for Drafting &amp; Revision</h2>
+                <p>A workspace built around the day-to-day process of writing and assembling longer manuscripts.</p>
             </div>
 
             <div class="features-grid">
                 <div class="feature-card">
                     <span class="feature-icon">📜</span>
-                    <h3>The 55 Maxims of Scenic Method</h3>
-                    <p>Access the timeless principles of Henry James, Caroline Gordon, and Flannery O'Connor right inside your writing drawer. Shuffle the Maxim of the Moment, check applied techniques, and ground every scene in physical geography.</p>
+                    <h3>The 55 Scenic Maxims</h3>
+                    <p>Brief craft reminders on pacing, physical detail, and scene construction synthesized from Henry James, Caroline Gordon, and Flannery O'Connor, available right in your side drawer.</p>
                 </div>
 
                 <div class="feature-card">
                     <span class="feature-icon">⚡</span>
-                    <h3>5-Minute Literary Warm-Up</h3>
-                    <p>Tune your ear and cadence before writing. A dedicated rotation of master copywork passages from G.K. Chesterton, Leo Tolstoy, Fyodor Dostoevsky, Cormac McCarthy, Willa Cather, Herman Melville, and Edith Wharton.</p>
+                    <h3>5-Minute Typing Warm-Up</h3>
+                    <p>A rotating selection of short masterwork excerpts from writers like G.K. Chesterton, Willa Cather, and Herman Melville to type through as a quick warm-up before you begin drafting.</p>
                 </div>
 
                 <div class="feature-card">
                     <span class="feature-icon">✒️</span>
-                    <h3>Strunk &amp; White Craft Engine</h3>
-                    <p>Live, non-destructive stylistic analysis. Spot passive voice and superfluous adverbs in real-time, inspect Flesch-Kincaid readability, and certify words with Walker Percy definitions and Wiktionary etymologies.</p>
+                    <h3>Draft Metrics &amp; Revision</h3>
+                    <p>Non-destructive feedback while revising: check word counts, inspect readability estimates, highlight potential passive phrasing or adverbs, and look up definitions via Wiktionary.</p>
                 </div>
 
                 <div class="feature-card">
                     <span class="feature-icon">🗂️</span>
-                    <h3>Fractal Portfolios &amp; Sheets</h3>
-                    <p>A dual-tier visual graph. Portfolios group chapters and acts into leather-bound containers, while vellum Sheets provide distraction-free prose. Rename titles directly in-place with a single double-click.</p>
+                    <h3>Portfolios &amp; Sheets</h3>
+                    <p>Group chapters into folder portfolios and write individual scenes on movable cards. Rename any card directly on the board with a double-click.</p>
                 </div>
 
                 <div class="feature-card">
                     <span class="feature-icon">⛶</span>
-                    <h3>Full View Writing &amp; Focus Dimming</h3>
-                    <p>Toggle true full-screen Zen writing mode with <kbd>F11</kbd> or <kbd>Ctrl+Shift+F</kbd>. Ambient desk blur and focus dimming ensure that entering any portfolio keeps your eyes locked on the current scene.</p>
+                    <h3>Full-Screen Writing</h3>
+                    <p>Press <kbd>F11</kbd> or <kbd>Ctrl+Shift+F</kbd> to hide toolbars and distracting chrome so you can focus on the current page.</p>
                 </div>
 
                 <div class="feature-card">
                     <span class="feature-icon">📄</span>
-                    <h3>Manuscript Press &amp; Word Export</h3>
-                    <p>Compile entire acts and chapters into unified manuscript drafts or export individual sheets directly to Microsoft Word (.docx / .doc) with proper literary margins, typography, and page formatting.</p>
+                    <h3>Word &amp; Manuscript Export</h3>
+                    <p>Compile chapters into a single manuscript or export individual scenes directly to standard Microsoft Word (.docx) documents with standard margins and serif formatting.</p>
                 </div>
 
                 <div class="feature-card">
                     <span class="feature-icon">📦</span>
-                    <h3>Velvet Archives Vault</h3>
-                    <p>Declutter your desk without permanently deleting your words. Archive completed drafts, fragments, and old acts into a secluded velvet vault, review them anytime, and restore them with a single click.</p>
+                    <h3>Archive Drawer</h3>
+                    <p>Move completed drafts, cut scenes, and alternate outlines out of view without permanently deleting them. Review and restore them whenever needed.</p>
                 </div>
 
                 <div class="feature-card">
                     <span class="feature-icon">🛡️</span>
-                    <h3>7-Layer Fail-Safe Persistence</h3>
-                    <p>Continuous debounced auto-saves, atomic file writes (.tmp + rename), pre-save backup rotation (.bak), and emergency browser mirrors guarantee that you never lose a single sentence.</p>
+                    <h3>Local Auto-Save &amp; Backups</h3>
+                    <p>Your work is saved automatically to local JSON files on your disk, with automatic backup (.bak) rotation to safeguard against power loss or crashes.</p>
                 </div>
             </div>
         </section>

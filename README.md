@@ -1,108 +1,85 @@
-# Morada 📜🖋️
-### *The Scholar's Desk for Deep Creative Writing*
+# Morada
 
-[![Release](https://img.shields.io/github/v/release/thecorcoran/Morada?include_prereleases&color=d4a373)](https://github.com/thecorcoran/Morada/releases)
-[![License: ISC](https://img.shields.io/badge/License-ISC-8b5a2b.svg)](https://opensource.org/licenses/ISC)
-[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-4a2810.svg)](https://thecorcoran.github.io/Morada/)
-[![CI](https://github.com/thecorcoran/Morada/actions/workflows/ci.yml/badge.svg)](https://github.com/thecorcoran/Morada/actions/workflows/ci.yml)
+A desktop writing app organized as an open canvas rather than a traditional file tree.
 
-**Morada** is a visual, fractal writing environment engineered specifically for long-form literary prose, scene architecture, and stylistic rigor. Inspired by the tactile atmosphere of a scholar's mahogany desk, Morada replaces endless flat document lists with a two-dimensional graph of leather-bound **Portfolios** (containers/chapters) and vellum **Sheets** (scenes/notes).
+Morada is built for drafting long-form prose—novels, essays, and stories. Instead of managing documents in a nested sidebar list, work is arranged on a two-dimensional board using two basic building blocks:
 
----
+- **Portfolios**: Folders for acts, chapters, or reference material. Double-click to open.
+- **Sheets**: Cards where you write individual scenes or notes.
 
-## 🌟 Core Features
-
-### 1. 🗂️ Fractal Portfolios & Sheets
-- **Two-Tier Visual Graph**: Seamlessly nest scenes inside chapters and acts.
-- **In-Place Title Renaming**: Double-click or double-tap directly on any card name to edit it instantly on the desk canvas.
-- **Double-Tap Dive**: Double-click the body of a portfolio to enter its chamber; double-click a sheet to open the prose editor.
-- **Auto-Tidy Desk**: Tidy your canvas automatically with golden-ratio card geometry, clean vertical shelf alignment, and intelligent tag filtering.
-
-### 2. ⚡ 5-Minute Literary Warm-Up
-- **Master Stylist Rotation**: Pre-populated copywork passages from G.K. Chesterton, Leo Tolstoy, Fyodor Dostoevsky, Cormac McCarthy, Willa Cather, Herman Melville, and Edith Wharton.
-- **Cadence & Ear Tuning**: Copy masterwork sentences for 5 minutes before drafting to tune your inner ear to rhythm, concrete details, and active verbs.
-
-### 3. 📜 The 55 Maxims of the Scenic Method
-- Timeless craft maxims synthesized from **Henry James**, **Caroline Gordon**, and **Flannery O'Connor**.
-- **Maxim of the Moment**: Shuffle randomized guiding wisdom directly in your writing drawer.
-- **Applied Tracking**: Mark maxims as applied in each scene (e.g. *#2 Render, never report*, *#6 Trust the concrete detail*).
-
-### 4. ✒️ Strunk & White Craft Engine
-- **Live Stylistic Auditing**: Real-time detection of passive voice constructs and weak adverbs.
-- **Readability Index**: Instant Flesch-Kincaid grade level and Reading Ease scoring.
-- **Walker Percy Diction & Wiktionary**: Look up precise etymologies and certify literary word definitions without leaving your draft.
-
-### 5. ⛶ Full View Writing & Focus Dimming
-- **Zen Expanse**: Switch to true distraction-free full-screen writing with <kbd>F11</kbd> or <kbd>Ctrl+Shift+F</kbd>.
-- **Ambient Desk Dimming**: Entering a portfolio gracefully blurs and dims the background desk to keep attention locked on the active chapter.
-
-### 6. 📄 Clean Word (.docx) & Manuscript Press Export
-- **Native Word Export**: Export individual sheets directly into standard Microsoft Word documents with 1-inch literary margins and styled serif typography.
-- **Manuscript Press**: Assemble and reorder multiple chapters into a unified compendium manuscript.
-
-### 7. 📦 Velvet Archives Vault
-- **Non-Destructive Decluttering**: Move completed acts, old outlines, and experimental scenes into a private velvet vault.
-- **Instant Restoration**: Browse archives with word count telemetry and restore them to the active desk with a single click.
-
-### 8. 🛡️ 7-Layer Fail-Safe Auto-Save Architecture
-- **Zero Data Loss Guarantee**: Continuous debounced editor auto-save, atomic file writes (`.tmp` + rename), automatic `.bak` rotation, and emergency browser local mirrors.
+Files are saved locally as plain JSON. There are no user accounts, cloud sync dependencies, or analytics.
 
 ---
 
-## 💻 Download & Installation
+## Overview
 
-Visit the official portal at **[https://thecorcoran.github.io/Morada/](https://thecorcoran.github.io/Morada/)** or download directly from **[GitHub Releases](https://github.com/thecorcoran/Morada/releases/latest)**:
+### The desk
+- Arrange chapters and scenes visually across the board.
+- Nest scenes inside chapter portfolios, or keep research notes floating nearby.
+- A tidy tool cleans up card spacing when the workspace gets crowded.
+- An archive drawer lets you move draft fragments or cut scenes out of view without deleting them.
 
-| Operating System | Package | Installation Notes |
-| :--- | :--- | :--- |
-| **Windows** | `Morada-Setup-<version>.exe` | Standard setup wizard for Windows 10/11 |
-| **macOS** | `Morada-<version>.dmg` | Drag `Morada` to `Applications` (Apple Silicon & Intel) |
-| **Linux (AppImage)** | `Morada-<version>.AppImage` | `chmod +x Morada-*.AppImage && ./Morada-*.AppImage` |
-| **Linux (Debian/Ubuntu)**| `morada_<version>_amd64.deb` | `sudo dpkg -i morada_*.deb` |
+### The editor
+- Plain-text writing area focused on typing speed and clear serif typography.
+- Full-screen mode (<kbd>F11</kbd> or <kbd>Ctrl+Shift+F</kbd>) to hide toolbars while drafting.
+- Right-click context menu to add footnotes, check word definitions on Wiktionary, or format text.
+- Export individual sheets or compiled manuscripts directly to Microsoft Word (`.docx`).
+
+### The craft drawer
+A collapsible side panel with reference tools for drafting and revision:
+- **Scenic Maxims**: 55 short craft reminders on pacing, scene construction, and concrete detail drawn from Henry James, Caroline Gordon, and Flannery O'Connor.
+- **Warm-Up Passages**: Brief excerpts from writers such as G.K. Chesterton, Willa Cather, and Herman Melville for a quick five-minute typing exercise before drafting.
+- **Draft Metrics**: Word counts, reading-grade estimates, and highlights for potential passive constructions and adverbs.
+- **Diction Notes**: Save definitions and word notes alongside your project.
+
+### Local saving
+- Saves automatically to your local disk as you type.
+- Backup files (`.bak`) are created alongside the main project file to protect against sudden power loss or crashes.
 
 ---
 
-## ⌨️ Keyboard Shortcuts Reference
+## Downloads
+
+Binaries are available on the [releases page](https://github.com/thecorcoran/Morada/releases):
+
+- **Windows**: `Morada-Setup-<version>.exe`
+- **macOS**: `Morada-<version>.dmg` (Universal for Intel & Apple Silicon)
+- **Linux**: `Morada-<version>.AppImage` or `morada_<version>_amd64.deb`
+
+---
+
+## Keyboard shortcuts
 
 | Shortcut | Action |
 | :--- | :--- |
-| <kbd>Esc</kbd> | Save & close sheet / Step back to parent portfolio |
-| <kbd>Ctrl</kbd> + <kbd>T</kbd> | Auto-Tidy active desk |
-| <kbd>F11</kbd> / <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd> | Toggle Full View Zen writing mode |
-| <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd> | Toggle Craft Drawer (Scenic Maxims & Strunk stats) |
-| <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>A</kbd> | Open Archives Vault |
-| <kbd>Ctrl</kbd> + <kbd>K</kbd> | Focus masthead search palette |
-| <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>C</kbd> | Certify selected word (Percy Diction) |
+| <kbd>Esc</kbd> | Close sheet / step back to parent portfolio |
+| <kbd>Ctrl</kbd> + <kbd>T</kbd> | Tidy cards on the desk |
+| <kbd>F11</kbd> / <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd> | Toggle full-screen mode |
+| <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd> | Toggle Craft Drawer |
+| <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>A</kbd> | Open Archive |
+| <kbd>Ctrl</kbd> + <kbd>K</kbd> | Focus card search |
+| <kbd>Ctrl</kbd> + <kbd>M</kbd> | Add footnote |
 | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>E</kbd> | Look up Wiktionary etymology |
-| <kbd>Ctrl</kbd> + <kbd>M</kbd> | Insert scholarly margin comment |
 
 ---
 
-## 🛠️ Development & Testing
+## Building from source
 
-### Prerequisites
-- Node.js (v18 or v20+)
-- npm
+Requirements: Node.js (v18 or v20+) and npm.
 
-### Setup
 ```bash
 git clone https://github.com/thecorcoran/Morada.git
 cd Morada
 npm install
-```
-
-### Launch Development App
-```bash
 npm start
 ```
 
-### Run Automated Tests
-Morada includes an exhaustive suite of unit and integration tests covering the state manager, auto-save persistence, Strunk engine, Scenic maxims, archives, and canvas interaction:
+Run test suite:
 ```bash
 npm test
 ```
 
-### Build Installers Locally
+Package installers:
 ```bash
 npm run dist:win      # Windows installer (.exe)
 npm run dist:mac      # macOS disk image (.dmg)
@@ -111,7 +88,6 @@ npm run dist:linux    # Linux AppImage & Debian package
 
 ---
 
-## 📜 License & Privacy
+## License
 
-- **License**: Open source under the [ISC License](LICENSE).
-- **100% Local-First**: No mandatory accounts, no cloud lock-in, and zero telemetry. All your writing, portfolios, and notes remain strictly on your local machine in open JSON format (word definitions and etymologies use optional lookups to Wiktionary).
+Open source under the [ISC License](LICENSE).
