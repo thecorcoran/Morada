@@ -45,6 +45,10 @@ describe('MyProjectEditorManager & Craft Drawer Integration Tests', () => {
             setRangeText: function(replacement, start, end) {
                 this.value = this.value.substring(0, start) + replacement + this.value.substring(end);
             },
+            setSelectionRange: function(start, end) {
+                this.selectionStart = start;
+                this.selectionEnd = end;
+            },
             dispatchEvent: jest.fn(),
             focus: jest.fn()
         };
@@ -85,7 +89,11 @@ describe('MyProjectEditorManager & Craft Drawer Integration Tests', () => {
             'scenic-insert-btn': createMockElement('scenic-insert-btn', 'button'),
             'scenic-search-input': createMockElement('scenic-search-input', 'input'),
             'scenic-category-filter': createMockElement('scenic-category-filter', 'select'),
-            'scenic-maxims-list': createMockElement('scenic-maxims-list', 'div')
+            'scenic-maxims-list': createMockElement('scenic-maxims-list', 'div'),
+            'editor-context-menu': createMockElement('editor-context-menu', 'div'),
+            'editor-ctx-comment': createMockElement('editor-ctx-comment', 'li'),
+            'editor-ctx-certify': createMockElement('editor-ctx-certify', 'li'),
+            'editor-ctx-etymology': createMockElement('editor-ctx-etymology', 'li')
         };
 
         mockElements['editor-mode'].classList.add('hidden');
@@ -496,6 +504,78 @@ describe('MyProjectEditorManager & Craft Drawer Integration Tests', () => {
         ta.value = 'Initial prose with brilliant new thought';
         ta.oninput();
         expect(testNode.content).toBe('Initial prose with brilliant new thought');
+    });
+
+    test('addCommentAtSelection wraps selected text in footnote span and opens modal', () => {
+        const testNode = { id: 'sheet-fn-1', title: 'Footnote Test', content: 'The whale was white as snow.' };
+        EditorManager.openEditorMode(testNode);
+
+        const ta = EditorManager.getTextareaElement();
+        ta.value = testNode.content;
+        // Select 'white'
+        ta.selectionStart = 14;
+        ta.selectionEnd = 19;
+
+        EditorManager.addCommentAtSelection();
+
+        expect(mockUIManager.openCommentModal).toHaveBeenCalledWith(
+            expect.stringMatching(/^comment-\d+/),
+            'white'
+        );
+        expect(ta.value).toContain('class="comment-highlight"');
+        expect(ta.value).toContain('white');
+        expect(testNode.content).toBe(ta.value);
+    });
+
+    test('addCommentAtSelection auto-inserts footnote marker when no text is selected', () => {
+        const testNode = { id: 'sheet-fn-2', title: 'Footnote Marker Test', content: 'End of sentence.' };
+        EditorManager.openEditorMode(testNode);
+
+        const ta = EditorManager.getTextareaElement();
+        ta.value = testNode.content;
+        // Caret at end after period
+        ta.selectionStart = 16;
+        ta.selectionEnd = 16;
+
+        EditorManager.addCommentAtSelection();
+
+        expect(mockUIManager.openCommentModal).toHaveBeenCalledWith(
+            expect.stringMatching(/^comment-\d+/),
+            '[*]'
+        );
+        expect(ta.value).toContain('data-auto-marker="true"');
+        expect(ta.value).toContain('[*]');
+        expect(testNode.content).toBe(ta.value);
+    });
+
+    test('initEditorContextMenu attaches right-click context menu and menu comment option calls addCommentAtSelection', () => {
+        const testNode = { id: 'sheet-ctx-test', title: 'Context Menu Test', content: 'Prose text' };
+        EditorManager.openEditorMode(testNode);
+
+        const ta = EditorManager.getTextareaElement();
+        const menu = mockElements['editor-context-menu'];
+        const commentBtn = mockElements['editor-ctx-comment'];
+
+        expect(ta._hasContextMenuAttached).toBe(true);
+
+        // Simulate contextmenu event
+        const ctxEvent = {
+            preventDefault: jest.fn(),
+            stopPropagation: jest.fn(),
+            clientX: 200,
+            clientY: 150
+        };
+        ta.trigger('contextmenu', ctxEvent);
+
+        expect(ctxEvent.preventDefault).toHaveBeenCalled();
+        expect(menu.classList.contains('hidden')).toBe(false);
+
+        // Clicking the Add Footnote context menu option
+        const clickEvent = { stopPropagation: jest.fn() };
+        commentBtn.trigger('click', clickEvent);
+
+        expect(mockUIManager.openCommentModal).toHaveBeenCalled();
+        expect(menu.classList.contains('hidden')).toBe(true);
     });
 });
 

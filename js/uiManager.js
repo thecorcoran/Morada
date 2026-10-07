@@ -1542,9 +1542,14 @@ window.MyProjectUIManager = {
         }
 
         if (node && node.content) {
-            const re = new RegExp(`<span[^>]*id="${spanId}"[^>]*>([\\s\\S]*?)<\\/span>`, 'gi');
-            node.content = node.content.replace(re, '$1');
-            const ta = document.getElementById('main-editor-fallback');
+            const autoMarkerRe = new RegExp(`<span[^>]*id="${spanId}"[^>]*data-auto-marker="true"[^>]*>([\\s\\S]*?)<\\/span>`, 'gi');
+            if (autoMarkerRe.test(node.content)) {
+                node.content = node.content.replace(autoMarkerRe, '');
+            } else {
+                const re = new RegExp(`<span[^>]*id="${spanId}"[^>]*>([\\s\\S]*?)<\\/span>`, 'gi');
+                node.content = node.content.replace(re, '$1');
+            }
+            const ta = document.getElementById('main-editor') || document.getElementById('main-editor-fallback');
             if (ta) ta.value = node.content;
         }
     },
@@ -1553,7 +1558,7 @@ window.MyProjectUIManager = {
     openCommentModal: function(spanId, selectedText) {
         const node = this.stateManager.getSelectedNode();
         if (!node) return;
-        this._pendingComment = { spanId: spanId, nodeId: node.id };
+        this._pendingComment = { spanId: spanId, nodeId: node.id, selectedText: selectedText || '' };
         if (this.commentSelectedText) this.commentSelectedText.textContent = selectedText || '';
         const existing = (node.comments || []).find(c => c.id === spanId || c.spanId === spanId);
         if (this.commentTextarea) {
@@ -1597,10 +1602,11 @@ window.MyProjectUIManager = {
             if (!node) return;
             const txt = this.commentTextarea ? this.commentTextarea.value.trim() : '';
             if (!txt) {
-                alert('Please enter comment text, or click Delete to remove this comment.');
+                alert('Please enter footnote text, or click Delete to remove this footnote.');
                 return;
             }
-            const commentObj = { id: this._pendingComment.spanId, spanId: this._pendingComment.spanId, text: txt, createdAt: Date.now() };
+            const selTxt = (this._pendingComment && this._pendingComment.selectedText) || (this.commentSelectedText ? this.commentSelectedText.textContent : '') || '';
+            const commentObj = { id: this._pendingComment.spanId, spanId: this._pendingComment.spanId, text: txt, selectedText: selTxt, createdAt: Date.now() };
             if (!Array.isArray(node.comments)) node.comments = [];
             const idx = node.comments.findIndex(c => c.id === commentObj.id || c.spanId === commentObj.spanId);
             if (idx > -1) node.comments[idx] = commentObj; else node.comments.push(commentObj);
@@ -2016,14 +2022,15 @@ window.MyProjectUIManager = {
         container.innerHTML = '';
         if (!node) return;
 
-        // Comments
+        // Comments / Footnotes
         if (Array.isArray(node.comments) && node.comments.length > 0) {
-            const h = document.createElement('h5'); h.textContent = 'Comments'; container.appendChild(h);
-            node.comments.forEach(c => {
+            const h = document.createElement('h5'); h.textContent = 'Footnotes'; container.appendChild(h);
+            node.comments.forEach((c, idx) => {
                 const div = document.createElement('div');
                 div.className = 'footnote-item comment-item';
                 div.dataset.commentId = c.id || c.spanId || '';
-                div.textContent = c.text || '';
+                const quoteText = c.selectedText ? `“${c.selectedText}”: ` : '';
+                div.innerHTML = `<span class="footnote-num">[${idx + 1}]</span> <strong>${quoteText}</strong><span>${c.text || ''}</span>`;
                 // clicking a footnote opens the editor and focuses the inline span
                 div.addEventListener('click', async () => {
                     if (window.MyProjectEditorManager && typeof window.MyProjectEditorManager.openEditorMode === 'function') {
@@ -2045,7 +2052,7 @@ window.MyProjectUIManager = {
                 div.addEventListener('dblclick', (e) => {
                     e.stopPropagation();
                     const spanId = div.dataset.commentId;
-                    this.openCommentModal(spanId, c.text);
+                    this.openCommentModal(spanId, c.selectedText || c.text);
                 });
                 container.appendChild(div);
             });

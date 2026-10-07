@@ -270,20 +270,20 @@
             </div>
         </div>
     </div>
-<!-- Comment Modal -->
+<!-- Comment / Footnote Modal -->
 <div id="comment-modal" class="modal hidden">
     <div class="modal-content">
         <div class="modal-header">
-            <h2>Add/Edit Comment</h2>
+            <h2>Add/Edit Footnote</h2>
             <span class="close-button" id="close-comment-modal">&times;</span>
         </div>
         <div class="modal-body">
-            <p>Commenting on: "<span id="comment-selected-text"></span>"</p>
-            <textarea id="comment-textarea" placeholder="Type your comment here..."></textarea>
+            <p>Footnote for: "<span id="comment-selected-text"></span>"</p>
+            <textarea id="comment-textarea" placeholder="Type your footnote or annotation note here..."></textarea>
         </div>
         <div class="modal-footer">
-            <button id="save-comment-btn">Save Comment</button>
-            <button id="delete-comment-btn" class="delete-button">Delete Comment</button>
+            <button id="save-comment-btn">Save Footnote</button>
+            <button id="delete-comment-btn" class="delete-button">Delete Footnote</button>
         </div>
     </div>
 </div>
@@ -420,7 +420,7 @@
     <!-- Context Menu for Editor Prose (Right-Click in Sheet) -->
     <div id="editor-context-menu" class="context-menu hidden">
       <ul>
-        <li id="editor-ctx-comment">💬 Add Comment <span class="shortcut-hint">Ctrl+M</span></li>
+        <li id="editor-ctx-comment">🔖 Add Footnote <span class="shortcut-hint">Ctrl+M</span></li>
         <li id="editor-ctx-certify">✓ Certify Word <span class="shortcut-hint">Ctrl+Shift+C</span></li>
         <li id="editor-ctx-etymology">📖 Look up Etymology <span class="shortcut-hint">Ctrl+Shift+E</span></li>
         <li class="context-menu-divider"></li>

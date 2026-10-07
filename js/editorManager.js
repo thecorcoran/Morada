@@ -659,7 +659,7 @@ window.MyProjectEditorManager = {
                     let end = pos;
                     while (start > 0 && /[\w'-]/.test(val[start - 1])) start--;
                     while (end < val.length && /[\w'-]/.test(val[end])) end++;
-                    if (start < end) {
+                    if (start < end && typeof ta.setSelectionRange === 'function') {
                         ta.setSelectionRange(start, end);
                     }
                 }
@@ -679,7 +679,7 @@ window.MyProjectEditorManager = {
     },
 
     /**
-     * Wrap the current editor selection in a comment span and open the comment modal.
+     * Wrap the current editor selection in a footnote/comment span and open the footnote modal.
      */
     addCommentAtSelection: function() {
         const node = this.stateManager.getSelectedNode();
@@ -687,13 +687,17 @@ window.MyProjectEditorManager = {
         const spanId = 'comment-' + Date.now();
         try {
             if (this.isTinyMCEActive()) {
-                const selText = this.tinymceEditor.selection.getContent({ format: 'text' }) || '';
-                const selHtml = this.tinymceEditor.selection.getContent({ format: 'html' }) || '';
+                let selText = this.tinymceEditor.selection.getContent({ format: 'text' }) || '';
+                let selHtml = this.tinymceEditor.selection.getContent({ format: 'html' }) || '';
+                let isAutoMarker = false;
                 if (!selText.trim()) {
-                    alert('Please select text in the editor to add a comment.');
-                    return;
+                    selText = '[*]';
+                    selHtml = '[*]';
+                    isAutoMarker = true;
                 }
-                const wrapped = `<span id="${spanId}" class="comment-highlight">${selHtml}</span>`;
+                const wrapped = isAutoMarker
+                    ? `<span id="${spanId}" class="comment-highlight" data-auto-marker="true">${selHtml}</span>`
+                    : `<span id="${spanId}" class="comment-highlight">${selHtml}</span>`;
                 this.tinymceEditor.selection.setContent(wrapped);
                 node.content = this.tinymceEditor.getContent();
                 // update editor word count and open modal
@@ -703,28 +707,50 @@ window.MyProjectEditorManager = {
                 return;
             }
         } catch (err) {
-            console.warn('[editor] TinyMCE comment wrap failed, trying fallback', err);
+            console.warn('[editor] TinyMCE footnote wrap failed, trying fallback', err);
         }
 
-        // Fallback: manipulate textarea content
+        // Textarea mode: manipulate textarea content
         try {
             const ta = this.getTextareaElement();
             if (!ta) return;
-            const start = ta.selectionStart || 0;
-            const end = ta.selectionEnd || 0;
-            const sel = ta.value.substring(start, end);
+            let start = ta.selectionStart || 0;
+            let end = ta.selectionEnd || 0;
+            let sel = ta.value.substring(start, end);
+
+            // If no text selected, try expanding to word touching cursor
             if (!sel.trim()) {
-                alert('Please select text in the editor to add a comment.');
-                return;
+                let pos = start;
+                let wStart = pos;
+                let wEnd = pos;
+                while (wStart > 0 && /[\w'-]/.test(ta.value[wStart - 1])) wStart--;
+                while (wEnd < ta.value.length && /[\w'-]/.test(ta.value[wEnd])) wEnd++;
+                if (wStart < wEnd) {
+                    start = wStart;
+                    end = wEnd;
+                    sel = ta.value.substring(start, end);
+                    if (typeof ta.setSelectionRange === 'function') {
+                        ta.setSelectionRange(start, end);
+                    }
+                }
             }
-            const wrapped = `<span id="${spanId}" class="comment-highlight">${sel}</span>`;
+
+            let isAutoMarker = false;
+            if (!sel.trim()) {
+                sel = '[*]';
+                isAutoMarker = true;
+            }
+
+            const wrapped = isAutoMarker
+                ? `<span id="${spanId}" class="comment-highlight" data-auto-marker="true">${sel}</span>`
+                : `<span id="${spanId}" class="comment-highlight">${sel}</span>`;
             ta.value = ta.value.substring(0, start) + wrapped + ta.value.substring(end);
             node.content = ta.value;
             if (this.uiManager && typeof this.uiManager.openCommentModal === 'function') {
                 this.uiManager.openCommentModal(spanId, sel);
             }
         } catch (err) {
-            console.error('[editor] fallback comment insertion failed', err);
+            console.error('[editor] fallback footnote insertion failed', err);
         }
     },
 
@@ -849,13 +875,19 @@ window.MyProjectEditorManager = {
             const ta = this.getTextareaElement();
             if (!ta) return;
             const re = new RegExp(`<span[^>]*id="${spanId}"[^>]*>([\\s\\S]*?)<\\/span>`, 'i');
-            const m = node.content.match(re);
-            if (m && m[1]) {
-                const inner = m[1];
-                const idx = ta.value.indexOf(inner);
+            const m = (node.content && typeof node.content === 'string') ? node.content.match(re) : null;
+            let targetText = m && m[1] ? m[1] : '';
+            if (!targetText) {
+                const c = (node.comments || []).find(x => x.id === spanId || x.spanId === spanId);
+                if (c && c.selectedText) targetText = c.selectedText;
+                const cw = (node.certifiedWords || []).find(x => x.spanId === spanId || x.id === spanId);
+                if (!targetText && cw && cw.word) targetText = cw.word;
+            }
+            if (targetText) {
+                const idx = ta.value.indexOf(targetText);
                 if (idx >= 0) {
                     ta.focus();
-                    ta.setSelectionRange(idx, idx + inner.length);
+                    ta.setSelectionRange(idx, idx + targetText.length);
                 }
             }
         } catch (err) {
@@ -1069,6 +1101,7 @@ window.MyProjectEditorManager = {
             this.uiManager.updateEditorWordCount(ta.value);
             if (this.uiManager.renderTags) this.uiManager.renderTags(node);
             if (this.uiManager.renderFootnotes) this.uiManager.renderFootnotes(node);
+            this.initEditorContextMenu();
 
             ta.oninput = () => {
                 const clean = (window.MyProjectStrunkEngine && typeof window.MyProjectStrunkEngine.cleanStrunkMarkers === 'function')
