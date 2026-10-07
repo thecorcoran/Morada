@@ -239,19 +239,15 @@ window.MyProjectWarmUp = {
     },
 
     /**
-     * Formats the sheet HTML content for a warm-up passage.
+     * Formats the sheet content for a warm-up passage in clean Markdown prose.
      * @param {Object} passage
      * @returns {string}
      */
     generateSheetContent: function(passage) {
-        return `<h3>${passage.author} — ${passage.work}</h3>` +
-            `<p class="warmup-instruction"><em>5-Minute Copywork &amp; Sensory Warm-Up: Read the passage below to absorb its cadence and concrete detail. Copy it into this sheet, or use its final cadence as a springboard for your own scene.</em></p>` +
-            `<blockquote style="border-left: 3px solid #b57614; padding-left: 16px; margin: 18px 0; font-style: italic; color: #3c3836;">` +
-            `"${passage.text}"` +
-            `</blockquote>` +
-            `<p><br></p>` +
-            `<p><strong>My Writing:</strong></p>` +
-            `<p></p>`;
+        return `### ${passage.author} — ${passage.work}\n\n` +
+            `*5-Minute Copywork & Sensory Warm-Up: Read the passage below to absorb its cadence and concrete detail. Copy it into this sheet, or use its final cadence as a springboard for your own scene.*\n\n` +
+            `> "${passage.text}"\n\n` +
+            `**My Writing:**\n\n`;
     }
 };
 

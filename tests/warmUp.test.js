@@ -37,14 +37,16 @@ describe('5-Minute Warm-Up System & Escape Key Audit', () => {
             expect(WarmUp.getPassageById('nonexistent-id')).toBeNull();
         });
 
-        test('generateSheetContent creates rich copywork template HTML', () => {
+        test('generateSheetContent creates rich copywork template Markdown prose', () => {
             const passage = WarmUp.getPassageById('tolstoy-austerlitz');
-            const html = WarmUp.generateSheetContent(passage);
-            expect(html).toContain('Leo Tolstoy');
-            expect(html).toContain('War and Peace');
-            expect(html).toContain('5-Minute Copywork');
-            expect(html).toContain(passage.text);
-            expect(html).toContain('blockquote');
+            const content = WarmUp.generateSheetContent(passage);
+            expect(content).toContain('Leo Tolstoy');
+            expect(content).toContain('War and Peace');
+            expect(content).toContain('5-Minute Copywork');
+            expect(content).toContain(passage.text);
+            expect(content).toContain('> "');
+            expect(content).not.toContain('<p>');
+            expect(content).not.toContain('blockquote');
         });
 
         test('ensureWarmUpPortfolio creates Warm Up portfolio with 6 pre-populated copywork sheets', () => {
@@ -80,7 +82,8 @@ describe('5-Minute Warm-Up System & Escape Key Audit', () => {
             expect(firstSheet.type).toBe('text');
             expect(firstSheet.timer.duration).toBe(300); // 5 minutes (300 seconds)
             expect(firstSheet.wordGoal).toBe(250);
-            expect(firstSheet.content).toContain('blockquote');
+            expect(firstSheet.content).toContain('> "');
+            expect(firstSheet.content).not.toContain('<p>');
 
             // Calling ensureWarmUpPortfolio again does not duplicate
             const existing = WarmUp.ensureWarmUpPortfolio(rootNodes, mockNodeManager);

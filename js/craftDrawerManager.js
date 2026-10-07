@@ -96,6 +96,8 @@ window.CraftDrawerManager = {
             warmupInsertBtn.addEventListener('click', () => this.insertWarmUpIntoSheet());
         }
 
+        this.initCollapsibleAndReorderableSections();
+
         if (!this._documentKeyListenersAttached && typeof document !== 'undefined') {
             this._documentKeyListenersAttached = true;
             document.addEventListener('keydown', (e) => {
@@ -128,6 +130,7 @@ window.CraftDrawerManager = {
 
     /**
      * Toggles the Craft Drawer sidebar open or closed.
+     * When open, the top toolbar toggle button disappears. When closed, it reappears.
      * @param {boolean} [forceState]
      */
     toggleCraftDrawer: function(forceState) {
@@ -141,6 +144,7 @@ window.CraftDrawerManager = {
 
         if (shouldShow) {
             sidebar.classList.remove('hidden');
+            this.initCollapsibleAndReorderableSections();
             const selectedNode = this.stateManager ? this.stateManager.getSelectedNode() : null;
             if (selectedNode) {
                 this.renderCraftCertifiedList(selectedNode);
@@ -153,13 +157,135 @@ window.CraftDrawerManager = {
             sidebar.classList.add('hidden');
         }
 
+        // Hide Craft Drawer button from top toolbar when drawer is open, show when closed
         const toggleBtn = document.getElementById('toggle-craft-drawer-btn');
         if (toggleBtn) {
-            toggleBtn.textContent = shouldShow ? 'Craft Drawer ▾' : 'Craft Drawer ▸';
+            if (shouldShow) {
+                toggleBtn.classList.add('hidden');
+            } else {
+                toggleBtn.classList.remove('hidden');
+                toggleBtn.textContent = 'Craft Drawer ▾';
+            }
         }
 
         if (this._tinymceCraftDrawerApi && typeof this._tinymceCraftDrawerApi.setActive === 'function') {
             this._tinymceCraftDrawerApi.setActive(shouldShow);
+        }
+    },
+
+    /**
+     * Enhances Craft Drawer sections with collapsibility and drag-and-drop reordering.
+     * Persists collapse states and custom section order in localStorage.
+     */
+    initCollapsibleAndReorderableSections: function() {
+        if (typeof document === 'undefined') return;
+        const sidebar = (this.uiManager && this.uiManager.editorInspectorSidebar)
+            ? this.uiManager.editorInspectorSidebar
+            : (typeof document.getElementById === 'function' ? document.getElementById('editor-inspector-sidebar') : null);
+        if (!sidebar || typeof sidebar.querySelectorAll !== 'function') return;
+
+        // 1. Restore saved section order
+        try {
+            const savedOrderRaw = (typeof localStorage !== 'undefined') ? localStorage.getItem('morada_craft_section_order') : null;
+            if (savedOrderRaw) {
+                const savedOrder = JSON.parse(savedOrderRaw);
+                if (Array.isArray(savedOrder) && savedOrder.length > 0 && typeof sidebar.querySelector === 'function') {
+                    savedOrder.forEach(secId => {
+                        const secEl = sidebar.querySelector(`#${secId}`);
+                        if (secEl && typeof sidebar.appendChild === 'function') {
+                            sidebar.appendChild(secEl);
+                        }
+                    });
+                }
+            }
+        } catch (e) {
+            console.warn('[craft-drawer] restoring section order failed', e);
+        }
+
+        // 2. Load saved collapse states
+        let collapsedMap = {};
+        try {
+            if (typeof localStorage !== 'undefined') {
+                const raw = localStorage.getItem('morada_craft_section_collapsed');
+                if (raw) collapsedMap = JSON.parse(raw) || {};
+            }
+        } catch (e) {}
+
+        const sections = sidebar.querySelectorAll('.craft-section');
+        if (!sections || !sections.forEach) return;
+        sections.forEach(section => {
+            const header = section.querySelector('.craft-section-header');
+            if (!header) return;
+
+            // Apply saved collapse state
+            if (section.id && collapsedMap[section.id] === true) {
+                section.classList.add('collapsed');
+            }
+
+            if (!header._hasCollapseInit) {
+                header._hasCollapseInit = true;
+
+                // Add drag grip and toggle caret to header if not present
+                if (!header.querySelector('.craft-drag-handle')) {
+                    const grip = document.createElement('span');
+                    grip.className = 'craft-drag-handle';
+                    grip.innerHTML = '&#8942;&#8942;';
+                    grip.title = 'Drag to reorder section';
+                    header.insertBefore(grip, header.firstChild);
+                }
+
+                if (!header.querySelector('.craft-collapse-toggle')) {
+                    const caret = document.createElement('span');
+                    caret.className = 'craft-collapse-toggle';
+                    caret.textContent = '▾';
+                    caret.title = 'Click to collapse/expand section';
+                    header.appendChild(caret);
+                }
+
+                header.addEventListener('click', (e) => {
+                    // Ignore clicks on buttons/inputs/selects inside the header
+                    if (e.target.closest('button, input, select, a, .craft-drag-handle')) return;
+                    section.classList.toggle('collapsed');
+
+                    // Save state
+                    if (section.id && typeof localStorage !== 'undefined') {
+                        try {
+                            const raw = localStorage.getItem('morada_craft_section_collapsed');
+                            const map = raw ? JSON.parse(raw) : {};
+                            map[section.id] = section.classList.contains('collapsed');
+                            localStorage.setItem('morada_craft_section_collapsed', JSON.stringify(map));
+                        } catch (err) {}
+                    }
+                });
+            }
+        });
+
+        // 3. Initialize Sortable drag-and-drop
+        try {
+            const SortableLib = (typeof Sortable !== 'undefined') ? Sortable : (window.Sortable || null);
+            if (SortableLib && typeof SortableLib.create === 'function') {
+                if (this._sortableInstance && typeof this._sortableInstance.destroy === 'function') {
+                    try { this._sortableInstance.destroy(); } catch (e) {}
+                }
+                this._sortableInstance = SortableLib.create(sidebar, {
+                    handle: '.craft-drag-handle',
+                    draggable: '.craft-section',
+                    animation: 160,
+                    ghostClass: 'craft-section-ghost',
+                    chosenClass: 'craft-section-chosen',
+                    onEnd: () => {
+                        try {
+                            const secEls = sidebar.querySelectorAll('.craft-section');
+                            const order = Array.from(secEls).map(s => s.id).filter(Boolean);
+                            if (typeof localStorage !== 'undefined') {
+                                localStorage.setItem('morada_craft_section_order', JSON.stringify(order));
+                            }
+                        } catch (err) {}
+                    }
+                });
+            }
+        } catch (err) {
+            console.warn('[craft-drawer] Sortable init failed', err);
         }
     },
 
@@ -543,15 +669,18 @@ window.CraftDrawerManager = {
         if (!this._currentWarmUpPassage) return;
 
         const passage = this._currentWarmUpPassage;
-        const html = window.MyProjectWarmUp.generateSheetContent(passage);
+        const text = window.MyProjectWarmUp.generateSheetContent(passage);
 
         if (this.tinyMCEAvailable && this.tinymceEditor) {
-            this.tinymceEditor.insertContent(html);
+            this.tinymceEditor.insertContent(text);
         } else {
             const ta = document.getElementById('main-editor-fallback') || document.getElementById('main-editor');
             if (ta) {
-                const plain = `\n\n--- 5-Minute Warm-Up (${passage.author} — ${passage.work}) ---\n"${passage.text}"\n\nMy Writing:\n`;
-                ta.value += plain;
+                const start = ta.selectionStart || ta.value.length;
+                const end = ta.selectionEnd || ta.value.length;
+                const prefix = (start > 0 && !ta.value.slice(0, start).endsWith('\n\n')) ? '\n\n' : '';
+                const toInsert = prefix + text;
+                ta.value = ta.value.substring(0, start) + toInsert + ta.value.substring(end);
                 ta.dispatchEvent(new Event('input'));
             }
         }

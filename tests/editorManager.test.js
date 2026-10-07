@@ -165,19 +165,21 @@ describe('MyProjectEditorManager & Craft Drawer Integration Tests', () => {
 
         expect(sidebar.classList.contains('hidden')).toBe(true);
 
-        // Open
+        // Open: drawer opens and toggle button disappears per user requirement
         EditorManager.toggleCraftDrawer();
         expect(sidebar.classList.contains('hidden')).toBe(false);
-        expect(toggleBtn.textContent).toBe('Craft Drawer ▾');
+        expect(toggleBtn.classList.contains('hidden')).toBe(true);
 
-        // Close
+        // Close: drawer closes and toggle button reappears
         EditorManager.toggleCraftDrawer();
         expect(sidebar.classList.contains('hidden')).toBe(true);
-        expect(toggleBtn.textContent).toBe('Craft Drawer ▸');
+        expect(toggleBtn.classList.contains('hidden')).toBe(false);
+        expect(toggleBtn.textContent).toBe('Craft Drawer ▾');
 
         // Force open
         EditorManager.toggleCraftDrawer(true);
         expect(sidebar.classList.contains('hidden')).toBe(false);
+        expect(toggleBtn.classList.contains('hidden')).toBe(true);
     });
 
     test('updateStrunkMetrics should calculate and display readability scores and grammar badges', () => {
@@ -389,7 +391,8 @@ describe('MyProjectEditorManager & Craft Drawer Integration Tests', () => {
             expect(sidebar.classList.contains('hidden')).toBe(true);
 
             const toggleBtn = document.getElementById('toggle-craft-drawer-btn');
-            expect(toggleBtn.textContent).toContain('▸');
+            expect(toggleBtn.classList.contains('hidden')).toBe(false);
+            expect(toggleBtn.textContent).toContain('Craft Drawer');
         } finally {
             window.innerWidth = origWidth;
         }
@@ -405,8 +408,9 @@ describe('MyProjectEditorManager & Craft Drawer Integration Tests', () => {
             const sidebar = mockElements['editor-inspector-sidebar'];
             expect(sidebar.classList.contains('hidden')).toBe(false);
 
+            // Craft Drawer toggle button disappears while drawer is open
             const toggleBtn = document.getElementById('toggle-craft-drawer-btn');
-            expect(toggleBtn.textContent).toContain('▾');
+            expect(toggleBtn.classList.contains('hidden')).toBe(true);
         } finally {
             window.innerWidth = origWidth;
         }

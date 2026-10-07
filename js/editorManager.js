@@ -33,6 +33,7 @@ window.MyProjectEditorManager = {
         // Initialize Craft Drawer controls
         this.initCraftDrawer();
         this._initFormattingControls();
+        this.initEditorContextMenu();
 
         // Ensure clicking on editor background transfers focus directly to active editor
         try {
@@ -536,6 +537,148 @@ window.MyProjectEditorManager = {
     },
 
     /**
+     * Initializes the right-click context menu for the prose editor.
+     * Allows commenting, certifying, etymology lookup, formatting, and clipboard actions on right-click.
+     */
+    initEditorContextMenu: function() {
+        if (typeof document === 'undefined') return;
+        const menu = document.getElementById('editor-context-menu');
+        if (!menu) return;
+
+        const hideMenu = () => {
+            menu.classList.add('hidden');
+        };
+
+        if (!menu._hasInitListeners) {
+            menu._hasInitListeners = true;
+
+            const commentOpt = document.getElementById('editor-ctx-comment');
+            if (commentOpt) {
+                commentOpt.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    hideMenu();
+                    this.addCommentAtSelection();
+                });
+            }
+
+            const certifyOpt = document.getElementById('editor-ctx-certify');
+            if (certifyOpt) {
+                certifyOpt.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    hideMenu();
+                    this.certifySelection();
+                });
+            }
+
+            const etymologyOpt = document.getElementById('editor-ctx-etymology');
+            if (etymologyOpt) {
+                etymologyOpt.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    hideMenu();
+                    this.lookupEtymologyAtSelection();
+                });
+            }
+
+            const boldOpt = document.getElementById('editor-ctx-bold');
+            if (boldOpt) {
+                boldOpt.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    hideMenu();
+                    this.applyFormatting('bold');
+                });
+            }
+
+            const italicOpt = document.getElementById('editor-ctx-italic');
+            if (italicOpt) {
+                italicOpt.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    hideMenu();
+                    this.applyFormatting('italic');
+                });
+            }
+
+            const copyOpt = document.getElementById('editor-ctx-copy');
+            if (copyOpt) {
+                copyOpt.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    hideMenu();
+                    const ta = this.getTextareaElement();
+                    if (ta) {
+                        const start = ta.selectionStart || 0;
+                        const end = ta.selectionEnd || 0;
+                        const selected = ta.value.substring(start, end);
+                        if (selected && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                            navigator.clipboard.writeText(selected).catch(() => {});
+                        } else if (selected) {
+                            try { document.execCommand('copy'); } catch (err) {}
+                        }
+                    }
+                });
+            }
+
+            const cutOpt = document.getElementById('editor-ctx-cut');
+            if (cutOpt) {
+                cutOpt.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    hideMenu();
+                    const ta = this.getTextareaElement();
+                    if (ta) {
+                        const start = ta.selectionStart || 0;
+                        const end = ta.selectionEnd || 0;
+                        const selected = ta.value.substring(start, end);
+                        if (selected && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                            navigator.clipboard.writeText(selected).catch(() => {});
+                        }
+                        ta.value = ta.value.substring(0, start) + ta.value.substring(end);
+                        ta.setSelectionRange(start, start);
+                        ta.dispatchEvent(new Event('input'));
+                    }
+                });
+            }
+
+            document.addEventListener('click', (e) => {
+                if (!menu.contains(e.target)) hideMenu();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' || e.key === 'Esc') hideMenu();
+            });
+        }
+
+        const ta = this.getTextareaElement();
+        if (ta && !ta._hasContextMenuAttached) {
+            ta._hasContextMenuAttached = true;
+            ta.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // If nothing is selected, select the word under the mouse pointer
+                if (ta.selectionStart === ta.selectionEnd) {
+                    const pos = ta.selectionStart;
+                    const val = ta.value;
+                    let start = pos;
+                    let end = pos;
+                    while (start > 0 && /[\w'-]/.test(val[start - 1])) start--;
+                    while (end < val.length && /[\w'-]/.test(val[end])) end++;
+                    if (start < end) {
+                        ta.setSelectionRange(start, end);
+                    }
+                }
+
+                const menuW = 230;
+                const menuH = 270;
+                const winW = (typeof window !== 'undefined' ? window.innerWidth : 1024);
+                const winH = (typeof window !== 'undefined' ? window.innerHeight : 768);
+                const x = Math.max(10, Math.min(e.clientX, winW - menuW - 10));
+                const y = Math.max(10, Math.min(e.clientY, winH - menuH - 10));
+
+                menu.style.left = `${x}px`;
+                menu.style.top = `${y}px`;
+                menu.classList.remove('hidden');
+            });
+        }
+    },
+
+    /**
      * Wrap the current editor selection in a comment span and open the comment modal.
      */
     addCommentAtSelection: function() {
@@ -873,7 +1016,14 @@ window.MyProjectEditorManager = {
 
         const isSidebarOpen = Boolean(this.uiManager && this.uiManager.editorInspectorSidebar && !this.uiManager.editorInspectorSidebar.classList.contains('hidden'));
         const toggleBtn = document.getElementById('toggle-craft-drawer-btn');
-        if (toggleBtn) toggleBtn.textContent = isSidebarOpen ? 'Craft Drawer ▾' : 'Craft Drawer ▸';
+        if (toggleBtn) {
+            if (isSidebarOpen) {
+                toggleBtn.classList.add('hidden');
+            } else {
+                toggleBtn.classList.remove('hidden');
+                toggleBtn.textContent = 'Craft Drawer ▾';
+            }
+        }
 
         if (this._tinymceCraftDrawerApi && typeof this._tinymceCraftDrawerApi.setActive === 'function') {
             this._tinymceCraftDrawerApi.setActive(isSidebarOpen);
@@ -910,7 +1060,12 @@ window.MyProjectEditorManager = {
             ta.style.display = 'block';
             ta.disabled = false;
             ta.readOnly = false;
-            ta.value = node ? (node.content || '') : '';
+            const rawContent = node ? (node.content || '') : '';
+            const cleanProse = this.cleanHtmlToProse(rawContent);
+            if (node && cleanProse !== rawContent) {
+                node.content = cleanProse;
+            }
+            ta.value = cleanProse;
             this.uiManager.updateEditorWordCount(ta.value);
             if (this.uiManager.renderTags) this.uiManager.renderTags(node);
             if (this.uiManager.renderFootnotes) this.uiManager.renderFootnotes(node);
@@ -980,6 +1135,54 @@ window.MyProjectEditorManager = {
         } catch (err) {
             console.error('[editor] openEditorMode failed:', err);
         }
+    },
+
+    /**
+     * Converts HTML fragments or legacy markup into clean prose / Markdown.
+     * Strips HTML tags, decodes entities, and preserves clean line breaks.
+     * @param {string} text
+     * @returns {string}
+     */
+    cleanHtmlToProse: function(text) {
+        if (!text || typeof text !== 'string') return '';
+        if (!/<[a-z][\s\S]*>/i.test(text) && !/&[a-z]+;/i.test(text) && !/&#\d+;/i.test(text)) {
+            return text;
+        }
+
+        let out = text;
+        out = out.replace(/<h1[^>]*>([\s\S]*?)<\/h1>/gi, '# $1\n\n');
+        out = out.replace(/<h2[^>]*>([\s\S]*?)<\/h2>/gi, '## $1\n\n');
+        out = out.replace(/<h3[^>]*>([\s\S]*?)<\/h3>/gi, '### $1\n\n');
+        out = out.replace(/<h4[^>]*>([\s\S]*?)<\/h4>/gi, '#### $1\n\n');
+        out = out.replace(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/gi, (m, c) => {
+            const inner = c.trim().replace(/^[\n\r]+|[\n\r]+$/g, '');
+            return inner.split('\n').map(l => '> ' + l.trim()).join('\n') + '\n\n';
+        });
+        out = out.replace(/<strong[^>]*>([\s\S]*?)<\/strong>/gi, '**$1**');
+        out = out.replace(/<b[^>]*>([\s\S]*?)<\/b>/gi, '**$1**');
+        out = out.replace(/<em[^>]*>([\s\S]*?)<\/em>/gi, '*$1*');
+        out = out.replace(/<i[^>]*>([\s\S]*?)<\/i>/gi, '*$1*');
+        out = out.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, '• $1\n');
+        out = out.replace(/<ul[^>]*>([\s\S]*?)<\/ul>/gi, '$1\n');
+        out = out.replace(/<ol[^>]*>([\s\S]*?)<\/ol>/gi, '$1\n');
+        out = out.replace(/<br\s*\/?>/gi, '\n');
+        out = out.replace(/<\/p>/gi, '\n\n');
+        out = out.replace(/<p[^>]*>/gi, '');
+        out = out.replace(/<\/?[a-z0-9_-]+(?:\s+[^>]*)?>/gi, '');
+        out = out
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/&#039;|&apos;/g, "'")
+            .replace(/&mdash;|&#8212;/g, '—')
+            .replace(/&ndash;|&#8211;/g, '–')
+            .replace(/&ldquo;|&#8220;/g, '"')
+            .replace(/&rdquo;|&#8221;/g, '"')
+            .replace(/&lsquo;|&#8216;/g, "'")
+            .replace(/&rsquo;|&#8217;/g, "'")
+            .replace(/&nbsp;|&#160;/g, ' ');
+        return out.replace(/\n{3,}/g, '\n\n').trim();
     },
 
     /**
@@ -1101,6 +1304,17 @@ window.MyProjectEditorManager = {
                 this.uiManager.editorInspectorSidebar.classList.add('hidden');
             }
         } catch (err) { /* ignore */ }
+
+        // Hide editor context menu if open
+        const ctxMenu = document.getElementById('editor-context-menu');
+        if (ctxMenu) ctxMenu.classList.add('hidden');
+
+        // Reset toggle craft drawer button state
+        const toggleCraftBtn = document.getElementById('toggle-craft-drawer-btn');
+        if (toggleCraftBtn) {
+            toggleCraftBtn.classList.remove('hidden');
+            toggleCraftBtn.textContent = 'Craft Drawer ▾';
+        }
 
         // Return desk view to what makes sense: ensure the edited sheet or parent container is visible
         try {

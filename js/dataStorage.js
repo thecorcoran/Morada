@@ -70,7 +70,7 @@ window.MyProjectDataStorage = {
             id: 'node-welcome-sheet',
             title: 'Your First Scene',
             type: 'text',
-            content: '<p>Welcome to <strong>Morada</strong> — a visual, fractal writing environment designed for deep creative focus and scenic construction.</p><p>Double-click or double-tap this sheet to open the prose editor. Use the <em>Craft Drawer</em> on the right for <strong>Strunk & White</strong> stylistic auditing and <strong>Scenic Method</strong> craft maxims.</p>',
+            content: 'Welcome to **Morada** — a visual, fractal writing environment designed for deep creative focus and scenic construction.\n\nDouble-click or double-tap this sheet to open the prose editor. Use the *Craft Drawer* on the right for **Strunk & White** stylistic auditing and **Scenic Method** craft maxims.',
             x: 60,
             y: 60,
             width: 300,
@@ -84,7 +84,7 @@ window.MyProjectDataStorage = {
         id: 'node-getting-started-sheet',
         title: 'The Scholar\'s Guide',
         type: 'text',
-        content: '<p><strong>Quick Gestures &amp; Controls:</strong></p><ul><li><strong>Double-click or double-tap</strong> empty canvas space to create a new card.</li><li><strong>Click + Sheet</strong> in the masthead to add a new scene.</li><li><strong>Drag</strong> cards to arrange them visually across your desk.</li><li><strong>Manuscript Press</strong> at the top compiles your work into Word (.docx), HTML, or Markdown.</li></ul>',
+        content: '**Quick Gestures & Controls:**\n\n• **Double-click or double-tap** empty canvas space to create a new card.\n• **Click + Sheet** in the masthead to add a new scene.\n• **Drag** cards to arrange them visually across your desk.\n• **Manuscript Press** at the top compiles your work into Word (.docx), HTML, or Markdown.',
         x: 460,
         y: 80,
         width: 320,
@@ -328,7 +328,11 @@ window.MyProjectDataStorage = {
       if (!Array.isArray(node.children)) node.children = [];
       if (typeof node.type !== 'string') node.type = 'container';
       if (typeof node.title !== 'string') node.title = 'Untitled';
-      if (typeof node.content !== 'string') node.content = '';
+      if (typeof node.content !== 'string') {
+        node.content = '';
+      } else if (node.content && (/<[a-z][\s\S]*>/i.test(node.content) || /&[a-z]+;/i.test(node.content) || /&#\d+;/i.test(node.content))) {
+        node.content = this.cleanHtmlToProse(node.content);
+      }
       if (!Array.isArray(node.tags)) node.tags = [];
   // Per-node word goal and timer support
   if (typeof node.wordGoal !== 'number') node.wordGoal = 0;
@@ -345,8 +349,55 @@ window.MyProjectDataStorage = {
         this.normalizeNodes(node.children);
       }
     });
-  }
-  ,
+  },
+
+  /**
+   * Converts HTML fragments or legacy formatted text into clean prose / Markdown.
+   * Strips HTML tags, decodes entities, and preserves layout.
+   * @param {string} text
+   * @returns {string}
+   */
+  cleanHtmlToProse: function(text) {
+    if (!text || typeof text !== 'string') return '';
+    if (!/<[a-z][\s\S]*>/i.test(text) && !/&[a-z]+;/i.test(text) && !/&#\d+;/i.test(text)) {
+      return text;
+    }
+
+    let out = text;
+    out = out.replace(/<h1[^>]*>([\s\S]*?)<\/h1>/gi, '# $1\n\n');
+    out = out.replace(/<h2[^>]*>([\s\S]*?)<\/h2>/gi, '## $1\n\n');
+    out = out.replace(/<h3[^>]*>([\s\S]*?)<\/h3>/gi, '### $1\n\n');
+    out = out.replace(/<h4[^>]*>([\s\S]*?)<\/h4>/gi, '#### $1\n\n');
+    out = out.replace(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/gi, (m, c) => {
+      const inner = c.trim().replace(/^[\n\r]+|[\n\r]+$/g, '');
+      return inner.split('\n').map(l => '> ' + l.trim()).join('\n') + '\n\n';
+    });
+    out = out.replace(/<strong[^>]*>([\s\S]*?)<\/strong>/gi, '**$1**');
+    out = out.replace(/<b[^>]*>([\s\S]*?)<\/b>/gi, '**$1**');
+    out = out.replace(/<em[^>]*>([\s\S]*?)<\/em>/gi, '*$1*');
+    out = out.replace(/<i[^>]*>([\s\S]*?)<\/i>/gi, '*$1*');
+    out = out.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, '• $1\n');
+    out = out.replace(/<ul[^>]*>([\s\S]*?)<\/ul>/gi, '$1\n');
+    out = out.replace(/<ol[^>]*>([\s\S]*?)<\/ol>/gi, '$1\n');
+    out = out.replace(/<br\s*\/?>/gi, '\n');
+    out = out.replace(/<\/p>/gi, '\n\n');
+    out = out.replace(/<p[^>]*>/gi, '');
+    out = out.replace(/<\/?[a-z0-9_-]+(?:\s+[^>]*)?>/gi, '');
+    out = out
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#039;|&apos;/g, "'")
+      .replace(/&mdash;|&#8212;/g, '—')
+      .replace(/&ndash;|&#8211;/g, '–')
+      .replace(/&ldquo;|&#8220;/g, '"')
+      .replace(/&rdquo;|&#8221;/g, '"')
+      .replace(/&lsquo;|&#8216;/g, "'")
+      .replace(/&rsquo;|&#8217;/g, "'")
+      .replace(/&nbsp;|&#160;/g, ' ');
+    return out.replace(/\n{3,}/g, '\n\n').trim();
+  },
   /**
    * Adds a comment object to the specified node.
    * @param {string} nodeId

@@ -98,28 +98,17 @@
             <button id="editor-quote-btn" type="button" title="Blockquote">“ ”</button>
             <button id="editor-bullet-btn" type="button" title="Bullet List">• List</button>
           </div>
-          <div class="editor-toolbar-separator"></div>
-          <button id="editor-comment-btn" type="button" title="Add Comment (Ctrl+M)">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
-            Comment
-          </button>
-          <button id="editor-certify-btn" type="button" title="Certify Word (Ctrl+Shift+C)">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M3 21v-3l11-11 3 3L6 21H3Zm14.7-12.3-3-3L16.4 4a1.4 1.4 0 0 1 2 0l1.6 1.6a1.4 1.4 0 0 1 0 2l-2.3 2.1Z"/></svg>
-            Certify
-          </button>
-          <button id="editor-etymology-btn" type="button" title="Look up Etymology (Ctrl+Shift+E)">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M19 2H6a3 3 0 0 0-3 3v14a3 3 0 0 0 3 3h13a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1ZM6 4h12v12H6a1 1 0 0 1-1-.1V5a1 1 0 0 1 1-1Zm12 16H6a1 1 0 0 1 0-2h12v2Z"/></svg>
-            Etymology
-          </button>
+          <div class="editor-toolbar-spacer"></div>
           <button id="editor-fullview-btn" type="button" title="Toggle Full View Focus Mode (F11 or Ctrl+Shift+F)">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
             ⛶ Full View
           </button>
-          <button id="toggle-craft-drawer-btn" type="button" title="Toggle Craft Drawer (Ctrl+Shift+D)">
+          <button id="toggle-craft-drawer-btn" type="button" title="Open Craft Drawer (Ctrl+Shift+D)">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Zm0 6H5V5h14v4Zm-5 2v2h-4v-2h4Zm5 8H5v-4h4v1a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1h4v4Z"/></svg>
             Craft Drawer ▾
           </button>
           <button id="exit-fullview-btn" class="hidden" type="button" title="Exit Full View (Esc / F11)">✕ Exit Full View</button>
+          <div class="editor-toolbar-separator"></div>
           <span id="editor-save-indicator" class="editor-save-indicator" title="Auto-save status">All changes saved</span>
         </div>
         <textarea id="main-editor"></textarea>
@@ -425,6 +414,21 @@
         <li class="context-menu-divider"></li>
         <li id="archive-node-option">📦 Archive to Vault</li>
         <li id="delete-node-option" class="context-menu-danger">🗑️ Delete</li>
+      </ul>
+    </div>
+
+    <!-- Context Menu for Editor Prose (Right-Click in Sheet) -->
+    <div id="editor-context-menu" class="context-menu hidden">
+      <ul>
+        <li id="editor-ctx-comment">💬 Add Comment <span class="shortcut-hint">Ctrl+M</span></li>
+        <li id="editor-ctx-certify">✓ Certify Word <span class="shortcut-hint">Ctrl+Shift+C</span></li>
+        <li id="editor-ctx-etymology">📖 Look up Etymology <span class="shortcut-hint">Ctrl+Shift+E</span></li>
+        <li class="context-menu-divider"></li>
+        <li id="editor-ctx-bold"><strong>B</strong> Bold <span class="shortcut-hint">Ctrl+B</span></li>
+        <li id="editor-ctx-italic"><em>I</em> Italic <span class="shortcut-hint">Ctrl+I</span></li>
+        <li class="context-menu-divider"></li>
+        <li id="editor-ctx-copy">📋 Copy <span class="shortcut-hint">Ctrl+C</span></li>
+        <li id="editor-ctx-cut">✂️ Cut <span class="shortcut-hint">Ctrl+X</span></li>
       </ul>
     </div>
 
