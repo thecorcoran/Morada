@@ -126,6 +126,28 @@ window.MyProjectCanvasRenderer = {
   },
 
   /**
+   * Extracts the first sentence from a manuscript script or HTML string.
+   * @param {string} htmlOrText
+   * @returns {string}
+   */
+  _extractFirstSentence: function(htmlOrText) {
+    const plain = this._extractPlainText(htmlOrText || '');
+    if (!plain) return '';
+    // Match up to the first '.', '!', or '?' followed by whitespace, quotes, closing paren, or end of string
+    const match = plain.match(/^.*?[.!?](?=(?:\s+["'”’)]?|$))/);
+    if (match && match[0].trim()) {
+      return match[0].trim();
+    }
+    // If no terminal punctuation found, provide a clean snippet up to 100 characters
+    if (plain.length > 100) {
+      const truncated = plain.slice(0, 95);
+      const lastSpace = truncated.lastIndexOf(' ');
+      return (lastSpace > 30 ? truncated.slice(0, lastSpace) : truncated) + '...';
+    }
+    return plain;
+  },
+
+  /**
    * Splits and word-wraps text into at most maxLines that fit within maxWidth.
    * @param {string} text
    * @param {number} maxWidth
@@ -316,7 +338,9 @@ window.MyProjectCanvasRenderer = {
   _drawNode: function(node, isCurrentLevel, isAncestor, scale) {
     const isSelected = !!node.selected;
     const isHovered = (this.hoveredNode && this.hoveredNode.id === node.id);
+    const isSticky = (node.type === 'sticky' || node.type === 'note');
     const isSheet = (node.type === 'text');
+    const isContainer = (!isSheet && !isSticky);
     const borderRadius = AppConstants.NODE_BORDER_RADIUS || 6;
     const isFilterActive = !!this.activeTagFilter;
     const isFilterMatch = isFilterActive ? this.nodeMatchesFilter(node, this.activeTagFilter) : true;
@@ -335,7 +359,12 @@ window.MyProjectCanvasRenderer = {
     const theme = this._getThemeTokens();
 
     // Card background
-    const bgColor = isSheet ? (theme.sheetBg || '#ffffff') : (theme.portfolioBg || '#f4ece1');
+    let bgColor = theme.portfolioBg || '#f4ece1';
+    if (isSticky) {
+      bgColor = theme.stickyBg || '#fef9c3';
+    } else if (isSheet) {
+      bgColor = theme.sheetBg || '#ffffff';
+    }
     this.ctx.fillStyle = bgColor;
 
     // Natural paper dropshadow when current level
@@ -359,8 +388,19 @@ window.MyProjectCanvasRenderer = {
     this.ctx.shadowColor = 'transparent';
     this.ctx.shadowBlur = 0;
 
-    // Left binding spine indicator for Manuscript Sheets
-    if (isSheet) {
+    // Header strip / spine / tape indicator
+    if (isSticky) {
+      // Top translucent sticky tape strip
+      const tapeW = 54;
+      const tapeH = 12;
+      const tapeX = node.x + (node.width - tapeW) / 2;
+      const tapeY = node.y - 4;
+      this.ctx.fillStyle = theme.stickyTape || 'rgba(255, 255, 255, 0.75)';
+      this.ctx.beginPath();
+      this.ctx.roundRect(tapeX, tapeY, tapeW, tapeH, 2);
+      this.ctx.fill();
+    } else if (isSheet) {
+      // Left binding spine indicator for Manuscript Sheets
       const spineColor = (isFilterActive && isFilterMatch) ? '#b57614' : (isSelected ? theme.selectedStroke : (isHovered ? theme.hoverStroke : theme.sheetSpine));
       this.ctx.fillStyle = spineColor;
       this.ctx.beginPath();
@@ -389,15 +429,15 @@ window.MyProjectCanvasRenderer = {
       strokeColor = '#b57614';
       strokeWidth = 2.5 / scale;
     } else if (isSelected) {
-      strokeColor = theme.selectedStroke || '#b57614';
+      strokeColor = isSticky ? (theme.stickyBorder || '#eab308') : (theme.selectedStroke || '#b57614');
       strokeWidth = 2.5 / scale;
     } else if (isHovered) {
-      strokeColor = theme.hoverStroke || '#8b5a2b';
+      strokeColor = isSticky ? (theme.stickyBorder || '#eab308') : (theme.hoverStroke || '#8b5a2b');
       strokeWidth = 1.5 / scale;
     } else {
       // Subtle baseline outline for clear legibility on the desk
-      strokeColor = theme.baseStroke || 'rgba(189, 174, 147, 0.45)';
-      strokeWidth = 1 / scale;
+      strokeColor = isSticky ? (theme.stickyBorder || '#eab308') : (theme.baseStroke || 'rgba(189, 174, 147, 0.45)');
+      strokeWidth = isSticky ? (1.5 / scale) : (1 / scale);
     }
 
     if (strokeColor) {
@@ -429,21 +469,21 @@ window.MyProjectCanvasRenderer = {
       this.ctx.textAlign = 'left';
       this.ctx.textBaseline = 'middle';
 
-      if (!isSheet) {
+      if (isContainer) {
         const childCount = Array.isArray(node.children) ? node.children.length : 0;
         let totalWords = 0;
         if (this.getWordCountFunction && Array.isArray(node.children)) {
           const countWordsRecursive = (items) => {
             let sum = 0;
             items.forEach(it => {
-              if (it.type === 'text') sum += this.getWordCountFunction(it.content || '');
+              if (it.type === 'text' || it.type === 'sticky' || it.type === 'note') sum += this.getWordCountFunction(it.content || '');
               if (it.children && it.children.length) sum += countWordsRecursive(it.children);
             });
             return sum;
           };
           totalWords = countWordsRecursive(node.children);
         }
-        const countText = childCount === 1 ? '1 sheet' : `${childCount} sheets`;
+        const countText = childCount === 1 ? '1 item' : `${childCount} items`;
         const wordSummary = totalWords > 0 ? ` · ${totalWords.toLocaleString()} words` : '';
         let headerLabel = `📁 Portfolio · ${countText}${wordSummary}`;
         while (headerLabel.length > 5 && this.ctx.measureText(headerLabel).width > innerW) {
@@ -453,6 +493,17 @@ window.MyProjectCanvasRenderer = {
           headerLabel = headerLabel.trim() + '...';
         }
         this.ctx.fillText(headerLabel, innerX, badgeY);
+      } else if (isSticky) {
+        const wordCount = this.getWordCountFunction ? this.getWordCountFunction(node.content || '') : 0;
+        this.ctx.fillStyle = theme.stickyHeader || '#854d0e';
+        this.ctx.fillText(`📌 Sticky Note`, innerX, badgeY);
+
+        if (wordCount > 0) {
+          this.ctx.font = "11px 'Vollkorn', serif";
+          this.ctx.fillStyle = theme.stickyHeader || '#854d0e';
+          this.ctx.textAlign = 'right';
+          this.ctx.fillText(`${wordCount}w`, rightX, badgeY);
+        }
       } else {
         const wordCount = this.getWordCountFunction ? this.getWordCountFunction(node.content || '') : 0;
         this.ctx.fillText(`📄 Sheet`, innerX, badgeY);
@@ -474,13 +525,13 @@ window.MyProjectCanvasRenderer = {
       }
 
       // 2. Title
-      this.ctx.fillStyle = theme.titleColor || '#282421';
+      this.ctx.fillStyle = isSticky ? (theme.stickyText || '#451a03') : (theme.titleColor || '#282421');
       this.ctx.font = isSelected ? "bold 17px 'Vollkorn', serif" : (AppConstants.DEFAULT_FONT_BOLD || "bold 17px 'Vollkorn', serif");
       this.ctx.textAlign = 'left';
       this.ctx.textBaseline = 'top';
 
       if (!node.isEditing) {
-        let displayTitle = node.title || 'Untitled';
+        let displayTitle = node.title || (isSticky ? 'Outline Note' : 'Untitled');
         if (this.ctx.measureText(displayTitle).width > innerW) {
           while (displayTitle.length > 3 && this.ctx.measureText(displayTitle + '...').width > innerW) {
             displayTitle = displayTitle.slice(0, -1);
@@ -492,7 +543,7 @@ window.MyProjectCanvasRenderer = {
 
       // 3. Subtle separator rule below title
       if (this.ctx.moveTo && this.ctx.lineTo) {
-        this.ctx.strokeStyle = theme.dividerColor || 'rgba(189, 174, 147, 0.35)';
+        this.ctx.strokeStyle = isSticky ? (theme.stickyBorder || 'rgba(217, 119, 6, 0.4)') : (theme.dividerColor || 'rgba(189, 174, 147, 0.35)');
         this.ctx.lineWidth = 1 / scale;
         this.ctx.beginPath();
         this.ctx.moveTo(innerX, node.y + 64);
@@ -505,7 +556,27 @@ window.MyProjectCanvasRenderer = {
       const footerTop = node.y + node.height - 36;
       const availableBodyH = Math.max(0, footerTop - bodyY);
 
-      if (isSheet) {
+      if (isSticky) {
+        const plainText = this._extractPlainText(node.content || '');
+        if (plainText) {
+          this.ctx.font = AppConstants.EXCERPT_FONT || "13px 'Vollkorn', serif";
+          this.ctx.fillStyle = theme.stickyText || '#451a03';
+          this.ctx.textAlign = 'left';
+          this.ctx.textBaseline = 'top';
+
+          const maxExcerptLines = Math.max(1, Math.min(8, Math.floor(availableBodyH / 19)));
+          const lines = this._wrapTextLines(plainText, innerW, maxExcerptLines);
+          lines.forEach((line, idx) => {
+            this.ctx.fillText(line, innerX, bodyY + (idx * 19));
+          });
+        } else {
+          this.ctx.font = "italic 13px 'Vollkorn', serif";
+          this.ctx.fillStyle = theme.stickyHeader || '#854d0e';
+          this.ctx.textAlign = 'left';
+          this.ctx.textBaseline = 'top';
+          this.ctx.fillText('Empty sticky note — double-click to outline...', innerX, bodyY + 6);
+        }
+      } else if (isSheet) {
         const plainText = this._extractPlainText(node.content || '');
         if (plainText) {
           this.ctx.font = AppConstants.EXCERPT_FONT || "13px 'Vollkorn', serif";
@@ -533,10 +604,11 @@ window.MyProjectCanvasRenderer = {
           this.ctx.fillText(emptyPrompt, innerX, bodyY + 6);
         }
       } else {
-        // Portfolio: list children that fit within availableBodyH
+        // Portfolio: list scripts/children with Name AND First Sentence
         const children = Array.isArray(node.children) ? node.children : [];
         if (children.length > 0) {
-          const maxPossibleRows = Math.max(1, Math.floor(availableBodyH / 24));
+          const itemH = 38; // 2 lines per child: Title + First sentence
+          const maxPossibleRows = Math.max(1, Math.floor(availableBodyH / itemH));
           const maxShow = Math.min(maxPossibleRows, children.length);
           for (let i = 0; i < maxShow; i++) {
             if (i === maxPossibleRows - 1 && children.length > maxPossibleRows) {
@@ -547,22 +619,24 @@ window.MyProjectCanvasRenderer = {
               while (moreLabel.length > 5 && this.ctx.measureText(moreLabel).width > innerW) {
                 moreLabel = moreLabel.slice(0, -1);
               }
-              this.ctx.fillText(moreLabel, innerX, bodyY + (i * 24));
+              this.ctx.fillText(moreLabel, innerX, bodyY + (i * itemH));
               break;
             }
             const child = children[i];
-            const isChildSheet = (child.type === 'text');
-            const icon = isChildSheet ? '• ' : '📁 ';
+            const isChildContainer = (child.type === 'container');
+            const isChildSticky = (child.type === 'sticky' || child.type === 'note');
+            const icon = isChildContainer ? '📁 ' : (isChildSticky ? '📌 ' : '• ');
             let itemText = icon + (child.title || 'Untitled');
-            const itemRowY = bodyY + (i * 24);
+            const itemRowY = bodyY + (i * itemH);
 
             let wordBadge = '';
-            if (isChildSheet && this.getWordCountFunction) {
+            if (!isChildContainer && this.getWordCountFunction) {
               const childWords = this.getWordCountFunction(child.content || '');
               wordBadge = `${childWords}w`;
             }
 
-            this.ctx.font = "14px 'Vollkorn', serif";
+            // Line 1: Child Title
+            this.ctx.font = "bold 13px 'Vollkorn', serif";
             this.ctx.fillStyle = theme.childColor || '#3c3836';
             this.ctx.textAlign = 'left';
             this.ctx.textBaseline = 'top';
@@ -582,7 +656,34 @@ window.MyProjectCanvasRenderer = {
               this.ctx.font = "11px 'Vollkorn', serif";
               this.ctx.fillStyle = theme.headerColor || '#7c6f64';
               this.ctx.textAlign = 'right';
-              this.ctx.fillText(wordBadge, rightX, itemRowY + 2);
+              this.ctx.fillText(wordBadge, rightX, itemRowY + 1);
+            }
+
+            // Line 2: First sentence of script / outline
+            let firstSentence = '';
+            if (isChildContainer) {
+              const subCount = Array.isArray(child.children) ? child.children.length : 0;
+              firstSentence = subCount === 1 ? '1 item' : `${subCount} items`;
+            } else {
+              firstSentence = this._extractFirstSentence(child.content || '');
+              if (!firstSentence) {
+                firstSentence = isChildSticky ? 'Empty outline note' : 'Empty sheet';
+              }
+            }
+
+            if (firstSentence) {
+              this.ctx.font = "italic 12px 'Vollkorn', serif";
+              this.ctx.fillStyle = theme.excerptColor || '#665c54';
+              this.ctx.textAlign = 'left';
+              const maxSentenceW = innerW - 14;
+              let sentenceText = firstSentence;
+              if (this.ctx.measureText(sentenceText).width > maxSentenceW) {
+                while (sentenceText.length > 5 && this.ctx.measureText(sentenceText + '...').width > maxSentenceW) {
+                  sentenceText = sentenceText.slice(0, -1);
+                }
+                sentenceText += '...';
+              }
+              this.ctx.fillText(sentenceText, innerX + 12, itemRowY + 17);
             }
           }
         } else {

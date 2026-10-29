@@ -204,5 +204,88 @@ describe('MyProjectCanvasRenderer Unit Tests', () => {
                 expect.any(Number)
             );
         });
+
+        test('should extract first sentence from script content cleanly', () => {
+            const htmlWithSentence = '<p>The clock struck thirteen. Winston Smith hurried past the doorway.</p>';
+            expect(CanvasRenderer._extractFirstSentence(htmlWithSentence)).toBe('The clock struck thirteen.');
+
+            const exclamation = 'Call me Ishmael! Some years ago...';
+            expect(CanvasRenderer._extractFirstSentence(exclamation)).toBe('Call me Ishmael!');
+
+            const question = 'To be or not to be? That is the question.';
+            expect(CanvasRenderer._extractFirstSentence(question)).toBe('To be or not to be?');
+        });
+
+        test('should render both script name and first sentence on portfolio card before click', () => {
+            const portfolioNode = {
+                id: 'portfolio-test',
+                x: 0,
+                y: 0,
+                width: 520,
+                height: 330,
+                type: 'container',
+                title: 'My Novel',
+                children: [
+                    {
+                        id: 'script-1',
+                        type: 'text',
+                        title: 'Prologue: The Journey',
+                        content: '<p>The carriage arrived at dusk. The horses were lathered in sweat.</p>'
+                    }
+                ]
+            };
+
+            CanvasRenderer._drawNode(portfolioNode, true, false, 1);
+
+            // Verifies child title is rendered
+            expect(mockCtx.fillText).toHaveBeenCalledWith(
+                expect.stringContaining('Prologue: The Journey'),
+                expect.any(Number),
+                expect.any(Number)
+            );
+
+            // Verifies first sentence is rendered
+            expect(mockCtx.fillText).toHaveBeenCalledWith(
+                expect.stringContaining('The carriage arrived at dusk.'),
+                expect.any(Number),
+                expect.any(Number)
+            );
+        });
+
+        test('should render sticky note with outline content and sticky note badge', () => {
+            const stickyNode = {
+                id: 'sticky-1',
+                x: 50,
+                y: 50,
+                width: 270,
+                height: 230,
+                type: 'sticky',
+                title: 'Act I Outline',
+                content: '<p>• Inciting Incident: The stolen letter</p><p>• Plot Point 1: Confrontation</p>'
+            };
+
+            CanvasRenderer._drawNode(stickyNode, true, false, 1);
+
+            // Verifies sticky note badge
+            expect(mockCtx.fillText).toHaveBeenCalledWith(
+                expect.stringContaining('Sticky Note'),
+                expect.any(Number),
+                expect.any(Number)
+            );
+
+            // Verifies outline title
+            expect(mockCtx.fillText).toHaveBeenCalledWith(
+                expect.stringContaining('Act I Outline'),
+                expect.any(Number),
+                expect.any(Number)
+            );
+
+            // Verifies outline body content
+            expect(mockCtx.fillText).toHaveBeenCalledWith(
+                expect.stringContaining('Inciting Incident'),
+                expect.any(Number),
+                expect.any(Number)
+            );
+        });
     });
 });

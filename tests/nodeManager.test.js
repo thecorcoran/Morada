@@ -25,6 +25,17 @@ describe('MyProjectNodeManager', () => {
         expect(node.height).toBe(210);
     });
 
+    test('should create sticky outline note with proper title, type, and dimensions', () => {
+        const node = NodeManager.createNode(300, 300, 'sticky', 'test-sticky-1');
+        expect(node.id).toBe('test-sticky-1');
+        expect(node.type).toBe('sticky');
+        expect(node.title).toBe('Outline Note');
+        expect(node.width).toBe(270);
+        expect(node.height).toBe(230);
+        expect(node.x).toBe(300 - 135);
+        expect(node.y).toBe(300 - 115);
+    });
+
     test('should add tags to node without introducing duplicates', () => {
         const node = { id: 'node-1', tags: ['draft'] };
         NodeManager.addTagToNode(node, 'chapter-1');

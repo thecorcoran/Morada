@@ -11,6 +11,10 @@ window.AppConstants = {
     SHEET_WIDTH: 340,
     /** @const {number} SHEET_HEIGHT - Standard height for manuscript sheet cards. */
     SHEET_HEIGHT: 210,
+    /** @const {number} STICKY_WIDTH - Standard width for outline sticky note cards. */
+    STICKY_WIDTH: 270,
+    /** @const {number} STICKY_HEIGHT - Standard height for outline sticky note cards. */
+    STICKY_HEIGHT: 230,
     /** @const {number} NODE_WIDTH - Fallback width for new nodes. */
     NODE_WIDTH: 340,
     /** @const {number} NODE_HEIGHT - Fallback height for new nodes. */
@@ -25,6 +29,8 @@ window.AppConstants = {
     NODE_PORTFOLIO_COLOR: '#f4ece1',
     /** @const {string} NODE_SHEET_COLOR - Crisp manuscript sheet paper color. */
     NODE_SHEET_COLOR: '#ffffff',
+    /** @const {string} NODE_STICKY_COLOR - Warm sticky canary paper color. */
+    NODE_STICKY_COLOR: '#fef9c3',
     /** @const {string} NODE_SELECTED_STROKE_COLOR - Scholarly focus stroke color (burnished gold). */
     NODE_SELECTED_STROKE_COLOR: '#b57614',
     /** @const {string} NODE_HOVER_STROKE_COLOR - Subtle hover stroke color (saddle leather). */
@@ -41,6 +47,11 @@ window.AppConstants = {
             gridDot: 'rgba(180, 150, 120, 0.4)',
             portfolioBg: '#f5ece1',
             sheetBg: '#ffffff',
+            stickyBg: '#fef9c3',
+            stickyBorder: '#d97706',
+            stickyHeader: '#854d0e',
+            stickyText: '#451a03',
+            stickyTape: 'rgba(255, 255, 255, 0.75)',
             portfolioSpine: '#8b5a2b',
             portfolioTab: '#d4a373',
             sheetSpine: '#8b5a2b',
@@ -73,6 +84,11 @@ window.AppConstants = {
             gridDot: 'rgba(212, 163, 115, 0.18)',
             portfolioBg: '#181310',
             sheetBg: '#201a16',
+            stickyBg: '#2d2417',
+            stickyBorder: '#ca8a04',
+            stickyHeader: '#fef08a',
+            stickyText: '#fef9c3',
+            stickyTape: 'rgba(255, 255, 255, 0.2)',
             portfolioSpine: '#8b5a2b',
             portfolioTab: '#d4a373',
             sheetSpine: '#d4a373',
@@ -129,6 +145,8 @@ window.AppConstants = {
     NEW_PORTFOLIO_TITLE: 'New Portfolio',
     /** @const {string} NEW_SHEET_TITLE - Default title for new text nodes. */
     NEW_SHEET_TITLE: 'New Sheet',
+    /** @const {string} NEW_STICKY_TITLE - Default title for new sticky outline notes. */
+    NEW_STICKY_TITLE: 'Outline Note',
     /** @const {string} NEW_CHAMBER_TITLE - Backwards compatibility alias for containers. */
     NEW_CHAMBER_TITLE: 'New Portfolio',
     /** @const {string} NEW_SCRIPTORIUM_TITLE - Backwards compatibility alias for text nodes. */

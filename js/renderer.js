@@ -15,6 +15,7 @@ let lastMousePosition = { x: 0, y: 0 };
 let lastClickTime = 0;
 let lastClickedNodeId = null;
 let lastDoubleActionHandledTime = 0;
+let lastNavigationTime = 0;
 
 // --- Initialization ---
 async function init() {
@@ -96,7 +97,10 @@ async function init() {
 function setupEventListeners() {
     canvas.addEventListener('mousedown', onMouseDown);
     canvas.addEventListener('dblclick', (e) => {
-        onMouseDown(e);
+        // Prevent default browser double click behavior on canvas.
+        // onMouseDown processes double-clicks via e.detail === 2 and quick tap detection.
+        // Firing onMouseDown here caused duplicated execution and empty-space portfolio creation upon entering containers.
+        e.preventDefault();
     });
 
     let lastTouchTime = 0;
@@ -219,17 +223,33 @@ function onMouseDown(e) {
                 menu.style.top = (e.clientY) + 'px';
                 menu.classList.remove('hidden');
 
+                const isNodeMenu = !!clickedNode;
+                const nodeOptIds = ['open-node-option', 'rename-node-option', 'inspect-node-option', 'archive-node-option', 'delete-node-option', 'canvas-node-divider'];
+                const emptyOptIds = ['new-sheet-option', 'new-portfolio-option', 'new-sticky-option'];
+                nodeOptIds.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.style.display = isNodeMenu ? '' : 'none';
+                });
+                emptyOptIds.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.style.display = isNodeMenu ? 'none' : '';
+                });
+
                 const openOpt = document.getElementById('open-node-option');
                 if (openOpt) {
                     openOpt.onclick = (evt) => {
                         evt.stopPropagation();
                         menu.classList.add('hidden');
                         if (!clickedNode) return;
-                        if (clickedNode.type === 'text') {
+                        if (clickedNode.type === 'text' || clickedNode.type === 'sticky' || clickedNode.type === 'note') {
                             isPotentialDrag = false;
                             isDragging = false;
                             MyProjectEditorManager.openEditorMode(clickedNode);
                         } else {
+                            lastNavigationTime = Date.now();
+                            lastDoubleActionHandledTime = Date.now();
+                            lastClickTime = 0;
+                            lastClickedNodeId = null;
                             MyProjectStateManager.pushToViewStack(clickedNode);
                             MyProjectStateManager.setCurrentNodes(clickedNode.children || []);
                             MyProjectUIManager.updateUIChrome();
@@ -237,6 +257,72 @@ function onMouseDown(e) {
                                 window.MyProjectUIManager.fitNodesToView(80);
                             }
                             draw();
+                        }
+                    };
+                }
+
+                const newSheetOpt = document.getElementById('new-sheet-option');
+                if (newSheetOpt) {
+                    newSheetOpt.onclick = (evt) => {
+                        evt.stopPropagation();
+                        menu.classList.add('hidden');
+                        const id = 'node-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
+                        const newNode = MyProjectNodeManager.createNode(worldPos.x, worldPos.y, true, id);
+                        const current = MyProjectStateManager.getCurrentNodes();
+                        current.push(newNode);
+                        MyProjectStateManager.setCurrentNodes(current);
+                        MyProjectStateManager.setSelectedNode(newNode);
+                        MyProjectDataStorage.saveNodes(MyProjectStateManager.getRootNodes());
+                        if (window.MyProjectUIManager && typeof window.MyProjectUIManager.renderOutliner === 'function') {
+                            window.MyProjectUIManager.renderOutliner();
+                        }
+                        draw();
+                        if (window.MyProjectUIManager && typeof window.MyProjectUIManager.createTitleEditor === 'function') {
+                            window.MyProjectUIManager.createTitleEditor(newNode);
+                        }
+                    };
+                }
+
+                const newPortfolioOpt = document.getElementById('new-portfolio-option');
+                if (newPortfolioOpt) {
+                    newPortfolioOpt.onclick = (evt) => {
+                        evt.stopPropagation();
+                        menu.classList.add('hidden');
+                        const id = 'node-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
+                        const newNode = MyProjectNodeManager.createNode(worldPos.x, worldPos.y, false, id);
+                        const current = MyProjectStateManager.getCurrentNodes();
+                        current.push(newNode);
+                        MyProjectStateManager.setCurrentNodes(current);
+                        MyProjectStateManager.setSelectedNode(newNode);
+                        MyProjectDataStorage.saveNodes(MyProjectStateManager.getRootNodes());
+                        if (window.MyProjectUIManager && typeof window.MyProjectUIManager.renderOutliner === 'function') {
+                            window.MyProjectUIManager.renderOutliner();
+                        }
+                        draw();
+                        if (window.MyProjectUIManager && typeof window.MyProjectUIManager.createTitleEditor === 'function') {
+                            window.MyProjectUIManager.createTitleEditor(newNode);
+                        }
+                    };
+                }
+
+                const newStickyOpt = document.getElementById('new-sticky-option');
+                if (newStickyOpt) {
+                    newStickyOpt.onclick = (evt) => {
+                        evt.stopPropagation();
+                        menu.classList.add('hidden');
+                        const id = 'node-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
+                        const newNode = MyProjectNodeManager.createNode(worldPos.x, worldPos.y, 'sticky', id);
+                        const current = MyProjectStateManager.getCurrentNodes();
+                        current.push(newNode);
+                        MyProjectStateManager.setCurrentNodes(current);
+                        MyProjectStateManager.setSelectedNode(newNode);
+                        MyProjectDataStorage.saveNodes(MyProjectStateManager.getRootNodes());
+                        if (window.MyProjectUIManager && typeof window.MyProjectUIManager.renderOutliner === 'function') {
+                            window.MyProjectUIManager.renderOutliner();
+                        }
+                        draw();
+                        if (window.MyProjectUIManager && typeof window.MyProjectUIManager.createTitleEditor === 'function') {
+                            window.MyProjectUIManager.createTitleEditor(newNode);
                         }
                     };
                 }
@@ -319,7 +405,7 @@ function onMouseDown(e) {
 
         // Double-click / Double-tap action
         if (isDoubleAction) {
-            if (now - lastDoubleActionHandledTime < 250) {
+            if (now - lastDoubleActionHandledTime < 350 || (typeof lastNavigationTime === 'number' && now - lastNavigationTime < 500)) {
                 return;
             }
             lastDoubleActionHandledTime = now;
@@ -346,11 +432,15 @@ function onMouseDown(e) {
                 }
             }
 
-            // 2. Double-clicking anywhere else on the card opens the sheet into editor or enters the portfolio:
-            if (clickedNode.type === 'text') {
+            // 2. Double-clicking anywhere else on the card opens the sheet/sticky into editor or enters the portfolio:
+            if (clickedNode.type === 'text' || clickedNode.type === 'sticky' || clickedNode.type === 'note') {
                 MyProjectEditorManager.openEditorMode(clickedNode);
                 return;
             } else if (clickedNode.type === 'container') {
+                lastNavigationTime = Date.now();
+                lastDoubleActionHandledTime = Date.now();
+                lastClickTime = 0;
+                lastClickedNodeId = null;
                 MyProjectStateManager.pushToViewStack(clickedNode);
                 MyProjectStateManager.setCurrentNodes(clickedNode.children || []);
                 MyProjectUIManager.updateUIChrome();
@@ -377,6 +467,10 @@ function onMouseDown(e) {
         try { const m = document.getElementById('node-inspector-modal'); if (m) m.remove(); } catch (e) {}
 
         if (isDoubleAction) {
+            if (now - lastDoubleActionHandledTime < 400 || (typeof lastNavigationTime === 'number' && now - lastNavigationTime < 600)) {
+                return;
+            }
+            lastDoubleActionHandledTime = now;
             // Double click empty space: create a new node
             // Shift + double-click -> Sheet (text)
             // Normal double-click -> Portfolio (container)
@@ -676,6 +770,9 @@ function resizeCanvas() {
 }
 
 function navigateToNode(path, nodeId) {
+    lastNavigationTime = Date.now();
+    lastClickTime = 0;
+    lastClickedNodeId = null;
     if (!nodeId && path && path.id) {
         nodeId = path.id;
         path = [path];

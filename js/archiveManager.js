@@ -55,7 +55,7 @@ window.ArchiveManager = {
         }
 
         // Show undo toast
-        const typeLabel = node.type === 'container' ? 'Portfolio' : 'Sheet';
+        const typeLabel = node.type === 'container' ? 'Portfolio' : (node.type === 'sticky' || node.type === 'note' ? 'Sticky Note' : 'Sheet');
         const undoFn = () => {
             this.unarchiveNode(node, false);
         };
@@ -94,7 +94,7 @@ window.ArchiveManager = {
         }
 
         if (showToast) {
-            const typeLabel = node.type === 'container' ? 'Portfolio' : 'Sheet';
+            const typeLabel = node.type === 'container' ? 'Portfolio' : (node.type === 'sticky' || node.type === 'note' ? 'Sticky Note' : 'Sheet');
             this._showUndoToast(`Restored ${typeLabel} "${node.title || '(untitled)'}" to desk`, () => {
                 this.archiveNode(node);
             }, 6000);
@@ -107,7 +107,7 @@ window.ArchiveManager = {
      */
     deleteArchivedNodePermanently: function(node) {
         if (!node) return;
-        const typeLabel = node.type === 'container' ? 'Portfolio' : 'Sheet';
+        const typeLabel = node.type === 'container' ? 'Portfolio' : (node.type === 'sticky' || node.type === 'note' ? 'Sticky Note' : 'Sheet');
         const confirmed = (typeof confirm === 'function')
             ? confirm(`Permanently delete ${typeLabel} "${node.title || '(untitled)'}"?\nThis action cannot be undone.`)
             : true;
@@ -314,9 +314,11 @@ window.ArchiveManager = {
             const headerRow = document.createElement('div');
             headerRow.className = 'archive-card-header';
 
+            const isContainer = node.type === 'container';
+            const isSticky = (node.type === 'sticky' || node.type === 'note');
             const iconSpan = document.createElement('span');
             iconSpan.className = 'archive-card-icon';
-            iconSpan.textContent = node.type === 'container' ? '📁' : '📄';
+            iconSpan.textContent = isContainer ? '📁' : (isSticky ? '📌' : '📄');
 
             const titleEl = document.createElement('h4');
             titleEl.className = 'archive-card-title';
@@ -324,7 +326,7 @@ window.ArchiveManager = {
 
             const badge = document.createElement('span');
             badge.className = `archive-type-badge badge-${node.type}`;
-            badge.textContent = node.type === 'container' ? 'Portfolio' : 'Sheet';
+            badge.textContent = isContainer ? 'Portfolio' : (isSticky ? 'Sticky Note' : 'Sheet');
 
             headerRow.appendChild(iconSpan);
             headerRow.appendChild(titleEl);
@@ -333,13 +335,13 @@ window.ArchiveManager = {
             const metaRow = document.createElement('div');
             metaRow.className = 'archive-card-meta';
 
-            if (node.type === 'text') {
+            if (node.type === 'text' || isSticky) {
                 const words = this.getWordCount ? this.getWordCount(node.content || '') : 0;
                 const wordsSpan = document.createElement('span');
                 wordsSpan.className = 'archive-meta-item';
                 wordsSpan.textContent = `${words} words`;
                 metaRow.appendChild(wordsSpan);
-            } else if (node.type === 'container') {
+            } else if (isContainer) {
                 const childCount = Array.isArray(node.children) ? node.children.length : 0;
                 const countSpan = document.createElement('span');
                 countSpan.className = 'archive-meta-item';

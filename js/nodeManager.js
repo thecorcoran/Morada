@@ -68,31 +68,51 @@ window.MyProjectNodeManager = {
    * Creates a new node object.
    * @param {number} x - The x-coordinate for the new node.
    * @param {number} y - The y-coordinate for the new node.
-   * @param {boolean} isTextType - True if the node should be a text node, false for a container.
+   * @param {boolean|string} isTextType - True for text, false for container, or 'sticky' for outline note.
    * @param {string} id - A unique ID for the node.
+   * @param {string} [explicitType=null] - Optional explicit node type ('text', 'container', 'sticky').
    * @returns {Object} The newly created node object.
    */
-  createNode: function(x, y, isTextType, id) {
+  createNode: function(x, y, isTextType, id, explicitType = null) {
+    const isSticky = (explicitType === 'sticky' || explicitType === 'note' || isTextType === 'sticky' || isTextType === 'note');
+    const isText = (isTextType === true || isTextType === 'text');
+    const isContainer = (!isSticky && !isText);
+
     const portfolioWidth = (typeof AppConstants !== 'undefined' && AppConstants.PORTFOLIO_WIDTH) || 520;
     const portfolioHeight = (typeof AppConstants !== 'undefined' && AppConstants.PORTFOLIO_HEIGHT) || 330;
     const sheetWidth = (typeof AppConstants !== 'undefined' && AppConstants.SHEET_WIDTH) || 340;
     const sheetHeight = (typeof AppConstants !== 'undefined' && AppConstants.SHEET_HEIGHT) || 210;
+    const stickyWidth = (typeof AppConstants !== 'undefined' && AppConstants.STICKY_WIDTH) || 270;
+    const stickyHeight = (typeof AppConstants !== 'undefined' && AppConstants.STICKY_HEIGHT) || 230;
 
-    const nodeWidth = isTextType ? sheetWidth : portfolioWidth;
-    const nodeHeight = isTextType ? sheetHeight : portfolioHeight;
-    const sheetTitle = (typeof AppConstants !== 'undefined' && (AppConstants.NEW_SHEET_TITLE || AppConstants.NEW_SCRIPTORIUM_TITLE)) || 'New Sheet';
-    const portfolioTitle = (typeof AppConstants !== 'undefined' && (AppConstants.NEW_PORTFOLIO_TITLE || AppConstants.NEW_CHAMBER_TITLE)) || 'New Portfolio';
+    let nodeWidth = sheetWidth;
+    let nodeHeight = sheetHeight;
+    let defaultTitle = (typeof AppConstants !== 'undefined' && (AppConstants.NEW_SHEET_TITLE || AppConstants.NEW_SCRIPTORIUM_TITLE)) || 'New Sheet';
+    let nodeType = 'text';
+
+    if (isSticky) {
+      nodeWidth = stickyWidth;
+      nodeHeight = stickyHeight;
+      defaultTitle = (typeof AppConstants !== 'undefined' && AppConstants.NEW_STICKY_TITLE) || 'Outline Note';
+      nodeType = 'sticky';
+    } else if (isContainer) {
+      nodeWidth = portfolioWidth;
+      nodeHeight = portfolioHeight;
+      defaultTitle = (typeof AppConstants !== 'undefined' && (AppConstants.NEW_PORTFOLIO_TITLE || AppConstants.NEW_CHAMBER_TITLE)) || 'New Portfolio';
+      nodeType = 'container';
+    }
+
     return {
       id: id,
       x: x - nodeWidth / 2,
       y: y - nodeHeight / 2,
       width: nodeWidth,
       height: nodeHeight,
-      title: isTextType ? sheetTitle : portfolioTitle,
+      title: defaultTitle,
       content: '',
       tags: [],
       children: [],
-      type: isTextType ? 'text' : 'container',
+      type: nodeType,
       isExpanded: false,
       selected: false,
       isEditing: false,

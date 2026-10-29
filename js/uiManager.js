@@ -284,6 +284,26 @@ window.MyProjectUIManager = {
             }
             if (typeof this.fitNodesToView === 'function' && this._autoFit) this.fitNodesToView();
         });
+        // New Sticky Outline Note button (+ Sticky)
+        this.newStickyBtn = document.getElementById('new-sticky-btn');
+        if (this.newStickyBtn) this.newStickyBtn.addEventListener('click', () => {
+            const id = 'node-' + Date.now() + '-' + Math.floor(Math.random()*10000);
+            const centerX = (this.canvas ? (this.canvas.width/2) : 0);
+            const centerY = (this.canvas ? (this.canvas.height/2) : 0);
+            const jitterX = (Math.random() - 0.5) * 40;
+            const jitterY = (Math.random() - 0.5) * 40;
+            const newNode = window.MyProjectNodeManager.createNode(centerX + jitterX, centerY + jitterY, 'sticky', id);
+            const current = this.stateManager.getCurrentNodes();
+            current.push(newNode);
+            this.stateManager.setCurrentNodes(current);
+            this.stateManager.setSelectedNode(newNode);
+            if (this.saveNodesFunction) this.saveNodesFunction();
+            if (this.drawFunction) this.drawFunction();
+            if (this.outlinerSidebar && !this.outlinerSidebar.classList.contains('hidden')) {
+                this.renderOutliner();
+            }
+            if (typeof this.fitNodesToView === 'function' && this._autoFit) this.fitNodesToView();
+        });
         // 5-Min Warm-Up Desk Button (navigates to or creates dedicated Warm Up portfolio)
         this.deskWarmupBtn = document.getElementById('desk-warmup-btn');
         if (this.deskWarmupBtn) this.deskWarmupBtn.addEventListener('click', () => {
@@ -1197,6 +1217,9 @@ window.MyProjectUIManager = {
                     if (sel.type === 'container') {
                         this.openScriptoriumBtn.textContent = 'Enter Portfolio ➔';
                         this.openScriptoriumBtn.title = `Enter "${sel.title || 'Portfolio'}"`;
+                    } else if (sel.type === 'sticky' || sel.type === 'note') {
+                        this.openScriptoriumBtn.textContent = 'Open Outline 📌';
+                        this.openScriptoriumBtn.title = `Open "${sel.title || 'Outline Note'}" in Editor`;
                     } else {
                         this.openScriptoriumBtn.textContent = 'Open Sheet ✍';
                         this.openScriptoriumBtn.title = `Open "${sel.title || 'Sheet'}" in Editor`;
@@ -1307,14 +1330,16 @@ window.MyProjectUIManager = {
             // Node info wrapper
             const info = document.createElement('span');
             info.className = 'outliner-item-info';
-            const icon = node.type === 'container' ? '📁 ' : '📄 ';
+            const isContainer = node.type === 'container';
+            const isSticky = (node.type === 'sticky' || node.type === 'note');
+            const icon = isContainer ? '📁 ' : (isSticky ? '📌 ' : '📄 ');
             const titleSpan = document.createElement('span');
             titleSpan.className = 'outliner-item-title';
             titleSpan.textContent = icon + (node.title || 'Untitled');
             info.appendChild(titleSpan);
 
             // Word count / sheet badge
-            if (node.type === 'text') {
+            if (node.type === 'text' || isSticky) {
                 const words = this.getWordCount(node.content || '');
                 const badge = document.createElement('span');
                 badge.className = 'outliner-word-badge';
@@ -1351,7 +1376,7 @@ window.MyProjectUIManager = {
             const openBtn = document.createElement('button');
             openBtn.type = 'button';
             openBtn.className = 'outliner-open-btn';
-            openBtn.title = node.type === 'container' ? 'Open Portfolio' : 'Open Sheet';
+            openBtn.title = isContainer ? 'Open Portfolio' : (isSticky ? 'Open Sticky Note' : 'Open Sheet');
             openBtn.textContent = '↗';
             openBtn.addEventListener('click', (ev) => {
                 ev.stopPropagation();
@@ -1443,7 +1468,7 @@ window.MyProjectUIManager = {
             if (typeof this.navigateToNodeFunction === 'function') {
                 this.navigateToNodeFunction(node);
             }
-        } else if (node.type === 'text') {
+        } else if (node.type === 'text' || node.type === 'sticky' || node.type === 'note') {
             if (window.MyProjectEditorManager && typeof window.MyProjectEditorManager.openEditorMode === 'function') {
                 window.MyProjectEditorManager.openEditorMode(node);
             }
