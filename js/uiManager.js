@@ -303,6 +303,9 @@ window.MyProjectUIManager = {
                 this.renderOutliner();
             }
             if (typeof this.fitNodesToView === 'function' && this._autoFit) this.fitNodesToView();
+            if (typeof this.createStickyNoteEditor === 'function') {
+                this.createStickyNoteEditor(newNode);
+            }
         });
         // 5-Min Warm-Up Desk Button (navigates to or creates dedicated Warm Up portfolio)
         this.deskWarmupBtn = document.getElementById('desk-warmup-btn');
@@ -1099,6 +1102,119 @@ window.MyProjectUIManager = {
             if (e.key === AppConstants.KEY_ENTER || e.key === AppConstants.KEY_ESCAPE) {
                 e.stopPropagation();
                 editor.blur();
+            }
+        });
+    },
+
+    /**
+     * Creates an in-place textarea editor directly over the body of a sticky note,
+     * allowing the author to outline directly on the desk or portfolio without opening the full editor.
+     * @param {Object} node - The sticky note node.
+     */
+    createStickyNoteEditor: function(node) {
+        if (!this.drawFunction || !this.saveNodesFunction || !this.canvas) {
+            console.error("UIManager not fully initialized for createStickyNoteEditor");
+            return;
+        }
+
+        // Close any existing editor before opening a new one
+        const existing = document.querySelector('.sticky-body-editor, .node-editor');
+        if (existing) {
+            try { existing.blur(); } catch (e) {}
+        }
+
+        node.isEditingBody = true;
+        this.drawFunction();
+
+        const textarea = document.createElement('textarea');
+        textarea.className = 'sticky-body-editor';
+
+        // Convert existing content to plain text with preserved newlines
+        const rawContent = node.content || '';
+        const plainText = rawContent
+            .replace(/<\/p>\s*<p>/gi, '\n')
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/<[^>]+>/g, '')
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .trim();
+
+        textarea.value = plainText;
+        textarea.placeholder = "Type your outline here...\n• Point 1\n• Point 2";
+
+        const rect = this.canvas.getBoundingClientRect();
+        const canvasX = rect.left + window.scrollX;
+        const canvasY = rect.top + window.scrollY;
+
+        const scale = this.stateManager.getScale();
+        const offsetX = this.stateManager.getOffsetX();
+        const offsetY = this.stateManager.getOffsetY();
+
+        // Note body area: innerX = node.x + 16, innerY = node.y + 70, width = node.width - 32, height = node.height - 84
+        const bodyWorldX = node.x + 16;
+        const bodyWorldY = node.y + 70;
+        const bodyWorldW = Math.max(120, node.width - 32);
+        const bodyWorldH = Math.max(80, node.height - 84);
+
+        const screenX = (bodyWorldX - this.canvas.width / 2 - offsetX) * scale + this.canvas.width / 2 + canvasX;
+        const screenY = (bodyWorldY - this.canvas.height / 2 - offsetY) * scale + this.canvas.height / 2 + canvasY;
+        const screenW = bodyWorldW * scale;
+        const screenH = bodyWorldH * scale;
+
+        textarea.style.position = 'absolute';
+        textarea.style.left = `${screenX}px`;
+        textarea.style.top = `${screenY}px`;
+        textarea.style.width = `${screenW}px`;
+        textarea.style.height = `${screenH}px`;
+        textarea.style.fontSize = `${Math.max(12, 14 * scale)}px`;
+        textarea.style.fontFamily = "'Vollkorn', Georgia, serif";
+        textarea.style.lineHeight = '1.45';
+        textarea.style.resize = 'none';
+
+        const isMidnight = (this.stateManager && typeof this.stateManager.getTheme === 'function' && this.stateManager.getTheme() === 'midnight');
+        textarea.style.color = isMidnight ? "#fef9c3" : "#451a03";
+        textarea.style.backgroundColor = isMidnight ? "#2d2417" : "#fef9c3";
+        textarea.style.border = isMidnight ? "1.5px dashed #ca8a04" : "1.5px dashed #d97706";
+        textarea.style.borderRadius = "4px";
+        textarea.style.padding = "6px 8px";
+        textarea.style.outline = "none";
+        textarea.style.boxSizing = "border-box";
+        textarea.style.zIndex = '1000';
+
+        document.body.appendChild(textarea);
+        textarea.focus();
+
+        const saveAndClose = () => {
+            const val = textarea.value;
+            // Convert plain text with newlines to clean HTML paragraphs
+            if (val.trim()) {
+                const paragraphs = val.split('\n')
+                    .map(line => `<p>${line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') || '&nbsp;'}</p>`)
+                    .join('');
+                node.content = paragraphs;
+            } else {
+                node.content = '';
+            }
+            node.isEditingBody = false;
+            if (document.body.contains(textarea)) {
+                document.body.removeChild(textarea);
+            }
+            this.saveNodesFunction();
+            if (typeof this.renderOutliner === 'function') {
+                this.renderOutliner();
+            }
+            this.drawFunction();
+        };
+
+        textarea.addEventListener('blur', saveAndClose, { once: true });
+        textarea.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                e.stopPropagation();
+                textarea.blur();
             }
         });
     },

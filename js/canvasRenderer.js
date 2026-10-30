@@ -557,24 +557,26 @@ window.MyProjectCanvasRenderer = {
       const availableBodyH = Math.max(0, footerTop - bodyY);
 
       if (isSticky) {
-        const plainText = this._extractPlainText(node.content || '');
-        if (plainText) {
-          this.ctx.font = AppConstants.EXCERPT_FONT || "13px 'Vollkorn', serif";
-          this.ctx.fillStyle = theme.stickyText || '#451a03';
-          this.ctx.textAlign = 'left';
-          this.ctx.textBaseline = 'top';
+        if (!node.isEditingBody) {
+          const plainText = this._extractPlainText(node.content || '');
+          if (plainText) {
+            this.ctx.font = AppConstants.EXCERPT_FONT || "13px 'Vollkorn', serif";
+            this.ctx.fillStyle = theme.stickyText || '#451a03';
+            this.ctx.textAlign = 'left';
+            this.ctx.textBaseline = 'top';
 
-          const maxExcerptLines = Math.max(1, Math.min(8, Math.floor(availableBodyH / 19)));
-          const lines = this._wrapTextLines(plainText, innerW, maxExcerptLines);
-          lines.forEach((line, idx) => {
-            this.ctx.fillText(line, innerX, bodyY + (idx * 19));
-          });
-        } else {
-          this.ctx.font = "italic 13px 'Vollkorn', serif";
-          this.ctx.fillStyle = theme.stickyHeader || '#854d0e';
-          this.ctx.textAlign = 'left';
-          this.ctx.textBaseline = 'top';
-          this.ctx.fillText('Empty sticky note — double-click to outline...', innerX, bodyY + 6);
+            const maxExcerptLines = Math.max(1, Math.min(8, Math.floor(availableBodyH / 19)));
+            const lines = this._wrapTextLines(plainText, innerW, maxExcerptLines);
+            lines.forEach((line, idx) => {
+              this.ctx.fillText(line, innerX, bodyY + (idx * 19));
+            });
+          } else {
+            this.ctx.font = "italic 13px 'Vollkorn', serif";
+            this.ctx.fillStyle = theme.stickyHeader || '#854d0e';
+            this.ctx.textAlign = 'left';
+            this.ctx.textBaseline = 'top';
+            this.ctx.fillText('Empty sticky note — double-click to outline...', innerX, bodyY + 6);
+          }
         }
       } else if (isSheet) {
         const plainText = this._extractPlainText(node.content || '');

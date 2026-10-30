@@ -241,10 +241,16 @@ function onMouseDown(e) {
                         evt.stopPropagation();
                         menu.classList.add('hidden');
                         if (!clickedNode) return;
-                        if (clickedNode.type === 'text' || clickedNode.type === 'sticky' || clickedNode.type === 'note') {
+                        if (clickedNode.type === 'text') {
                             isPotentialDrag = false;
                             isDragging = false;
                             MyProjectEditorManager.openEditorMode(clickedNode);
+                        } else if (clickedNode.type === 'sticky' || clickedNode.type === 'note') {
+                            isPotentialDrag = false;
+                            isDragging = false;
+                            if (window.MyProjectUIManager && typeof window.MyProjectUIManager.createStickyNoteEditor === 'function') {
+                                window.MyProjectUIManager.createStickyNoteEditor(clickedNode);
+                            }
                         } else {
                             lastNavigationTime = Date.now();
                             lastDoubleActionHandledTime = Date.now();
@@ -321,8 +327,8 @@ function onMouseDown(e) {
                             window.MyProjectUIManager.renderOutliner();
                         }
                         draw();
-                        if (window.MyProjectUIManager && typeof window.MyProjectUIManager.createTitleEditor === 'function') {
-                            window.MyProjectUIManager.createTitleEditor(newNode);
+                        if (window.MyProjectUIManager && typeof window.MyProjectUIManager.createStickyNoteEditor === 'function') {
+                            window.MyProjectUIManager.createStickyNoteEditor(newNode);
                         }
                     };
                 }
@@ -432,10 +438,15 @@ function onMouseDown(e) {
                 }
             }
 
-            // 2. Double-clicking anywhere else on the card opens the sheet/sticky into editor or enters the portfolio:
-            if (clickedNode.type === 'text' || clickedNode.type === 'sticky' || clickedNode.type === 'note') {
+            // 2. Double-clicking anywhere else on the card opens the sheet into editor, edits sticky note in place, or enters the portfolio:
+            if (clickedNode.type === 'text') {
                 MyProjectEditorManager.openEditorMode(clickedNode);
                 return;
+            } else if (clickedNode.type === 'sticky' || clickedNode.type === 'note') {
+                if (window.MyProjectUIManager && typeof window.MyProjectUIManager.createStickyNoteEditor === 'function') {
+                    window.MyProjectUIManager.createStickyNoteEditor(clickedNode);
+                    return;
+                }
             } else if (clickedNode.type === 'container') {
                 lastNavigationTime = Date.now();
                 lastDoubleActionHandledTime = Date.now();
@@ -463,6 +474,10 @@ function onMouseDown(e) {
         const existing = document.querySelector('.node-editor');
         if (existing) {
             try { existing.blur(); } catch (err) {}
+        }
+        const existingSticky = document.querySelector('.sticky-body-editor');
+        if (existingSticky) {
+            try { existingSticky.blur(); } catch (err) {}
         }
         try { const m = document.getElementById('node-inspector-modal'); if (m) m.remove(); } catch (e) {}
 
@@ -624,6 +639,10 @@ function onKeyDown(e) {
                     isPotentialDrag = false;
                     isDragging = false;
                     MyProjectEditorManager.openEditorMode(selectedNode);
+                } else if (selectedNode.type === 'sticky' || selectedNode.type === 'note') {
+                    if (window.MyProjectUIManager && typeof window.MyProjectUIManager.createStickyNoteEditor === 'function') {
+                        window.MyProjectUIManager.createStickyNoteEditor(selectedNode);
+                    }
                 } else {
                     MyProjectStateManager.pushToViewStack(selectedNode);
                     MyProjectStateManager.setCurrentNodes(selectedNode.children || []);
